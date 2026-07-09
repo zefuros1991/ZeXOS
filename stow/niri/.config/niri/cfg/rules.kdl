@@ -1,0 +1,57 @@
+// Window rules let you adjust behavior for individual windows.
+// Find more information on the wiki:
+// https://yalter.github.io/niri/Configuration:-Window-Rules
+
+// Work around WezTerm's initial configure bug
+// by setting an empty default-column-width.
+window-rule {
+    // This regular expression is intentionally made as specific as possible,
+    // since this is the default config, and we want no false positives.
+    // You can get away with just app-id="wezterm" if you want.
+    match app-id=r"^org.wezfurlong.wezterm$"
+    default-column-width 
+}
+
+// Example: enable rounded corners for all windows.
+// (This example rule is commented out with a "/-" in front.)
+window-rule {
+    geometry-corner-radius 14
+    clip-to-geometry true
+}
+
+// Dim all unfocused windows
+window-rule {
+    match is-focused=false
+    opacity 0.86
+}
+
+// Noctalia overview wallpaper on backdrop
+layer-rule {
+  match namespace="^noctalia-overview*"
+  place-within-backdrop true
+}
+
+debug {
+  // Allows notification actions and window activation from Noctalia.
+  honor-xdg-activation-with-invalid-serial
+  // Render on the AMD iGPU (PCI 66:00.0) so the NVIDIA dGPU can runtime-suspend.
+  // Both eDP and the dock's DP outputs are wired to the iGPU; games still get
+  // the dGPU via PRIME offload. By-path used because renderD128/129 numbering
+  // is not stable across boots.
+  render-drm-device "/dev/dri/by-path/pci-0000:66:00.0-render"
+}
+
+// Enable blur behind Applications.
+window-rule {
+    match app-id="^(Spotify|vesktop|kitty|steam|zen|codium|heroic|Bitwarden|viber|romm-nativefier-fe2465|obsidian|vlc|com.obsproject.Studio)$"
+
+    background-effect {
+        blur true
+    }
+}
+
+// Turn Opacity of Spotify to 85%
+window-rule {
+    match app-id="^Spotify$"
+    opacity 0.85
+}

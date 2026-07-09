@@ -1,0 +1,9 @@
+[Unit]
+Description=RustDesk Remote Desktop
+
+[Service]
+ExecStart=/usr/bin/rustdesk
+Restart=on-failure
+
+[Install]
+WantedBy=default.target

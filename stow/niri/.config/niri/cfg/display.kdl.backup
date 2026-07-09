@@ -1,0 +1,11 @@
+// Outputs configuration
+output "Samsung Display Corp. ATNA60DL04-0  Unknown" {
+    mode "2560x1600@240.000"
+}
+
+output "Samsung Electric Company Odyssey G85SD H1AK500000" {
+    mode "3440x1440@174.962"
+    variable-refresh-rate on-demand=true
+    scale 1.1
+    position x=0 y=0
+}

@@ -1,0 +1,6 @@
+[Unit]
+Description=Niri monitor auto switch
+
+[Service]
+Type=oneshot
+ExecStart=%h/.local/bin/niri-monitor-toggle.sh

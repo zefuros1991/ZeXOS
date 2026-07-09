@@ -1,0 +1,14 @@
+[Unit]
+Description=Dynamic output configuration for niri (dock/undock monitor switching)
+Documentation=man:kanshi(1)
+PartOf=graphical-session.target
+After=graphical-session.target niri.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/kanshi
+Restart=on-failure
+RestartSec=2
+
+[Install]
+WantedBy=graphical-session.target

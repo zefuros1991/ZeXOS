@@ -1,0 +1,18 @@
+{
+    "yaml.schemas": {
+        "file:///home/zefuros/.vscode/extensions/continue.continue-1.2.11-linux-x64/config-yaml-schema.json": [
+            ".continue/**/*.yaml"
+        ],
+        "file:///home/zefuros/.vscode/extensions/continue.continue-1.2.14-linux-x64/config-yaml-schema.json": [
+            ".continue/**/*.yaml"
+        ],
+        "file:///home/zefuros/.vscode/extensions/continue.continue-1.2.17-linux-x64/config-yaml-schema.json": [
+            ".continue/**/*.yaml"
+        ]
+    },
+    "docker.extension.enableComposeLanguageServer": false,
+    "redhat.telemetry.enabled": true,
+    "gitlens.ai.model": "vscode",
+    "gitlens.ai.vscode.model": "copilot:gpt-4.1",
+    "workbench.colorTheme": "NoctaliaTheme"
+}

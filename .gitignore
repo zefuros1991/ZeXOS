@@ -28,6 +28,12 @@ proton/
 
 # Zsh runtime artifacts (IMPORTANT)
 .zcompdump*
+
+# Fish's own auto-rewritten universal variable store (theme/prompt settings
+# fish itself regenerates on every `set -U`). Not hand-edited, and tracking it
+# would cause git diff noise unrelated to real config changes. Regenerates
+# fine on a fresh machine when fish/plugins first run.
+stow/fish/.config/fish/fish_variables
 **/vscode/**/globalStorage/
 .vscode/
 **/globalStorage/

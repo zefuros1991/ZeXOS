@@ -71,9 +71,6 @@ backup/
 **/*.vscdb
 **/*.vscdb.backup
 
-# browser profiles are data (cookies/logins), not dotfiles
-stow/zen/
-
 # more Electron/VSCodium data-not-config
 **/CachedExtensionVSIXs/
 **/Shared Dictionary/

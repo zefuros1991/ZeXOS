@@ -87,3 +87,14 @@ backup/
 
 # telemetry state
 **/go/telemetry/
+
+# Spicetify Marketplace: this is a downloaded, self-updating third-party
+# bundle (installed by the Marketplace app itself), not hand-authored config.
+# Tracking it just means diff noise every time it auto-updates.
+stow/spicetify/.config/spicetify/CustomApps/marketplace/
+
+# VS Code Settings Sync's own local cache: timestamped snapshot files that
+# accumulate forever and are regenerated automatically. Settings Sync already
+# syncs this data to the cloud on its own, so tracking a local copy in git is
+# redundant and just grows the repo over time.
+stow/vscode/.config/Code/User/sync/

@@ -1,3 +1,11 @@
 [user]
     name = Zefuros
     email = zefuros.certificates@gmail.com
+
+[init]
+    defaultBranch = main
+
+[core]
+    editor = nano
+[credential]
+	helper = /usr/lib/git-core/git-credential-libsecret

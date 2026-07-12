@@ -38,6 +38,9 @@ debug {
   // Both eDP and the dock's DP outputs are wired to the iGPU; games still get
   // the dGPU via PRIME offload. By-path used because renderD128/129 numbering
   // is not stable across boots.
+  // NOTE: comment this line out when switching to dGPU-only mux mode (gpu-game) —
+  // the AMD node does not exist there and niri will fail to start. Restore it
+  // when returning to hybrid (gpu-battery), or the dGPU will never runtime-suspend.
   render-drm-device "/dev/dri/by-path/pci-0000:66:00.0-render"
 }
 
@@ -54,4 +57,22 @@ window-rule {
 window-rule {
     match app-id="^Spotify$"
     opacity 0.85
+}
+
+// Ubisoft Connect (and similar UMU/Proton-launched apps) spawn a tiny
+// borderless "toast" popup (empty title, ~145x18px) for its in-app
+// notification/download overlay. It's a known Wine/DXVK bug where the
+// popup gets stuck on screen instead of auto-dismissing (see
+// https://github.com/doitsujin/dxvk/issues/3146). It shares the generic
+// app-id "steam_app_default" with the real launcher window, so we key
+// off the empty title too, which the real window never has -- if a
+// legit window briefly opens with no title, this only nudges it out of
+// the way and drops its opacity, both of which self-correct once its
+// real title is set.
+/-window-rule {
+    match app-id="^steam_app_default$" title="^$"
+    open-floating true
+    open-focused false
+    default-floating-position x=16 y=16 relative-to="bottom-right"
+    opacity 0.0
 }

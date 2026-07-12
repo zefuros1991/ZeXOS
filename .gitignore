@@ -74,9 +74,6 @@ backup/
 # browser profiles are data (cookies/logins), not dotfiles
 stow/zen/
 
-# Obsidian .config dir is Electron data (vault configs live inside the vaults)
-stow/obsidian/
-
 # more Electron/VSCodium data-not-config
 **/CachedExtensionVSIXs/
 **/Shared Dictionary/

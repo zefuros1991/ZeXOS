@@ -56,13 +56,36 @@ Add `-n` to either command to do a dry run first and see what it *would* do with
 stow -n -d stow -t "$HOME" <package-name>
 ```
 
-If stow reports "no conflicts" on a dry run, that package is already correctly deployed and there's nothing to do. If it reports a conflict, that means a real (non-symlink) file already exists at the target — `stow.sh` itself handles this automatically by backing the real file up to `backup/stow-<timestamp>/` before linking, but doing it by hand with the commands above works too, just remember to move the conflicting real file out of the way first.
+A plain dry run (`-n`) only tells you whether there's a *conflict* — it exits cleanly either way, whether the package is already fully linked or just about to be linked for the first time with no conflicts, so its wording doesn't distinguish those two cases. Add `-v` as well (`stow -v -n ...`) if you want to actually see what would change: a `LINK: ...` line means that file is about to be newly linked, and no `LINK:`/`UNLINK:` lines at all means the package is already exactly right. Either way, if stow reports a conflict, that means a real (non-symlink) file already exists at the target — `stow.sh` itself handles this automatically by backing the real file up to `backup/stow-<timestamp>/` before linking, but doing it by hand with the commands above works too, just remember to move the conflicting real file out of the way first.
 
 Two packages (`theme` and `systemd`) can never fully "fold" into a single clean symlink because something outside stow's control (Noctalia rewriting live CSS, and pre-existing systemd user units) keeps a real directory in place at the target. That's expected — not a bug — see the comments in those two package folders if you're curious.
 
 ## A warning about the shell
 
 **`finaltouches.sh` sets the login shell to `zsh`.** In practice, `fish` is the shell actually used day to day on this machine (zsh is only launched inside Kitty via its own `shell` directive, and interactively at login fish is what you'll land in already — see `stow/fish/` for that config). If you re-run `finaltouches.sh` on a fresh machine, it will flip your login shell to zsh. That's intentional for a truly clean bootstrap, but if you want fish to be the login shell instead, either skip this script or edit it to `chsh -s fish` before running it.
+
+## Troubleshooting
+
+### The login screen (SDDM) hangs forever / never shows the desktop
+
+If you ever end up staring at a black screen or a stuck SDDM login screen after entering your password, and it happens with a **plain shell** login rather than fish specifically, the classic cause on Arch/CachyOS is a broken `~/.profile`.
+
+Here's the plain-language version of why: when SDDM starts your graphical session, it runs a little startup script (`/usr/share/sddm/scripts/wayland-session`) that begins with `#!/bin/sh`. On CachyOS, `/bin/sh` is actually `bash` running in a stricter compatibility mode. That script's job is to read your `~/.profile` (a very old, universal shell config file) before launching niri. If `~/.profile` tries to load a file that doesn't exist — for example a leftover line like `. "$HOME/.local/bin/env"` from some tool that was uninstalled later — bash-in-that-mode treats a missing file as a **fatal error** and kills the whole startup script right there. Niri never gets launched. SDDM just sits there, because from its point of view the session script is still "running" (it's actually dead, but nothing told SDDM that).
+
+**Why this repo never deploys a `~/.profile`:** rather than trying to keep an old-style profile file perfectly error-free forever, ZeXOS relies entirely on `~/.config/environment.d/*.conf` (see the `system` package) for environment variables instead. `environment.d` is the modern, systemd-native way to set login-session variables, and it can't have this particular failure mode — there's no `.` (source) command to break. If you ever add a `~/.profile` by hand on this machine (or a future one built from this repo), keep it either empty or absolutely certain every line it sources actually exists, since this is exactly the kind of failure that's silent until the very next login.
+
+### Git push asks for a username and password every time
+
+GitHub no longer accepts a plain account password over HTTPS — the "password" it wants is a **Personal Access Token (PAT)**, a long random string you generate once on github.com (Settings → Developer settings → Personal access tokens) and then paste in place of your password.
+
+The `git` stow package already configures `credential.helper = /usr/lib/git-core/git-credential-libsecret`, which ships as part of the official `git` package on Arch/CachyOS (nothing extra to install). This tells git to save that token in your desktop's secure keyring (GNOME Keyring, via the `gnome-keyring-daemon` that's normally already running) after the very first successful login, so you only ever have to type it in once per machine.
+
+What to expect on a **brand-new machine**, the very first time you push:
+1. `git push` will ask for your GitHub username, then for a "password" — paste your PAT there (it won't echo to the screen, that's normal).
+2. If it works, the keyring saves it, and every push after that is silent — no prompt at all.
+3. If your desktop has no keyring/secrets service running (unlikely on a normal desktop CachyOS install, but possible on a very minimal setup), the helper can't save anything and it'll ask every time. If that happens, either make sure `gnome-keyring-daemon` (or your DE's equivalent secrets service) is running, or use `gh auth login` (the GitHub CLI) instead, which handles its own token storage and reconfigures git's credential helper for you.
+
+If push ever fails outright with an authentication error instead of prompting, don't keep retrying — GitHub temporarily blocks repeated failed auth attempts. Generate a fresh PAT and try once more.
 
 ## Package table
 

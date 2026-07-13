@@ -40,7 +40,6 @@ local pid=$1
 local msg=$2
 local spin='|/-'
 
-```
 echo -ne "${CYAN}${msg}${RESET} "
 
 while kill -0 "$pid" 2>/dev/null; do
@@ -51,7 +50,6 @@ while kill -0 "$pid" 2>/dev/null; do
 done
 
 echo -e "\b✔"
-```
 
 }
 
@@ -115,7 +113,6 @@ echo -e "\n${YELLOW}==> REPOSITORY CHECK${RESET}"
 if [ ! -d "$TARGET/.git" ]; then
 echo -e "${CYAN}Cloning ZeXOS repository${RESET}"
 
-```
 tmpclone=$(mktemp -d)
 
 git clone "$REPO" "$tmpclone/ZeXOS" &
@@ -127,7 +124,6 @@ cp -r "$tmpclone/ZeXOS"/. "$TARGET"
 rm -rf "$tmpclone"
 
 echo -e "${GREEN}✔ Repository installed${RESET}"
-```
 
 else
 echo -e "${GREEN}✔ Repository already present${RESET}"

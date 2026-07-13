@@ -98,3 +98,9 @@ stow/spicetify/.config/spicetify/CustomApps/marketplace/
 # syncs this data to the cloud on its own, so tracking a local copy in git is
 # redundant and just grows the repo over time.
 stow/vscode/.config/Code/User/sync/
+
+# Vesktop's window state (position/size in pixels): the app rewrites this
+# itself every time the window moves or resizes, and it's tied to this
+# machine's specific monitor layout anyway. Nothing hand-edited here, just
+# diff noise. settings.json/quickCss/themes stay tracked as before.
+stow/vesktop/.config/vesktop/state.json

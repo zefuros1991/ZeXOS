@@ -6,6 +6,15 @@ set -e
 # -----------------------------
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+# -----------------------------
+# XDG environment (defensive)
+# -----------------------------
+# Normally already exported by install.sh/bootstrap.sh before this script
+# runs, but set it up here too in case packages.sh is ever run on its own.
+# Idempotent — see scripts/lib-xdg.sh.
+. "$REPO_ROOT/scripts/lib-xdg.sh"
+zexos_setup_xdg_env
+
 LOGFILE="$REPO_ROOT/packages.log"
 mkdir -p "$REPO_ROOT"
 exec > >(tee -a "$LOGFILE") 2>&1

@@ -131,6 +131,21 @@ fi
 
 # -----------------------------
 
+# XDG ENVIRONMENT (early, propagated to every stage below)
+
+# -----------------------------
+
+# Source the shared helper and export the XDG_* vars into THIS process now,
+# before calling any stage script. Every "bash scripts/X.sh" call below
+# inherits exported variables automatically, so bootstrap/packages/stow all
+# see the same XDG_CONFIG_HOME/XDG_CACHE_HOME/XDG_DATA_HOME/XDG_STATE_HOME
+# (and the directories already existing) from the very first step, instead
+# of only after the next login. See scripts/lib-xdg.sh for the full reasoning.
+. "$TARGET/scripts/lib-xdg.sh"
+zexos_setup_xdg_env
+
+# -----------------------------
+
 # BOOTSTRAP
 
 # -----------------------------

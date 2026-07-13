@@ -4,6 +4,16 @@ set -e
 REPO="https://github.com/zefuros1991/ZeXOS.git"
 TARGET="$HOME/.dotfiles"
 
+# -----------------------------
+# XDG environment (early)
+# -----------------------------
+# Set up XDG_* vars and dirs for THIS run before anything else touches the
+# filesystem or installs packages. See scripts/lib-xdg.sh for why.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=./lib-xdg.sh
+. "$SCRIPT_DIR/lib-xdg.sh"
+zexos_setup_xdg_env
+
 LOGFILE="$TARGET/bootstrap.log"
 
 # -----------------------------

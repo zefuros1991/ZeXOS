@@ -116,7 +116,18 @@ echo -e "${CYAN}Cloning ZeXOS repository${RESET}"
 tmpclone=$(mktemp -d)
 
 git clone "$REPO" "$tmpclone/ZeXOS" &
-spinner $! "Cloning repository"
+repo_clone_pid=$!
+spinner "$repo_clone_pid" "Cloning repository"
+
+# Without this check, a failed clone (network hiccup, etc.) still printed
+# "Repository installed" and copied an empty directory into $TARGET, which
+# then crashed a few lines below when sourcing scripts/lib-xdg.sh from a
+# $TARGET that never actually got the repo.
+if ! wait "$repo_clone_pid"; then
+    echo -e "${RED}✖ Failed to clone ZeXOS repository${RESET}"
+    rm -rf "$tmpclone"
+    exit 1
+fi
 
 mkdir -p "$TARGET"
 cp -r "$tmpclone/ZeXOS"/. "$TARGET"

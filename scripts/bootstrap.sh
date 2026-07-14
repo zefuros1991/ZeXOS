@@ -114,7 +114,21 @@ echo -e "\n${YELLOW}==> [2/5] CORE DEPENDENCIES${RESET}"
 
 sudo pacman -S --needed --noconfirm \
     git curl stow base-devel flatpak discover &
-spinner $! "Installing core packages"
+core_pkgs_pid=$!
+spinner "$core_pkgs_pid" "Installing core packages"
+
+# These packages are load-bearing for the rest of this script (git/stow for
+# the clone below, base-devel for the yay build just after) — the spinner
+# used to print its checkmark regardless of whether the install actually
+# succeeded, so a real failure here would silently look fine and then blow
+# up confusingly a few steps later instead of here, where the real cause is
+# obvious.
+if wait "$core_pkgs_pid"; then
+    echo -e "${GREEN}✔ Core packages installed${RESET}"
+else
+    echo -e "${RED}✖ Failed to install core packages — cannot continue without them${RESET}"
+    exit 1
+fi
 
 cd "$HOME"
 
@@ -129,7 +143,18 @@ else
     tmpdir=$(mktemp -d)
 
     git clone https://aur.archlinux.org/yay.git "$tmpdir/yay" &
-    spinner $! "Cloning yay"
+    yay_clone_pid=$!
+    spinner "$yay_clone_pid" "Cloning yay"
+
+    # Same silently-swallowed-failure pattern as the core packages above:
+    # without this check, a failed clone still printed a green checkmark,
+    # then crashed on the next `cd` with a confusing "No such file or
+    # directory" instead of a clear error.
+    if ! wait "$yay_clone_pid"; then
+        echo -e "${RED}✖ Failed to clone yay — cannot continue${RESET}"
+        rm -rf "$tmpdir"
+        exit 1
+    fi
 
     cd "$tmpdir/yay"
 
@@ -183,7 +208,18 @@ else
     tmpclone=$(mktemp -d)
 
     git clone "$REPO" "$tmpclone/ZeXOS" &
-    spinner $! "Cloning ZeXOS"
+    repo_clone_pid=$!
+    spinner "$repo_clone_pid" "Cloning ZeXOS"
+
+    # Same check as the yay clone above — without it, a failed clone still
+    # printed "Repo installed" and copied an empty directory into $TARGET,
+    # leaving it without a .git folder (so the next run would just try the
+    # same broken clone again instead of reporting what actually happened).
+    if ! wait "$repo_clone_pid"; then
+        echo -e "${RED}✖ Failed to clone ZeXOS repository${RESET}"
+        rm -rf "$tmpclone"
+        exit 1
+    fi
 
     cp -r "$tmpclone/ZeXOS"/. "$TARGET"
 

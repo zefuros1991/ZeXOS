@@ -72,12 +72,41 @@ echo -e "${BLUE}Log: $LOGFILE${RESET}"
 echo "--------------------------------------------------"
 
 # -----------------------------
+# SUDO KEEPALIVE (standalone safety)
+# -----------------------------
+# This script needs sudo for every pacman call plus the SDDM setup below.
+# Normally install.sh already keeps sudo warm for the whole run, so this
+# `sudo -v` is a harmless no-op refresh in that case. When packages.sh is
+# run standalone with a cold sudo cache, this prompts once up front instead
+# of leaving that to whichever backgrounded pacman call happens to need it
+# first.
+echo -e "\n${YELLOW}==> AUTHENTICATION${RESET}"
+sudo -v
+
+(
+    while true; do
+        sudo -n true
+        sleep 50
+    done
+) &
+
+SUDO_KEEPALIVE_PID=$!
+trap 'kill $SUDO_KEEPALIVE_PID 2>/dev/null || true' EXIT
+
+# -----------------------------
 # 0.5 SYSTEM UPGRADE
 # -----------------------------
 echo -e "\n${YELLOW}[SYSTEM] Full System Upgrade${RESET}"
 
 sudo pacman -Syu --noconfirm &
-spinner $! "Updating system"
+sysupgrade_pid=$!
+spinner "$sysupgrade_pid" "Updating system"
+
+if wait "$sysupgrade_pid"; then
+    echo -e "${GREEN}✔ System upgrade completed${RESET}"
+else
+    echo -e "${RED}✖ System upgrade failed — continuing anyway, but package installs below may also fail${RESET}"
+fi
 
 # =========================================================
 # 1. PACMAN PACKAGES
@@ -315,7 +344,14 @@ echo -e "\n${YELLOW}[FLATPAK] Setup${RESET}"
 
 if ! command -v flatpak >/dev/null 2>&1; then
     sudo pacman -S --needed --noconfirm flatpak &
-    spinner $! "Installing Flatpak"
+    flatpak_install_pid=$!
+    spinner "$flatpak_install_pid" "Installing Flatpak"
+
+    if wait "$flatpak_install_pid"; then
+        echo -e "${GREEN}✔ Flatpak installed${RESET}"
+    else
+        echo -e "${RED}✖ Failed to install Flatpak — remote/app steps below will also fail${RESET}"
+    fi
 fi
 
 if ! flatpak remotes | grep -q flathub; then

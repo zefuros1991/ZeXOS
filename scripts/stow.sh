@@ -16,7 +16,12 @@ LOGFILE="$DOTFILES/stow.log"
 . "$DOTFILES/scripts/lib-xdg.sh"
 zexos_setup_xdg_env
 
-mkdir -p "$BACKUP_DIR"
+# NOTE: BACKUP_DIR is deliberately NOT created here. The inner backup loop
+# below already does `mkdir -p "$BACKUP_DIR/..."` for each file it actually
+# backs up, which is enough to create BACKUP_DIR itself as a side effect.
+# Creating it unconditionally up front meant every single run of this
+# script left behind a new empty timestamped folder under backup/, even on
+# a run where nothing needed backing up at all.
 exec > >(tee -a "$LOGFILE") 2>&1
 
 # -----------------------------

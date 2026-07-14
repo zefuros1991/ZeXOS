@@ -222,7 +222,12 @@ install_pacman "System Tools" "${SYSTEM_PACMAN[@]}"
 # -----------------------------
 echo -e "\n${YELLOW}[CUSTOM] Zen Browser${RESET}"
 
-if command -v zen-browser >/dev/null 2>&1; then
+# The installer this script calls actually names its binary "zen" (found at
+# /opt/zen/zen, symlinked to /usr/local/bin/zen), never "zen-browser" — the
+# old check here never matched, so this curl-pipe-to-bash installer used to
+# re-run on every single invocation of this script even when Zen was
+# already installed.
+if command -v zen >/dev/null 2>&1 || [ -x /opt/zen/zen ]; then
     echo -e "${GREEN}✔ Zen Browser already installed${RESET}"
 else
     bash <(curl -fsSL https://raw.githubusercontent.com/MalikHw/zb-installer-script/main/install-zen.sh)
@@ -309,7 +314,17 @@ else
     echo -e "${RED}✖ Pixie theme directory not found${RESET}"
 fi
 
-CURRENT_DM=$(basename "$(readlink /etc/systemd/system/display-manager.service)" .service 2>/dev/null || echo "none")
+# If the symlink doesn't exist at all (e.g. a genuinely fresh install with
+# no display manager configured yet), `readlink` fails and the old
+# `|| echo "none"` fallback never actually fired here — basename of an
+# empty string is itself an empty string, not "none", which then made
+# `sudo systemctl disable ""` run below and abort the whole script under
+# `set -e`. Checking for the symlink explicitly first avoids that.
+if [ -L /etc/systemd/system/display-manager.service ]; then
+    CURRENT_DM=$(basename "$(readlink /etc/systemd/system/display-manager.service)" .service)
+else
+    CURRENT_DM="none"
+fi
 
 if [ "$CURRENT_DM" != "sddm" ]; then
 

@@ -30,8 +30,15 @@ Each script writes its own log file at the repo root (`bootstrap.log`, `packages
 From a fresh machine:
 
 ```bash
-bash <(curl -fsSL https://raw.githubusercontent.com/zefuros1991/ZeXOS/main/install.sh)
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/zefuros1991/ZeXOS/main/install.sh)"
 ```
+
+This works as-is in `fish` (CachyOS's default interactive shell), `bash`, and `zsh`. Two other forms that might look tempting **don't** work here:
+
+- `bash <(curl -fsSL ...)` — process substitution (`<(...)`) is bash/zsh syntax that `fish` doesn't support at all; it fails immediately with `fish: Invalid redirection target`, before `install.sh` ever runs.
+- `curl -fsSL ... | bash` — this pipes the script itself onto stdin, which then fights with the `sudo -v` password prompt (and the interactive prompts inside `packages.sh`) for that same stdin. Confirmed in testing: the tail end of a piped script can silently fail to run at all once an interactive prompt reads from the same pipe.
+
+The command above avoids both problems: `$(...)` command substitution only captures curl's *output* into the `bash -c` argument — it never touches stdin, so stdin stays connected to your real terminal the whole time, exactly like running `./install.sh` locally.
 
 Or, if the repo is already cloned to `~/.dotfiles`:
 

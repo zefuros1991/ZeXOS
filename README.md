@@ -30,15 +30,20 @@ Each script writes its own log file at the repo root (`bootstrap.log`, `packages
 From a fresh machine:
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/zefuros1991/ZeXOS/main/install.sh)"
+curl -fsSL https://raw.githubusercontent.com/zefuros1991/ZeXOS/main/install.sh -o /tmp/zexos-install.sh; bash /tmp/zexos-install.sh; rm -f /tmp/zexos-install.sh
 ```
 
-This works as-is in `fish` (CachyOS's default interactive shell), `bash`, and `zsh`. Two other forms that might look tempting **don't** work here:
+This downloads the script to a temp file, runs it, then deletes the temp file — three plain commands separated by `;`, nothing more exotic than that. It's deliberately written this way so it parses the same in as many shells as possible, not just the ones this machine actually uses day to day. Verified directly, with a local test server standing in for GitHub's raw URL (so this claim isn't just "should work"):
 
-- `bash <(curl -fsSL ...)` — process substitution (`<(...)`) is bash/zsh syntax that `fish` doesn't support at all; it fails immediately with `fish: Invalid redirection target`, before `install.sh` ever runs.
+- **fish** (CachyOS's default interactive shell), **bash**, **zsh** — ran the download-run-cleanup sequence correctly in all three, byte-identical file contents, temp file cleaned up afterwards in all three.
+- Also confirmed real stdin passes straight through untouched — fed a marker value into stdin ahead of the whole command and confirmed it reached a `read` prompt inside the downloaded script unchanged, so `sudo -v` and any other interactive prompts work normally.
+- **csh/tcsh, nushell** — not installed on this machine to test directly, so not verified the same way, but `;` as a command separator and plain external-command invocation (no pipes, no redirection, no `$(...)`/`<(...)` substitution of any kind) are basic, long-standing features of both, so this should parse correctly there too.
+
+Two other forms that might look tempting **don't** work everywhere:
+
+- `bash <(curl -fsSL ...)` — process substitution (`<(...)`) is bash/zsh-only syntax; `fish` rejects it immediately with `fish: Invalid redirection target`, before `install.sh` ever runs.
 - `curl -fsSL ... | bash` — this pipes the script itself onto stdin, which then fights with the `sudo -v` password prompt (and the interactive prompts inside `packages.sh`) for that same stdin. Confirmed in testing: the tail end of a piped script can silently fail to run at all once an interactive prompt reads from the same pipe.
-
-The command above avoids both problems: `$(...)` command substitution only captures curl's *output* into the `bash -c` argument — it never touches stdin, so stdin stays connected to your real terminal the whole time, exactly like running `./install.sh` locally.
+- `bash -c "$(curl -fsSL ...)"` — closer, and it does work in fish/bash/zsh (also verified), but `$(...)` command substitution is itself shell syntax that plainer shells (csh, some minimal `sh` implementations) don't universally handle the same way, so it's not the most portable option available.
 
 Or, if the repo is already cloned to `~/.dotfiles`:
 

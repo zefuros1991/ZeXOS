@@ -128,3 +128,36 @@ need to change, for later:
 
 This is explicitly a "not now" list — recorded so the direction is clear
 next time this repo gets worked on, not a queue of tasks to start today.
+
+## Target 3 (even longer term, not being designed now): multi-compositor, multi-shell, selectable at login
+
+Recorded 2026-07-16 so future work on Target 1/2 doesn't accidentally
+close off this direction. Nothing here is designed or built yet — this is
+a note of *where things are headed*, so choices made along the way don't
+paint the repo into a corner against it:
+
+- **Hyprland** (config already kept in `stow/hypr`, cleaned of stale
+  Monique content 2026-07-16 — see the comments in `monitors.conf`) and
+  **MangoWC** ("mangowm" in the user's own words — name to double-check
+  against upstream when this is actually picked up) as additional
+  compositor targets alongside niri.
+- **Multiple shells configured alongside Noctalia.** Note the naming
+  collision: "shell" here means a Wayland panel/bar shell (like Noctalia —
+  a quickshell-based bar/panel daemon), *not* the login shell (bash/zsh,
+  covered by `scripts/finaltouches.sh`'s "default shell" step). Keep these
+  two concepts of "shell" clearly distinct in any future work — they solve
+  completely different problems and this repo already has both kinds.
+- All three compositors selectable as SDDM sessions, all under the
+  existing Pixie theme.
+- A menu to switch the active panel shell (Noctalia vs. others) at
+  runtime, with the choice persisting per-user across reboots.
+- Far future, explicitly speculative: this project becoming its own
+  distro.
+
+**Why current work doesn't conflict with this:** kanshi (already used for
+niri's dock/undock switching) speaks the wlr-output-management protocol,
+which Hyprland also implements — the same tool should carry over rather
+than needing a Hyprland-specific reinvention. The `hypr` stow package was
+kept (not deleted) specifically because of this direction. Nothing in the
+Steam/GPU-detection/multilib fixes from 2026-07-16 assumes niri
+specifically — they live in `scripts/`, which is already compositor-agnostic.

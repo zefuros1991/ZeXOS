@@ -113,7 +113,7 @@ Every folder under `stow/` is one Stow "package" — a slice of `$HOME` that liv
 | `fuzzel` | `~/.config/fuzzel` | App launcher |
 | `git` | `~/.config/git/config` | Uses `git-credential-libsecret`, no plaintext credentials |
 | `htop` | `~/.config/htop/htoprc` | |
-| `hypr` | `~/.config/hypr` | Leftover from before switching to niri; Hyprland itself is not installed on this machine |
+| `hypr` | `~/.config/hypr` | Kept for a planned future Hyprland session (see PORTABILITY_PLAN.md); Hyprland itself is not installed on this machine yet, so this isn't wired into anything live right now |
 | `input` | `kcminputrc`, `kxkbrc`, `libinput-gestures.conf` | Read by individual Qt/KDE apps under niri (no full Plasma session) |
 | `kitty` | `~/.config/kitty` | Terminal config; this is where zsh gets launched from via the `shell` directive |
 | `mangohud` | `~/.config/MangoHud` | In-game performance overlay |

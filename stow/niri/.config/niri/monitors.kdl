@@ -8,8 +8,8 @@
 // Both outputs are kept ENABLED here on purpose: if kanshi is ever not
 // running (crashed, not yet started), niri must never boot into a state
 // where the laptop panel is forced off. That was the bug with the old
-// Monique-generated static "off" block — it persisted across reboots and
-// docking states with no way to react to what was actually connected.
+// static "off" block this file used to have — it persisted across reboots
+// and docking states with no way to react to what was actually connected.
 
 output "Samsung Electric Company Odyssey G85SD H1AK500000" {
     mode "3440x1440@119.960"

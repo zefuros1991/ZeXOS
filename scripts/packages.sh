@@ -138,6 +138,78 @@ install_pacman() {
 }
 
 # -----------------------------
+# GPU DETECTION (drives the Steam/lib32 provider pick just below)
+# -----------------------------
+# `steam` (pulled in transitively by cachyos-gaming-applications below)
+# depends on the virtual packages `vulkan-driver` / `lib32-vulkan-driver`.
+# When more than one installed package could satisfy those (mesa's
+# vulkan-radeon/intel/nouveau/swrast vs nvidia-utils), pacman stops and asks
+# which provider to use -- and `--noconfirm` does NOT skip that prompt, only
+# yes/no confirmations. On an unattended run (this script) that prompt just
+# hangs/fails, and Steam silently never installs. Confirmed 2026-07-16 on a
+# fresh CachyOS VM: the user had to answer the prompt by hand (picked
+# lib32-mesa) to get Steam installed at all.
+#
+# Fix: install a concrete provider *before* the gaming stack, matched to
+# whatever GPU(s) are actually detected. Once a concrete package already
+# satisfies the virtual dependency, pacman never needs to ask.
+detect_gpu_vendors() {
+    # Prints one tag per detected display GPU: amd / intel / nvidia.
+    # Hybrid laptops can print more than one line -- that's intentional,
+    # we install a provider for each. Empty output means "couldn't tell"
+    # (no lspci, headless VM, exotic hardware) and the caller falls back
+    # to the universal software rasterizer.
+    command -v lspci >/dev/null 2>&1 || return 0
+
+    lspci -mm 2>/dev/null | grep -Ei 'VGA compatible controller|3D controller|Display controller' | \
+    while IFS= read -r line; do
+        case "$line" in
+            *[Nn][Vv][Ii][Dd][Ii][Aa]*) echo nvidia ;;
+            *"Advanced Micro Devices"*|*AMD*|*ATI*) echo amd ;;
+            *Intel*) echo intel ;;
+        esac
+    done | sort -u
+}
+
+echo -e "\n${YELLOW}[GPU] Detecting hardware for Vulkan/lib32 provider${RESET}"
+
+# pciutils (lspci) isn't part of base/base-devel -- make sure it's here
+# before relying on it. Cheap, explicit, single-package install: no
+# ambiguity, so this call itself can never hit the provider prompt.
+if ! command -v lspci >/dev/null 2>&1; then
+    sudo pacman -S --needed --noconfirm pciutils >/dev/null 2>&1 || true
+fi
+
+GPU_VENDORS="$(detect_gpu_vendors)"
+VULKAN_PROVIDERS=()
+
+if echo "$GPU_VENDORS" | grep -q amd; then
+    VULKAN_PROVIDERS+=(vulkan-radeon lib32-vulkan-radeon)
+    echo -e "${GREEN}✔ AMD GPU detected -- using vulkan-radeon${RESET}"
+fi
+
+if echo "$GPU_VENDORS" | grep -q intel; then
+    VULKAN_PROVIDERS+=(vulkan-intel lib32-vulkan-intel)
+    echo -e "${GREEN}✔ Intel GPU detected -- using vulkan-intel${RESET}"
+fi
+
+if echo "$GPU_VENDORS" | grep -q nvidia; then
+    VULKAN_PROVIDERS+=(nvidia-utils lib32-nvidia-utils)
+    echo -e "${GREEN}✔ NVIDIA GPU detected -- using nvidia-utils${RESET}"
+fi
+
+if [ ${#VULKAN_PROVIDERS[@]} -eq 0 ]; then
+    # No GPU vendor detected (headless VM, missing lspci, exotic/virtual
+    # display adapter) -- vulkan-swrast (llvmpipe) is the universal software
+    # fallback and is what actually gets a fresh CachyOS VM install of Steam
+    # working unattended.
+    echo -e "${YELLOW}⚠ No GPU vendor detected -- falling back to software Vulkan (vulkan-swrast)${RESET}"
+    VULKAN_PROVIDERS=(vulkan-swrast lib32-vulkan-swrast)
+fi
+
+install_pacman "Vulkan/GL Driver (lib32 provider for Steam)" "${VULKAN_PROVIDERS[@]}"
+
+# -----------------------------
 # GAMING
 # -----------------------------
 GAMING_PACMAN=(
@@ -209,10 +281,25 @@ install_pacman "Media Stack" "${MEDIA_PACMAN[@]}"
 # -----------------------------
 # SYSTEM
 # -----------------------------
+# xorg-xhost and polkit-kde-agent make privileged GUI apps (gparted and
+# friends) actually work out of the box under niri + Xwayland:
+#   - polkit-kde-agent is the auth agent niri's autostart.kdl spawns
+#     (`/usr/lib/polkit-kde-authentication-agent-1`) -- without it pkexec
+#     fails immediately with "No authentication agent found".
+#   - xorg-xhost is a soft dependency of gparted's own launcher script,
+#     which grants the pkexec'd root process X access via `xhost` before
+#     handing off. Without it, auth succeeds but the root GUI process can't
+#     open the display ("cannot open display" Gtk-WARNING).
+# Both steps were previously applied by hand on the laptop (2026-07-08) but
+# never made it into this script, so a fresh VM install (2026-07-16) hit
+# the exact same gparted failure again. See ~/AI/IssuesFixed/
+# gparted-no-polkit-agent-niri.md and gparted-no-display-after-pkexec-niri.md.
 SYSTEM_PACMAN=(
     bitwarden
     gparted
     gedit
+    xorg-xhost
+    polkit-kde-agent
 )
 
 install_pacman "System Tools" "${SYSTEM_PACMAN[@]}"
@@ -271,7 +358,6 @@ install_aur() {
 # SYSTEM (AUR)
 # -----------------------------
 SYSTEM_AUR=(
-    monique
     btop
     xdg-ninja
     bibata-cursor-theme

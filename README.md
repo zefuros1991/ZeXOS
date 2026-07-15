@@ -12,10 +12,10 @@ This is a living setup that changes as I do. It is not meant to be a generic "cl
 
 Running `install.sh` walks through four stages, in order, each handled by its own script in `scripts/`:
 
-1. **Bootstrap** (`scripts/bootstrap.sh`) — updates the system, installs the small set of core tools needed for everything else (`git`, `curl`, `stow`, `base-devel`, `flatpak`, `discover`), installs the `yay` AUR helper if it's missing, adds the Flathub Flatpak repo, and makes sure this repo is cloned into `~/.dotfiles`.
-2. **Packages** (`scripts/packages.sh`) — installs the full application list: gaming stack, virtualization tools, development tools, social apps, media codecs and players, system utilities, the Zen browser, SDDM + the Pixie login screen theme, and a handful of Flatpak apps. Skips anything already installed.
+1. **Bootstrap** (`scripts/bootstrap.sh`) — makes sure the `multilib` repo is enabled (needed for lib32-* / Steam later), updates the system, installs the small set of core tools needed for everything else (`git`, `curl`, `stow`, `base-devel`, `flatpak`, `discover`), installs the `yay` AUR helper if it's missing, adds the Flathub Flatpak repo, and makes sure this repo is cloned into `~/.dotfiles`.
+2. **Packages** (`scripts/packages.sh`) — installs the full application list: gaming stack, virtualization tools, development tools, social apps, media codecs and players, system utilities, the Zen browser, SDDM + the Pixie login screen theme, and a handful of Flatpak apps. Skips anything already installed. Before the gaming stack, it detects the GPU(s) present (`lspci`) and installs the matching Vulkan/lib32 driver package explicitly, so Steam's install never stalls on pacman's "which provider?" prompt.
 3. **Stow** (`scripts/stow.sh`) — deploys every config package under `stow/` into `$HOME` as symlinks. Safe to re-run any time; see "Re-running stow" below.
-4. **Final touches** (`scripts/finaltouches.sh`) — small post-install tweaks. Currently this is just one thing: setting `zsh` as the login shell.
+4. **Final touches** (`scripts/finaltouches.sh`) — small post-install tweaks: setting `zsh` as the login shell, and checking Steam's `~/.steam/steam` bootstrap path for the "couldn't setup steam data" failure mode (self-heals if anything pre-seeded it as a real directory before Steam's first launch).
 
 Each script writes its own log file at the repo root (`bootstrap.log`, `packages.log`, `stow.log`, `finaltouches.log`) — these are gitignored, so they stay local to the machine.
 

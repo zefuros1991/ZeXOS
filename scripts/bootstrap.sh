@@ -100,6 +100,29 @@ SUDO_KEEPALIVE_PID=$!
 trap 'kill $SUDO_KEEPALIVE_PID 2>/dev/null || true' EXIT
 
 # -----------------------------
+# 0. MULTILIB REPOSITORY (defensive)
+# -----------------------------
+# Steam and the rest of the gaming stack installed later need 32-bit
+# (lib32-*) packages, which only exist in the multilib repo. CachyOS's own
+# niri/noctalia install profile enables this by default, but that's not
+# guaranteed on every profile/distro this repo may end up running on -- and
+# if it's ever off, every lib32-* package below fails outright with no
+# useful error until Steam. Checking pacman.conf directly (not `pacman -Sl
+# multilib`, which needs the repo already synced to answer) and enabling it
+# before the first sync below if needed. Idempotent: no-op if already on.
+echo -e "\n${YELLOW}==> [0/5] MULTILIB REPOSITORY${RESET}"
+
+if grep -q '^\[multilib\]' /etc/pacman.conf; then
+    echo -e "${GREEN}✔ multilib already enabled${RESET}"
+elif grep -q '^#\[multilib\]' /etc/pacman.conf; then
+    echo -e "${CYAN}Enabling multilib repository${RESET}"
+    sudo sed -i '/^#\[multilib\]/,/^#Include/ s/^#//' /etc/pacman.conf
+    echo -e "${GREEN}✔ multilib enabled in /etc/pacman.conf${RESET}"
+else
+    echo -e "${RED}✖ Could not find a [multilib] section (commented or not) in /etc/pacman.conf -- lib32-* packages below will likely fail. Enable multilib by hand and re-run.${RESET}"
+fi
+
+# -----------------------------
 # 1. SYSTEM UPDATE
 # -----------------------------
 echo -e "\n${YELLOW}==> [1/5] SYSTEM UPDATE${RESET}"

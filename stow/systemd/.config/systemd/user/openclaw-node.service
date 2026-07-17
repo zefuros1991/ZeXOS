@@ -6,7 +6,7 @@ StartLimitBurst=5
 StartLimitIntervalSec=60
 
 [Service]
-ExecStart=/usr/bin/node /home/zefuros/.local/share/npm/lib/node_modules/openclaw/dist/index.js node run --host 127.0.0.1 --port 18789
+ExecStart=/usr/bin/node /home/zefuros/.local/share/npm/lib/node_modules/openclaw/dist/index.js node run --host openclaw.zecuritylabs.com --port 443 --tls
 Restart=always
 RestartSec=5
 RestartPreventExitStatus=78
@@ -15,6 +15,7 @@ TimeoutStartSec=30
 SuccessExitStatus=0 143
 OOMPolicy=continue
 KillMode=control-group
+EnvironmentFile=-/home/zefuros/AI/Harnesses/OpenClaw/state/node.systemd.env
 Environment=HOME=/home/zefuros
 Environment=TMPDIR=/tmp
 Environment=OPENCLAW_STATE_DIR=/home/zefuros/AI/Harnesses/OpenClaw/state

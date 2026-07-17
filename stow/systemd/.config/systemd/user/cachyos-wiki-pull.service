@@ -1,0 +1,7 @@
+[Unit]
+Description=Pull latest CachyOS wiki mirror (~/AI/Docs/cachyos-wiki)
+
+[Service]
+Type=oneshot
+Nice=10
+ExecStart=/usr/bin/bash %h/AI/Docs/cachyos-wiki-pull.sh

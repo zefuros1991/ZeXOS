@@ -1,0 +1,7 @@
+[Unit]
+Description=Pull-based upstream watch for niri/gamescope/MangoHud/Proton-GE/CachyOS-kernel (~/AI/Docs/repo-watch)
+
+[Service]
+Type=oneshot
+Nice=10
+ExecStart=/usr/bin/python3 %h/AI/Docs/repo-watch/repo-watch.py --quiet

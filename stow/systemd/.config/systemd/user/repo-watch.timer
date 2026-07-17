@@ -1,0 +1,10 @@
+[Unit]
+Description=Weekly upstream repo watch (niri, gamescope, MangoHud, Proton-GE, CachyOS kernel)
+
+[Timer]
+OnCalendar=weekly
+Persistent=true
+RandomizedDelaySec=1h
+
+[Install]
+WantedBy=timers.target

@@ -180,14 +180,20 @@
                         "compactMode": false,
                         "defaultPeerAction": "copy-ip",
                         "hideDisconnected": false,
-                        "managementUrl": "",
+                        "hideMullvadExitNodes": true,
+                        "loginServer": "",
                         "pingCount": 5,
                         "refreshInterval": 5000,
                         "showIpAddress": true,
-                        "showPing": false,
+                        "showPeerCount": true,
+                        "showSearchBar": false,
+                        "sshUsername": "",
+                        "taildropDownloadDir": "~/Downloads",
+                        "taildropEnabled": true,
+                        "taildropReceiveMode": "operator",
                         "terminalCommand": ""
                     },
-                    "id": "plugin:netbird"
+                    "id": "plugin:tailscale"
                 },
                 {
                     "defaultSettings": {
@@ -248,7 +254,7 @@
                 },
                 {
                     "deviceNativePath": "__default__",
-                    "displayMode": "icon-hover",
+                    "displayMode": "icon-always",
                     "hideIfIdle": false,
                     "hideIfNotDetected": true,
                     "id": "Battery",

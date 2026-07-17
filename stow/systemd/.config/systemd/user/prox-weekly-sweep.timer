@@ -1,0 +1,9 @@
+[Unit]
+Description=Run the Prox weekly homelab sweep every Monday morning
+
+[Timer]
+OnCalendar=Mon *-*-* 08:07
+Persistent=true
+
+[Install]
+WantedBy=timers.target

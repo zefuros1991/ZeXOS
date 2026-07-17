@@ -1,0 +1,8 @@
+[Unit]
+Description=Prox monthly backup restore drill (headless Claude, approval-gated)
+
+[Service]
+Type=oneshot
+Nice=10
+TimeoutStartSec=2h
+ExecStart=/usr/bin/bash -lc 'mkdir -p %h/AI/Agents/Prox/tasks/scheduled && /usr/bin/claude -p "Launch the Prox agent to execute the runbook at ~/AI/Agents/Prox/runbooks/backup-restore-drill.md. Prox rules live in ~/.claude/agents/Prox/Prox.md. Part 1 (verification) is always allowed; Part 2 (test restore to VMID 399) ONLY if the standing approval in ~/AI/Agents/Prox/APPROVALS.md is active — if it is still the PENDING template, do Part 1 only." --allowedTools "Task,Agent,Bash,Read,Write,Edit,Glob,Grep" >> %h/AI/Agents/Prox/tasks/scheduled/restore-drill-$(date +%%F).log 2>&1'

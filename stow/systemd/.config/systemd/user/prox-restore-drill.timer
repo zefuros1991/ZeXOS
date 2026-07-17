@@ -1,0 +1,9 @@
+[Unit]
+Description=Run the Prox backup restore drill on the first Monday of each month
+
+[Timer]
+OnCalendar=Mon *-*-01..07 08:37
+Persistent=true
+
+[Install]
+WantedBy=timers.target

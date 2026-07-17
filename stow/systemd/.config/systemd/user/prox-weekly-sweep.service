@@ -1,0 +1,8 @@
+[Unit]
+Description=Prox weekly homelab sweep (headless Claude, read-only report)
+
+[Service]
+Type=oneshot
+Nice=10
+TimeoutStartSec=2h
+ExecStart=/usr/bin/bash -lc 'mkdir -p %h/AI/Agents/Prox/tasks/scheduled && /usr/bin/claude -p "Launch the Prox agent to execute the runbook at ~/AI/Agents/Prox/runbooks/weekly-changelog-sweep.md. Prox rules live in ~/.claude/agents/Prox/Prox.md. This is the scheduled read-only sweep: report and update docs only — never apply updates, never restart anything." --allowedTools "Task,Agent,Bash,Read,Write,Edit,Glob,Grep,WebFetch,WebSearch" >> %h/AI/Agents/Prox/tasks/scheduled/sweep-$(date +%%F).log 2>&1'

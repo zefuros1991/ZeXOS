@@ -1,0 +1,38 @@
+# qt6ct with a patch that lets KDE apps (Dolphin, Gwenview) follow a dark
+# colour scheme outside of Plasma. Plain qt6ct can't do that.
+#
+# Source: qt6ct from its author (https://www.opencode.net/trialuser/qt6ct),
+# pinned by checksum. The patch is copied from the qt6ct-kde recipe by
+# Antonio Rojas (Arch Linux developer) so we don't have to fetch it from
+# the AUR. Built by scripts/packages.sh with `makepkg -si`.
+
+pkgname=qt6ct-kde
+_pkgname=qt6ct
+pkgver=0.11
+pkgrel=8
+pkgdesc='Qt 6 settings tool, patched to work with KDE apps (ZeXOS)'
+arch=('x86_64')
+url='https://www.opencode.net/trialuser/qt6ct'
+license=('BSD-2-Clause')
+depends=('qqc2-desktop-style')
+makedepends=('cmake' 'git' 'qt6-tools')
+provides=("$_pkgname")
+conflicts=("$_pkgname")
+source=("git+$url#tag=$pkgver"
+        "$_pkgname-shenanigans.patch")
+sha256sums=('76bfc26838b8ec7dd049da54bd812d8c526986024845a30d1e546e43555e52bf'
+            'baab2b714ad490de3a12edd5d4ec0f6223eded034d66a694989e746b86d1f420')
+
+prepare() {
+    patch -d "$_pkgname" -p1 < "$_pkgname-shenanigans.patch"
+}
+
+build() {
+    cmake -B build -S "$_pkgname" -DCMAKE_INSTALL_PREFIX=/usr
+    cmake --build build
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+    install -Dm644 "$_pkgname/COPYING" "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+}

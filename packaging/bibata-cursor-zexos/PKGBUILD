@@ -1,0 +1,20 @@
+# Bibata Modern Ice mouse pointer (https://github.com/ful1e5/Bibata_Cursor).
+# Downloads the ready-made theme straight from the author's GitHub release,
+# checked against a fixed checksum, so nothing comes from the AUR.
+# Built by scripts/packages.sh with `makepkg -si`.
+
+pkgname=bibata-cursor-zexos
+pkgver=2.0.7
+pkgrel=1
+pkgdesc='Bibata Modern Ice cursor theme, from the official release (ZeXOS)'
+arch=('any')
+url="https://github.com/ful1e5/Bibata_Cursor"
+license=('GPL-3.0-or-later')
+options=('!strip')
+source=("Bibata-Modern-Ice-$pkgver.tar.xz::$url/releases/download/v$pkgver/Bibata-Modern-Ice.tar.xz")
+sha256sums=('a68cae60c4dc706350e194ebc91c5fe48bc7bc9d59e119555834a2a7ee5078ef')
+
+package() {
+    install -d "$pkgdir/usr/share/icons"
+    cp -r "$srcdir/Bibata-Modern-Ice" "$pkgdir/usr/share/icons/"
+}

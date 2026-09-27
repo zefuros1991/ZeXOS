@@ -100,7 +100,7 @@ fi
 # desktop. That script runs as the regular user (it's a desktop hook, not a
 # privileged one), so the destination directory has to already exist and be
 # user-writable, and the pixie theme has to be pointed at it -- neither of
-# which the pixie-sddm-git package sets up on its own. Runs here (last, after
+# which the pixie-sddm-zexos package sets up on its own. Runs here (last, after
 # packages.sh installed the pixie theme and stow deployed the sync script)
 # so a fresh install ends with login-screen sync already working, instead of
 # silently no-op'ing until someone notices and fixes it by hand.

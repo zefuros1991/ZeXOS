@@ -2,6 +2,9 @@
 set -e
 
 REPO="https://github.com/zefuros1991/ZeXOS.git"
+# Which branch to install. Always main, unless you are testing a new
+# change: ZEXOS_BRANCH=<branch> bash install.sh
+BRANCH="${ZEXOS_BRANCH:-main}"
 TARGET="$HOME/.dotfiles"
 
 LOGFILE="$HOME/.dotfiles/install.log"
@@ -131,7 +134,7 @@ echo -e "${CYAN}Cloning ZeXOS repository${RESET}"
 
 tmpclone=$(mktemp -d)
 
-git clone "$REPO" "$tmpclone/ZeXOS" &
+git clone -b "$BRANCH" "$REPO" "$tmpclone/ZeXOS" &
 repo_clone_pid=$!
 spinner "$repo_clone_pid" "Cloning repository"
 

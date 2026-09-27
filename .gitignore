@@ -26,3 +26,8 @@ backup/
 **/IndexedDB/
 **/Cookies*
 **/Singleton*
+
+# made by finaltouches.sh at install time (absolute links to the system's
+# adw-gtk3 theme, which stow refuses to deploy)
+stow/theme/.config/gtk-4.0/assets
+stow/theme/.config/gtk-4.0/gtk-dark.css

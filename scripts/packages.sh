@@ -256,12 +256,14 @@ install_pacman "System Tools" "${SYSTEM_PACMAN[@]}"
 # sidebar entries or a working "set as default app" flow. Switched to
 # Dolphin (2026-09-03) -- kio-extras adds network/archive/etc backends to
 # its sidebar, kde-cli-tools brings kioclient/kwrite helpers it shells out
-# to. Confirmed working under niri.
+# to. Confirmed working under niri. Papirus is the icon theme; its folders
+# are recoloured to follow the wallpaper (see make-papirus-zexos.py).
 FILE_MANAGER_PACMAN=(
     dolphin
     kio-extras
     kde-cli-tools
     gwenview
+    papirus-icon-theme
 )
 
 install_pacman "File Manager (Dolphin)" "${FILE_MANAGER_PACMAN[@]}"

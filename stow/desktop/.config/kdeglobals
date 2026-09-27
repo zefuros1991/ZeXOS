@@ -80,6 +80,9 @@ ColorScheme=noctalia
 Name=noctalia
 shadeSortColumn=true
 
+[Icons]
+Theme=Papirus-ZeXOS
+
 [KDE]
 contrast=4
 

@@ -122,6 +122,15 @@ else
     echo -e "${RED}✖ adw-gtk3 not found at $ADW_GTK4, skipping the GTK 4 theme links${RESET}"
 fi
 
+# Papirus with folders that follow the wallpaper colour. Built now so the
+# first Dolphin window already has it; afterwards every wallpaper change
+# rebuilds it when Papirus was updated (see make-papirus-zexos.py).
+if "$HOME/.local/bin/make-papirus-zexos.py"; then
+    echo -e "${GREEN}✔ Folder icons follow the wallpaper colour (Papirus-ZeXOS)${RESET}"
+else
+    echo -e "${RED}✖ Could not build the Papirus-ZeXOS folder icons${RESET}"
+fi
+
 # -----------------------------
 # 3. SDDM LOGIN WALLPAPER SYNC (PIXIE THEME)
 # -----------------------------

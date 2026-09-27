@@ -194,7 +194,7 @@ echo -e "\n${YELLOW}==> [4/5] FLATHUB SETUP${RESET}"
 if flatpak remotes | grep -q flathub; then
     echo -e "${GREEN}✔ Flathub already configured${RESET}"
 else
-    flatpak remote-add --if-not-exists \
+    sudo flatpak remote-add --if-not-exists \
         flathub \
         https://flathub.org/repo/flathub.flatpakrepo
 

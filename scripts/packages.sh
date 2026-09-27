@@ -442,7 +442,7 @@ fi
 
 if ! flatpak remotes | grep -q flathub; then
     echo -e "${CYAN}Adding Flathub repository${RESET}"
-    flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+    sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 fi
 
 FLATPAK_APPS=(
@@ -455,7 +455,7 @@ for app in "${FLATPAK_APPS[@]}"; do
     if flatpak list | grep -qi "$app"; then
         echo -e "${GREEN}✔ $app already installed${RESET}"
     else
-        flatpak install -y flathub "$app" || echo -e "${RED}✖ Failed to install $app${RESET}"
+        sudo flatpak install -y --system flathub "$app" || echo -e "${RED}✖ Failed to install $app${RESET}"
     fi
 done
 

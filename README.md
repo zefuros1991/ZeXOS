@@ -13,7 +13,7 @@ What you get:
 
 - **niri**, with keybinds, window rules, blur and animations already set up
 - **Noctalia v5** as the bar, launcher, notifications and lock screen. It uses a lightly patched build (`packaging/noctalia-zexos`) that attaches the three bar "islands" to the top edge and adds a launcher-only size option.
-- **Colours from your wallpaper**: Noctalia generates the theme from the current wallpaper and applies it to GTK, Qt and KDE apps, kitty, fuzzel, btop and the Zen browser. A mostly white wallpaper switches the desktop to light mode with grey-scale colours, so text, icons and the terminal stay readable; any other wallpaper switches it back to dark (to choose the mode yourself, create `~/.config/zexos/manual-theme-mode`)
+- **Colours from your wallpaper**: Noctalia generates the theme from the current wallpaper and applies it to GTK, Qt and KDE apps, kitty, fuzzel, btop and the Zen browser. Dolphin's folders (Papirus icons) change colour with it. A mostly white wallpaper switches the desktop to light mode with grey-scale colours, so text, icons and the terminal stay readable, and the folders turn white; any other wallpaper switches it back to dark (to choose the mode yourself, create `~/.config/zexos/manual-theme-mode`)
 - **roller**, a wallpaper picker (`Mod+W`)
 - **SDDM** with the Pixie theme; the login screen follows your current wallpaper
 - Everyday apps: **kitty** (terminal), **Dolphin** (files), **Gwenview** (images), **Neovim** (text), **Zen** (browser), **VLC** (media)
@@ -107,7 +107,7 @@ Every folder under `stow/` is one Stow package, a slice of your home folder that
 | `input` | keyboard and touchpad settings read by Qt/KDE apps |
 | `kitty` | `~/.config/kitty` |
 | `niri` | `~/.config/niri` |
-| `noctalia` | `~/.config/noctalia` (bar layout, plugins, theming), the SDDM wallpaper-sync script and the light/dark switch |
+| `noctalia` | `~/.config/noctalia` (bar layout, plugins, theming), the SDDM wallpaper-sync script, the light/dark switch and the script that makes the folder icons follow the wallpaper |
 | `roller` | `~/.config/roller` and its launcher files |
 | `theme` | GTK 3/4, qt5ct, qt6ct and the Noctalia colour files |
 | `zsh` | `~/.config/zsh` |

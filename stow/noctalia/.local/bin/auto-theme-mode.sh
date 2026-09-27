@@ -31,6 +31,17 @@ else
     scheme=faithful
 fi
 
+# Folder icons: build ZeXOS's copy of Papirus if it's missing or Papirus was
+# updated, then use white folders in light mode, where the accent colour they
+# would otherwise take is near black.
+# Swapped before the colours change below, because that change is what
+# makes open apps redraw their icons.
+"$HOME/.local/bin/make-papirus-zexos.py" || true
+[ "$want" = light ] && folders=light || folders=accent
+for size in "${XDG_DATA_HOME:-$HOME/.local/share}"/icons/Papirus-ZeXOS/*/; do
+    [ -L "${size}places" ] && ln -sfn "places-$folders" "${size}places"
+done
+
 # Colour style first, so the mode switch below redraws with it.
 case "$(noctalia msg color-scheme-get 2>/dev/null)" in
     "wallpaper faithful"|"wallpaper m3-monochrome")

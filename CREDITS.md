@@ -1,7 +1,8 @@
 # Credits
 
-ZeXOS is my own setup: the config files, the install scripts and a couple of
-small patches. Everything it runs on was made by other people, and it would
+ZeXOS is my own setup: the config files, the install scripts, a couple of
+small patches, and the wallpapers (drawn from scratch by
+`wallpapers/make-wallpapers.py`, no photos or outside art). Everything it runs on was made by other people, and it would
 not exist without them. Thank you.
 
 ## Built on

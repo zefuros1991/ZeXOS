@@ -76,7 +76,13 @@ The full list is in `stow/niri/.config/niri/cfg/keybinds.kdl`.
 
 ## Wallpapers
 
-Put your wallpapers in `~/Pictures/Wallpapers`. Noctalia and roller read from there, and the colour theme follows whichever one is active.
+ZeXOS comes with 15 wallpapers of its own, in 5 styles and several colours each. The installer copies them to `~/Pictures/Wallpapers`, and you start on `zexos-aurora` (the one in the screenshot above). The login screen starts with it too.
+
+![The ZeXOS wallpapers](docs/screenshots/wallpapers.webp)
+
+Press `Mod+W` to pick another one. Put your own pictures in `~/Pictures/Wallpapers` too: Noctalia and roller read from there, and the colour theme follows whichever one is active.
+
+All of them are drawn by `wallpapers/make-wallpapers.py`, with no photos or downloads. To make them in another size, run `python wallpapers/make-wallpapers.py 2560 1440`.
 
 ## Screens
 

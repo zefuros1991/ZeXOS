@@ -63,13 +63,14 @@ echo "--------------------------------------------------"
 
 echo -e "${BLUE}This script applies post-install tweaks:${RESET}"
 echo "  1. Set zsh as default shell"
-echo "  2. Wire up SDDM login wallpaper sync (pixie theme)"
+echo "  2. Copy the ZeXOS wallpapers to ~/Pictures/Wallpapers"
+echo "  3. Wire up SDDM login wallpaper sync (pixie theme)"
 echo "--------------------------------------------------"
 
 # -----------------------------
 # 1. DEFAULT SHELL (ZSH)
 # -----------------------------
-echo -e "\n${YELLOW}==> [1/2] DEFAULT SHELL${RESET}"
+echo -e "\n${YELLOW}==> [1/3] DEFAULT SHELL${RESET}"
 
 if command -v zsh >/dev/null 2>&1; then
 
@@ -93,7 +94,23 @@ else
 fi
 
 # -----------------------------
-# 2. SDDM LOGIN WALLPAPER SYNC (PIXIE THEME)
+# 2. WALLPAPERS
+# -----------------------------
+# Noctalia and roller both read ~/Pictures/Wallpapers, and noctalia.toml
+# names zexos-aurora.jpg as the starting wallpaper. --update=none never replaces a
+# file that is already there, so your own pictures are safe.
+echo -e "\n${YELLOW}==> [2/3] WALLPAPERS${RESET}"
+
+WALL_SRC="$REPO_ROOT/wallpapers"
+WALL_DIR="$HOME/Pictures/Wallpapers"
+DEFAULT_WALL="$WALL_DIR/zexos-aurora.jpg"
+
+mkdir -p "$WALL_DIR"
+cp --update=none "$WALL_SRC"/*.jpg "$WALL_DIR"/
+echo -e "${GREEN}✔ ZeXOS wallpapers are in $WALL_DIR${RESET}"
+
+# -----------------------------
+# 3. SDDM LOGIN WALLPAPER SYNC (PIXIE THEME)
 # -----------------------------
 # noctalia's wallpaper_changed hook ([hooks] in stow/noctalia/.config/noctalia/noctalia.toml)
 # calls stow/noctalia/.local/bin/sync-sddm-wallpaper.sh on every wallpaper
@@ -109,7 +126,7 @@ fi
 #
 # Safe/idempotent: only touches the wallpaper dir and theme.conf.user if
 # they're not already set up correctly.
-echo -e "\n${YELLOW}==> [2/2] SDDM WALLPAPER SYNC${RESET}"
+echo -e "\n${YELLOW}==> [3/3] SDDM WALLPAPER SYNC${RESET}"
 
 SDDM_WALLPAPER_DIR="/var/lib/sddm-wallpaper"
 PIXIE_THEME_DIR="/usr/share/sddm/themes/pixie"
@@ -139,15 +156,12 @@ EOF
         echo -e "${GREEN}✔ Pointed pixie theme at $SDDM_WALLPAPER_DIR/current.jpg${RESET}"
     fi
 
-    # Give the login screen a picture right away. Without one, Pixie shows
-    # a plain black screen until the first wallpaper change on the desktop.
-    # Use the first wallpaper in ~/Pictures/Wallpapers, or Pixie's own picture.
+    # Give the login screen the same picture as the desktop right away.
+    # Without one, Pixie shows its own default until the first wallpaper
+    # change. A plain copy is enough: the default is already a JPEG.
     if [ ! -f "$SDDM_WALLPAPER_DIR/current.jpg" ]; then
-        first_wall=$(find "$HOME/Pictures/Wallpapers" -maxdepth 1 -type f \
-            \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) 2>/dev/null | sort | head -n 1)
-        [ -n "$first_wall" ] || first_wall="$PIXIE_THEME_DIR/assets/background.jpg"
-        if "$HOME/.local/bin/sync-sddm-wallpaper.sh" "$first_wall" && [ -f "$SDDM_WALLPAPER_DIR/current.jpg" ]; then
-            echo -e "${GREEN}✔ Login background set from $first_wall${RESET}"
+        if cp "$DEFAULT_WALL" "$SDDM_WALLPAPER_DIR/current.jpg"; then
+            echo -e "${GREEN}✔ Login background set to $(basename "$DEFAULT_WALL")${RESET}"
         else
             echo -e "${RED}✖ Could not set a first login background${RESET}"
         fi

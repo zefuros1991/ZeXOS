@@ -118,4 +118,4 @@ Some files in `theme` are rewritten live by Noctalia whenever the wallpaper chan
 
 ## License
 
-[MIT](LICENSE) covers ZeXOS's own files. The patches and generated files listed in [CREDITS.md](CREDITS.md) build on other people's work and keep their own licenses.
+[MIT](LICENSE) covers ZeXOS's own files. [CREDITS.md](CREDITS.md) lists the projects ZeXOS is built on, and the few files here that contain their code (those keep their own licenses).

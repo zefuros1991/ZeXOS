@@ -1,0 +1,10 @@
+{
+    "wallpaper_path": "~/Pictures/Wallpapers",
+    "cache_path": "~/.cache/roller/thumbs",
+    "backend": "waypaper",
+    "number_of_pictures": 7,
+    "panel_height": 300,
+    "thumbnail_height": 512,
+    "show_search_hint": false,
+    "restore_last": true
+}

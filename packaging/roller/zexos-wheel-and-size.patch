@@ -1,0 +1,73 @@
+diff --git a/qml/Carousel.qml b/qml/Carousel.qml
+index e461ef7..191318f 100644
+--- a/qml/Carousel.qml
++++ b/qml/Carousel.qml
+@@ -170,34 +170,21 @@ Item {
+     // where the carousel is heading (== selectedIndex once settled)
+     readonly property int committedIndex: ((Math.round(targetSelection)% (count||1))+(count||1))%(count||1)
+ 
+-    WheelHandler {
+-        onWheel: (e) => {
+-            if (root.count === 0) return
+-            let d = Math.abs(e.angleDelta.y) >= Math.abs(e.angleDelta.x) ? e.angleDelta.y : e.angleDelta.x
+-            let nx = targetX - d * 0.8
+-            if (isSmallCount) {
+-                let minX = tileWidth/2 - width/2
+-                let maxX = (count - 1) * step + tileWidth/2 - width/2
+-                nx = Math.max(minX, Math.min(maxX, nx))
+-                let idx = Math.round((nx + width/2 - tileWidth/2) / step)
+-                idx = Math.max(0, Math.min(count - 1, idx))
+-                targetSelection = idx
+-            } else {
+-                let idx = Math.round((nx + width/2 - tileWidth/2) / step)
+-                idx = ((idx % count) + count) % count
+-                let cur = ((Math.round(targetSelection) % count) + count) % count
+-                let delta = idx - cur
+-                if (delta > count/2) delta -= count
+-                if (delta < -count/2) delta += count
+-                targetSelection += delta
+-            }
+-            targetX = nx
+-            startAnim()
+-        }
++    property real wheelAcc: 0
++    // one notch (120 units) = one card. The tile MouseAreas swallow wheel
++    // events, so they forward here too.
++    function wheelStep(a) {
++        if (root.count === 0) return
++        let d = Math.abs(a.y) >= Math.abs(a.x) ? a.y : a.x
++        root.wheelAcc += d
++        while (root.wheelAcc >= 120) { root.wheelAcc -= 120; root.prev() }
++        while (root.wheelAcc <= -120) { root.wheelAcc += 120; root.next() }
+     }
++    WheelHandler { onWheel: (e) => root.wheelStep(e.angleDelta) }
+     MouseArea {
+         id: dragArea
+         anchors.fill: parent
++        onWheel: (w) => root.wheelStep(w.angleDelta)
+         property real startX
+         property real startContentX
+         property bool dragging:false
+@@ -356,6 +343,7 @@ Item {
+             // Click handling
+             MouseArea {
+                 anchors.fill: parent
++                onWheel: (w) => root.wheelStep(w.angleDelta)
+                 onClicked: {
+                     if (isSelected) root.applyRequested(realIdx)
+                     else root.setSelected(realIdx)
+diff --git a/qml/Main.qml b/qml/Main.qml
+index b0a3e1a..cf53ce3 100644
+--- a/qml/Main.qml
++++ b/qml/Main.qml
+@@ -54,8 +54,8 @@ ApplicationWindow {
+ 
+     Item {
+         id: content
+-        width: win.width
+-        height: 678
++        width: win.width * 0.65
++        height: (config ? config.panelHeight : 500) * 1.2 + 90
+         anchors.centerIn: parent
+         opacity: 0
+         Behavior on opacity { NumberAnimation { duration: 100; easing.type: Easing.OutQuad } }

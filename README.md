@@ -21,11 +21,17 @@ What you get:
 
 ## Screenshots
 
-![kitty and Dolphin side by side on niri](docs/screenshots/desktop.webp)
+The whole desktop takes its colours from the wallpaper, so every screenshot below looks different.
+
+![kitty with fastfetch on the violet topo wallpaper](docs/screenshots/desktop.webp)
 
 | Launcher | Control center | Overview |
 |---|---|---|
-| ![Noctalia launcher](docs/screenshots/launcher.webp) | ![Noctalia control center](docs/screenshots/control-center.webp) | ![niri overview](docs/screenshots/overview.webp) |
+| ![Noctalia launcher on an orange wallpaper](docs/screenshots/launcher.webp) | ![Noctalia control center on a blue wallpaper](docs/screenshots/control-center.webp) | ![niri overview on a green wallpaper](docs/screenshots/overview.webp) |
+
+| Empty desktop | Empty desktop |
+|---|---|
+| ![The red topo wallpaper with only the bar](docs/screenshots/empty-topo-ember.webp) | ![The mark wallpaper with only the bar](docs/screenshots/empty-mark.webp) |
 
 ## Install
 
@@ -76,7 +82,7 @@ The full list is in `stow/niri/.config/niri/cfg/keybinds.kdl`.
 
 ## Wallpapers
 
-ZeXOS comes with 15 wallpapers of its own, in 5 styles and several colours each. The installer copies them to `~/Pictures/Wallpapers`, and you start on `zexos-aurora` (the one in the screenshot above). The login screen starts with it too.
+ZeXOS comes with 15 wallpapers of its own, in 5 styles and several colours each. The installer copies them to `~/Pictures/Wallpapers`, and you start on `zexos-aurora`. The login screen starts with it too.
 
 ![The ZeXOS wallpapers](docs/screenshots/wallpapers.webp)
 

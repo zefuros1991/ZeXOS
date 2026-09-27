@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/logo/zexos-logo-dark.svg">
+    <img src="docs/logo/zexos-logo-light.svg" alt="ZeXOS" height="120">
+  </picture>
+</p>
+
 # ZeXOS
 
 ZeXOS is a ready-to-use desktop for CachyOS (and other Arch-based systems), built on the [niri](https://github.com/YaLTeR/niri) scrolling window manager and the [Noctalia](https://noctalia.dev) shell. One script installs the packages and puts the config files in place, so a fresh install becomes a complete, themed daily desktop.

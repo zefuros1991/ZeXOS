@@ -2,7 +2,7 @@ diff --git a/src/qt6ct-common/qt6ct.cpp b/src/qt6ct-common/qt6ct.cpp
 index 250987d..18855fd 100644
 --- a/src/qt6ct-common/qt6ct.cpp
 +++ b/src/qt6ct-common/qt6ct.cpp
-@@ -170,7 +170,12 @@ std::optional<QPalette> Qt6CT::loadColorScheme(const QString &filePath)
+@@ -170,7 +170,15 @@ std::optional<QPalette> Qt6CT::loadColorScheme(const QString &filePath)
  
  #if defined KF_CONFIGCORE_LIB && defined KF_COLORSCHEME_LIB
      if(isKColorScheme(filePath))
@@ -11,6 +11,9 @@ index 250987d..18855fd 100644
 +        //ZeXOS: the file is shared and cached, so read it again in case it changed
 +        KSharedConfigPtr config = KSharedConfig::openConfig(filePath);
 +        config->reparseConfiguration();
++        //the Breeze style keeps its own cached copy (opened with NoGlobals) for
++        //the toolbar colours; refresh it too so the top bar follows the change
++        KSharedConfig::openConfig(filePath, KConfig::NoGlobals)->reparseConfiguration();
 +        return KColorScheme::createApplicationPalette(config);
 +    }
  #endif

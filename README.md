@@ -97,7 +97,7 @@ Every folder under `stow/` is one Stow package, a slice of your home folder that
 | `niri` | `~/.config/niri` |
 | `noctalia` | `~/.config/noctalia` (bar layout, plugins, theming) and the SDDM wallpaper-sync script |
 | `roller` | `~/.config/roller` and its launcher files |
-| `theme` | GTK 3/4, Kvantum, qt5ct and the Noctalia colour files |
+| `theme` | GTK 3/4, qt5ct, qt6ct and the Noctalia colour files |
 | `zsh` | `~/.config/zsh` |
 
 To relink a single package after editing it:

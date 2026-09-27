@@ -1,86 +1,82 @@
-// Window rules let you adjust behavior for individual windows.
-// Find more information on the wiki:
-// https://yalter.github.io/niri/Configuration:-Window-Rules
+// Per-app tweaks
+//
+// "window-rule" changes normal app windows.
+// "layer-rule" changes Noctalia's own pieces (bar, panels, pop-ups).
+// Each rule: `match` says who it applies to, the rest says what changes.
+// More: https://yalter.github.io/niri/Configuration:-Window-Rules
 
-// Work around WezTerm's initial configure bug
-// by setting an empty default-column-width.
-window-rule {
-    // This regular expression is intentionally made as specific as possible,
-    // since this is the default config, and we want no false positives.
-    // You can get away with just app-id="wezterm" if you want.
-    match app-id=r"^org.wezfurlong.wezterm$"
-    default-column-width 
-}
+// ── All windows ─────────────────────────────────────────
 
-// Example: enable rounded corners for all windows.
-// (This example rule is commented out with a "/-" in front.)
+// Rounded corners.
 window-rule {
     geometry-corner-radius 14
     clip-to-geometry true
 }
 
-// Dim all unfocused windows
+// Windows you're not using fade slightly, so the active one stands out.
 window-rule {
     match is-focused=false
     opacity 0.86
 }
 
-// Noctalia v5: blurred wallpaper behind the overview ([backdrop] in noctalia.toml)
-layer-rule {
-  match namespace="^noctalia-backdrop"
-  place-within-backdrop true
-}
+// ── Apps ────────────────────────────────────────────────
 
-// Noctalia v5: blur behind panels, notifications, dock, OSD.
-// xray off = blur what's actually underneath, not just the wallpaper.
-// (docs: noctalia compositor-settings/niri)
-layer-rule {
-  match namespace="^noctalia-(notification|dock|panel|attached-panel|osd)$"
-  background-effect {
-    xray false
-  }
-}
-
-// No blur on the bar: the bar is one see-through strip holding three
-// islands, and blurring it smears the gaps between them (breaks the look).
-layer-rule {
-  match namespace="^noctalia-bar-"
-  background-effect {
-    blur false
-  }
-}
-
-// Noctalia's window switcher doesn't request blur itself
-layer-rule {
-  match namespace="^noctalia-window-switcher"
-  background-effect {
-    blur true
-    xray false
-  }
-}
-
-// Noctalia v5 settings window floats, with blur behind it
-window-rule {
-  match app-id="dev.noctalia.Noctalia"
-  open-floating true
-  background-effect {
-    blur true
-    xray false
-  }
-}
-
-debug {
-  // Allows notification actions and window activation from Noctalia.
-  honor-xdg-activation-with-invalid-serial
-  // Multi-GPU laptops: pin niri to the iGPU so the dGPU can sleep, e.g.
-  // render-drm-device "/dev/dri/by-path/pci-XXXX:XX:XX.X-render"
-}
-
-// Enable blur behind Applications.
+// Frosted-glass blur behind these apps.
 window-rule {
     match app-id="^(kitty|zen|vlc|org.kde.dolphin)$"
-
     background-effect {
         blur true
     }
+}
+
+// Noctalia's settings window floats above the others, with blur.
+window-rule {
+    match app-id="dev.noctalia.Noctalia"
+    open-floating true
+    background-effect {
+        blur true
+        xray false
+    }
+}
+
+// WezTerm opens at the wrong size unless it picks its own width.
+window-rule {
+    match app-id=r"^org.wezfurlong.wezterm$"
+    default-column-width {
+    }
+}
+
+// ── Noctalia shell ──────────────────────────────────────
+
+// Blur behind panels, notifications, the dock and volume pop-ups.
+// "xray false" = blur what is really behind them, not just the wallpaper.
+layer-rule {
+    match namespace="^noctalia-(notification|dock|panel|attached-panel|osd)$"
+    background-effect {
+        xray false
+    }
+}
+
+// The window switcher doesn't ask for blur, so we switch it on here.
+layer-rule {
+    match namespace="^noctalia-window-switcher"
+    background-effect {
+        blur true
+        xray false
+    }
+}
+
+// No blur on the top bar. The bar is one clear strip holding three
+// "islands"; blur would smudge the gaps between them.
+layer-rule {
+    match namespace="^noctalia-bar-"
+    background-effect {
+        blur false
+    }
+}
+
+// Blurred wallpaper behind the overview (Mod+O).
+layer-rule {
+    match namespace="^noctalia-backdrop"
+    place-within-backdrop true
 }

@@ -1,21 +1,24 @@
-// Uncomment this line to ask the clients to omit their client-side decorations if possible.
-// If the client will specifically ask for CSD, the request will be honored.
-// Additionally, clients will be informed that they are tiled, removing some client-side rounded corners.
-// This option will also fix border/focus ring drawing behind some semitransparent windows.
-// After enabling or disabling this, you need to restart the apps for this to take effect.
-// prefer-no-csd
+// Small settings that don't fit anywhere else
 
-// You can change the path where screenshots are saved.
-// A ~ at the front will be expanded to the home directory.
-// The path is formatted with strftime(3) to give you the screenshot date and time.
-screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
-
-// Get rid of top bars in applications hopefully
+// Ask apps to drop their own title bars, so windows look clean and the
+// border draws neatly around them. Restart an app to see the change.
 prefer-no-csd
 
-// You can also set this to null to disable saving screenshots to disk.
-// screenshot-path null
+// Where screenshots are saved, named by date and time.
+screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
+
+// Settings passed to every app started from the desktop.
 environment {
-  QT_QPA_PLATFORMTHEME "qt6ct"
-  QT_SCALE_FACTOR "1.2"
+    QT_QPA_PLATFORMTHEME "qt6ct"   // Qt apps (Dolphin, VLC...) take their look from qt6ct
+    QT_SCALE_FACTOR "1.2"          // Qt apps drawn 20% bigger
+}
+
+debug {
+    // Lets Noctalia bring a window to the front, for example when you
+    // click a notification.
+    honor-xdg-activation-with-invalid-serial
+
+    // Laptops with two graphics cards: uncomment and fill in to keep niri on
+    // the built-in one, so the big one can sleep and save battery.
+    // render-drm-device "/dev/dri/by-path/pci-XXXX:XX:XX.X-render"
 }

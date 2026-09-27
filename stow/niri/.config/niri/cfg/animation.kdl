@@ -1,5 +1,9 @@
-// Animation settings.
-// The wiki explains how to configure individual animations:
-// https://yalter.github.io/niri/Configuration:-Animations
-animations 
-
+// Animations
+//
+// Empty = niri's built-in animations, which already feel smooth.
+// Ideas if you want to change them:
+//   slowdown 2.0   -> everything moves at half speed
+//   off            -> no animations at all
+// Per-animation tuning: https://yalter.github.io/niri/Configuration:-Animations
+animations {
+}

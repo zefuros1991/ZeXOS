@@ -1,12 +1,15 @@
-// Output layout.
+// Screens
 //
-// niri picks sensible defaults for every connected screen, so this file is
-// empty on purpose. Run `niri msg outputs` to see your screens' names, then
-// add blocks like the example below to set mode, scale or position.
-// Docs: https://github.com/YaLTeR/niri/wiki/Configuration:-Outputs
+// Left empty on purpose: niri already picks a good resolution and scale for
+// every screen you plug in.
+//
+// To change one, run `niri msg outputs` to get its name, then add a block.
+// Example for a laptop panel (remove the // to use it):
 //
 // output "eDP-1" {
-//     mode "1920x1080@60"
-//     scale 1.0
-//     position x=0 y=0
+//     mode "1920x1080@60"   // resolution @ refresh rate
+//     scale 1.0             // bigger number = bigger everything
+//     position x=0 y=0      // where it sits next to other screens
 // }
+//
+// More: https://yalter.github.io/niri/Configuration:-Outputs

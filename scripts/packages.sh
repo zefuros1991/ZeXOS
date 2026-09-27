@@ -216,6 +216,15 @@ FILE_MANAGER_PACMAN=(
 install_pacman "File Manager (Dolphin)" "${FILE_MANAGER_PACMAN[@]}"
 
 # -----------------------------
+# PACKAGE MANAGER APP (SHELLY)
+# -----------------------------
+# Shelly is a point-and-click app for installing and updating software
+# (Mod+M opens it). It is only in the CachyOS repos, so skip it elsewhere.
+if pacman -Si shelly &>/dev/null; then
+    install_pacman "Package manager app (Shelly)" shelly
+fi
+
+# -----------------------------
 # NOCTALIA EXTRAS
 # -----------------------------
 # udiskie/udisks2/xdg-utils: the aristides/udiskie plugin (USB widget in the

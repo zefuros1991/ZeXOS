@@ -1,17 +1,26 @@
-include "./cfg/animation.kdl"
-include "./cfg/autostart.kdl"
-include "./cfg/keybinds.kdl"
-include "./cfg/input.kdl"
-include "./cfg/layout.kdl"
-include "./cfg/rules.kdl"
-include "./cfg/misc.kdl"
+// ZeXOS — niri main file
+//
+// This file only pulls in the smaller files below, one per topic.
+// Change things in those files, not here.
+// Full option list: https://yalter.github.io/niri/
+
+include "./cfg/animation.kdl"   // how fast things move
+include "./cfg/autostart.kdl"   // programs that start with the desktop
+include "./cfg/keybinds.kdl"    // keyboard and mouse shortcuts
+include "./cfg/input.kdl"       // keyboard, touchpad, mouse
+include "./cfg/layout.kdl"      // gaps, column sizes, borders
+include "./cfg/rules.kdl"       // per-app tweaks (blur, rounding, floating)
+include "./cfg/misc.kdl"        // screenshots, env vars, small extras
+
+// Colours made from your wallpaper. Noctalia rewrites this file on its own,
+// so don't edit it. It comes after layout.kdl so its colours win.
 include "./noctalia.kdl"
 
+// Mouse pointer look
 cursor {
     xcursor-theme "Bibata-Modern-Ice"
     xcursor-size 24
 }
 
-
-// Screen layout (empty by default, see monitors.kdl)
+// Your screens (empty until you add something, see the file)
 include "monitors.kdl"

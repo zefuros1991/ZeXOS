@@ -1,42 +1,38 @@
-// Input device configuration.
-// Find the full list of options on the wiki:
-// https://yalter.github.io/niri/Configuration:-Input
+// Keyboard, touchpad and mouse
+// All options: https://yalter.github.io/niri/Configuration:-Input
+
 input {
     keyboard {
-        xkb 
+        // Keyboard layout. Empty = use the system layout.
+        // Example for English + Greek, switched with Alt+Shift:
+        //   layout "us,gr"
+        //   options "grp:alt_shift_toggle"
+        xkb {
+        }
 
-
-        // Enable numlock on startup, omitting this setting disables it.
+        // Number pad works right after login.
         numlock
     }
 
-    // Next sections include libinput settings.
-    // Omitting settings disables them, or leaves them at their default values.
-    // All commented-out settings here are examples, not defaults.
     touchpad {
-        // off
-        tap
-        // dwt
-        // dwtp
-        // drag false
-        // drag-lock
-        natural-scroll
-        // accel-speed 0.2
-        // accel-profile "flat"
-        // scroll-method "two-finger"
-        // disabled-on-external-mouse
+        tap              // a light tap counts as a click
+        natural-scroll   // content follows your fingers, like a phone
+        // Also handy:
+        //   dwt                          -> ignore the touchpad while typing
+        //   accel-speed 0.2              -> faster pointer (-1.0 to 1.0)
+        //   disabled-on-external-mouse   -> turn it off when a mouse is plugged in
     }
 
-    mouse 
+    // Empty = default settings for mice and laptop trackpoints.
+    mouse {
+    }
+    trackpoint {
+    }
 
+    // Moving the pointer over a window or screen gives it focus, no click needed.
+    focus-follows-mouse
 
-    trackpoint 
-
-
-
-    // Uncomment this to make the mouse warp to the center of newly focused windows.
+    // Turn this on to make the pointer jump to whichever window you focus
+    // with the keyboard:
     // warp-mouse-to-focus
-
-    // Focus windows and outputs automatically when moving the mouse into them.
-       focus-follows-mouse
 }

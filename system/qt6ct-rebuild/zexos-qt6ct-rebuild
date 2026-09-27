@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# Rebuilds qt6ct-kde from packaging/qt6ct-kde and installs it.
+# Run as root by zexos-qt6ct-rebuild.service. The build itself runs as you
+# (makepkg refuses to build as root); only the install step needs root.
+set -euo pipefail
+
+# Written by scripts/packages.sh: who you are and where ZeXOS lives.
+. /etc/zexos/qt6ct-rebuild.conf
+user_home="$(getent passwd "$ZEXOS_USER" | cut -d: -f6)"
+as_user() { runuser -u "$ZEXOS_USER" -- env HOME="$user_home" "$@"; }
+
+# The Qt update that started us may still be finishing. Wait for pacman
+# to let go of its lock (up to 10 minutes).
+for _ in $(seq 600); do
+    [ -e /var/lib/pacman/db.lck ] || break
+    sleep 1
+done
+if [ -e /var/lib/pacman/db.lck ]; then
+    echo "pacman is still busy after 10 minutes, giving up. Run install.sh to rebuild qt6ct-kde."
+    exit 1
+fi
+
+build="$(as_user mktemp -d)"
+trap 'rm -rf "$build"' EXIT
+as_user cp "$ZEXOS_REPO/packaging/qt6ct-kde"/. "$build"/ -r
+
+echo "Building qt6ct-kde against Qt $(pacman -Q qt6-base | cut -d' ' -f2)"
+(cd "$build" && as_user makepkg --noconfirm)
+pacman -U --noconfirm "$build"/qt6ct-kde-*.pkg.tar.zst
+echo "qt6ct-kde rebuilt"

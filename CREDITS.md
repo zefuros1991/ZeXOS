@@ -33,13 +33,14 @@ license.
 ## Files here that contain other people's code
 
 These are the only files in this repo with someone else's code inside them.
-They keep their original license (MIT, except the qt6ct patch, which follows
+They keep their original license (MIT, except the qt6ct patches, which follow
 qt6ct's BSD-2-Clause license).
 
 | File | What it is | Original project |
 |---|---|---|
 | `packaging/noctalia-zexos/zexos.patch` | ZeXOS changes to Noctalia | [Noctalia](https://github.com/noctalia-dev/noctalia), noctalia-dev |
 | `packaging/roller/zexos-wheel-and-size.patch` | ZeXOS changes to roller | [roller](https://github.com/zyrophix/roller), zyrophix |
+| `packaging/qt6ct-kde/zexos-live-colors.patch` | ZeXOS change to qt6ct so open apps pick up new colours | [qt6ct](https://www.opencode.net/trialuser/qt6ct), Ilya Kotov |
 | `packaging/qt6ct-kde/qt6ct-shenanigans.patch` | Lets qt6ct pass colours to KDE apps (copied unchanged) | [qt6ct-kde](https://aur.archlinux.org/packages/qt6ct-kde) recipe by Antonio Rojas, for [qt6ct](https://www.opencode.net/trialuser/qt6ct) by Ilya Kotov |
 | `stow/zsh/.config/zsh/.p10k.zsh` | Prompt settings made with the Powerlevel10k setup wizard | [Powerlevel10k](https://github.com/romkatv/powerlevel10k), Roman Perepelitsa |
 

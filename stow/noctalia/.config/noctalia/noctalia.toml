@@ -108,7 +108,9 @@ panel_open_near_click = true
 
 # ═══ Colours ════════════════════════════════════════════════════════════════
 # Dark mode, with colours picked from the wallpaper. The templates pass
-# those colours on to other apps so everything matches.
+# those colours on to other apps so everything matches. "kcolorscheme"
+# is the one KDE apps (Dolphin, Gwenview) need: qt6ct.conf points at the
+# file it writes, and Noctalia also copies the colours into kdeglobals.
 
 [theme]
 mode = "dark"
@@ -116,7 +118,7 @@ source = "wallpaper"
 wallpaper_scheme = "faithful"
 
 [theme.templates]
-builtin_ids = ["gtk3", "gtk4", "qt", "niri", "kitty", "btop"]
+builtin_ids = ["gtk3", "gtk4", "qt", "kcolorscheme", "niri", "kitty", "btop"]
 community_ids = ["zen-browser", "fuzzel"]
 
 # ═══ Pop-up size ════════════════════════════════════════════════════════════

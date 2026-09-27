@@ -176,6 +176,37 @@ CORE_PACMAN=(
 
 install_pacman "Desktop Core" "${CORE_PACMAN[@]}"
 
+# -----------------------------
+# DESKTOP BASICS
+# -----------------------------
+# What CachyOS's niri profile brings along and a KDE, GNOME or bare install
+# may not have: portals (screen sharing, file dialogs), a password keyring,
+# the clipboard tool, fonts, and the sound, network, Bluetooth and power
+# services the bar talks to. KDE and GNOME installs already have most of
+# these, so --needed skips them there. If one clashes with something you
+# already use (say PulseAudio instead of PipeWire), pacman says no and your
+# setup is kept; the bar just shows less for that one thing.
+BASICS_PACMAN=(
+    xdg-desktop-portal-gnome
+    xdg-desktop-portal-gtk
+    gnome-keyring
+    wl-clipboard
+    noto-fonts
+    noto-fonts-emoji
+    xdg-user-dirs
+    pipewire
+    pipewire-pulse
+    wireplumber
+    networkmanager
+    bluez
+    bluez-utils
+    power-profiles-daemon
+    upower
+    brightnessctl
+)
+
+install_pacman "Desktop Basics" "${BASICS_PACMAN[@]}"
+
 # The zsh config builds on CachyOS's own zsh setup (prompt, plugins). That
 # package only exists in the CachyOS repos; on plain Arch the zsh config
 # still loads, just without it.
@@ -400,13 +431,29 @@ fi
 
 if [ "$CURRENT_DM" != "sddm" ]; then
 
-    echo -e "${CYAN}Switching display manager from ${CURRENT_DM} to sddm${RESET}"
+    # Another login screen may be in use (GDM on GNOME, Plasma Login on
+    # newer KDE, ...). ZeXOS replaces it with SDDM + Pixie, but only once
+    # everything the new one needs is really there: SDDM itself, the Pixie
+    # theme, and the setting that picks it. Otherwise switching would swap a
+    # working login screen for a broken one, so keep the old one instead.
+    # (The login wallpaper sync is set up in finaltouches.sh.)
+    pixie_ready=1
+    for need in /usr/bin/sddm \
+                /usr/share/sddm/themes/pixie/Main.qml \
+                /usr/share/sddm/themes/pixie/metadata.desktop; do
+        [ -e "$need" ] || { pixie_ready=0; echo -e "${RED}✖ Missing $need${RESET}"; }
+    done
+    grep -qx 'Current=pixie' /etc/sddm.conf.d/theme.conf 2>/dev/null || pixie_ready=0
 
-    [ "$CURRENT_DM" != "none" ] && sudo systemctl disable "$CURRENT_DM"
-
-    sudo systemctl enable sddm
-
-    echo -e "${GREEN}✔ SDDM enabled${RESET}"
+    if [ "$pixie_ready" = 1 ]; then
+        echo -e "${CYAN}Switching display manager from ${CURRENT_DM} to sddm${RESET}"
+        [ "$CURRENT_DM" != "none" ] && sudo systemctl disable "$CURRENT_DM"
+        sudo systemctl enable sddm
+        echo -e "${GREEN}✔ SDDM with Pixie enabled${RESET}"
+    else
+        echo -e "${RED}✖ SDDM or the Pixie theme isn't ready, keeping ${CURRENT_DM} as the login screen${RESET}"
+        echo -e "${CYAN}  Pick \"niri\" in its session list to start ZeXOS, and run install.sh again to retry${RESET}"
+    fi
 
 else
     echo -e "${GREEN}✔ SDDM already active${RESET}"

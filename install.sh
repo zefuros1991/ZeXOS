@@ -8,6 +8,25 @@ LOGFILE="$HOME/.dotfiles/install.log"
 
 # -----------------------------
 
+# Preflight
+
+# -----------------------------
+
+# ZeXOS installs everything with pacman, so it only works on Arch-based
+# systems (CachyOS, Arch, EndeavourOS, ...). The desktop you start from
+# doesn't matter: KDE, GNOME or none at all. It must run as your normal
+# user, not root, because it sets up your home folder.
+if ! command -v pacman >/dev/null 2>&1; then
+    echo "ZeXOS needs an Arch-based system with pacman (CachyOS, Arch, EndeavourOS, ...). Stopping." >&2
+    exit 1
+fi
+if [ "$(id -u)" -eq 0 ]; then
+    echo "Run the installer as your normal user, not as root or with sudo. It asks for your password when it needs it." >&2
+    exit 1
+fi
+
+# -----------------------------
+
 # Logging
 
 # -----------------------------

@@ -1,0 +1,83 @@
+diff --git a/src/qt6ct-common/qt6ct.cpp b/src/qt6ct-common/qt6ct.cpp
+index 250987d..18855fd 100644
+--- a/src/qt6ct-common/qt6ct.cpp
++++ b/src/qt6ct-common/qt6ct.cpp
+@@ -170,7 +170,12 @@ std::optional<QPalette> Qt6CT::loadColorScheme(const QString &filePath)
+ 
+ #if defined KF_CONFIGCORE_LIB && defined KF_COLORSCHEME_LIB
+     if(isKColorScheme(filePath))
+-        return KColorScheme::createApplicationPalette(KSharedConfig::openConfig(filePath));
++    {
++        //ZeXOS: the file is shared and cached, so read it again in case it changed
++        KSharedConfigPtr config = KSharedConfig::openConfig(filePath);
++        config->reparseConfiguration();
++        return KColorScheme::createApplicationPalette(config);
++    }
+ #endif
+ 
+     QSettings settings(filePath, QSettings::IniFormat);
+diff --git a/src/qt6ct-qtplugin/qt6ctplatformtheme.cpp b/src/qt6ct-qtplugin/qt6ctplatformtheme.cpp
+index 78c2eae..d500d83 100644
+--- a/src/qt6ct-qtplugin/qt6ctplatformtheme.cpp
++++ b/src/qt6ct-qtplugin/qt6ctplatformtheme.cpp
+@@ -290,7 +290,25 @@ void Qt6CTPlatformTheme::createFSWatcher()
+     timer->setSingleShot(true);
+     timer->setInterval(3000);
+     connect(watcher, &QFileSystemWatcher::directoryChanged, timer, qOverload<>(&QTimer::start));
++    //ZeXOS: also reload when the colour scheme file changes, so apps follow
++    //a new wallpaper without being restarted
++    connect(watcher, &QFileSystemWatcher::fileChanged, timer, qOverload<>(&QTimer::start));
+     connect(timer, &QTimer::timeout, this, &Qt6CTPlatformTheme::updateSettings);
++    m_watcher = watcher;
++    watchColorScheme();
++}
++
++void Qt6CTPlatformTheme::watchColorScheme()
++{
++    //the file is often replaced rather than edited, which ends the watch,
++    //so watch its folder too and add the file back each time
++    if(!m_watcher || m_schemePath.isEmpty())
++        return;
++    const QString dir = QFileInfo(m_schemePath).absolutePath();
++    if(!m_watcher->directories().contains(dir))
++        m_watcher->addPath(dir);
++    if(!m_watcher->files().contains(m_schemePath) && QFile::exists(m_schemePath))
++        m_watcher->addPath(m_schemePath);
+ }
+ 
+ void Qt6CTPlatformTheme::updateSettings()
+@@ -298,6 +316,7 @@ void Qt6CTPlatformTheme::updateSettings()
+     qCDebug(lqt6ct) << "updating settings..";
+     readSettings();
+     applySettings();
++    watchColorScheme();
+ }
+ 
+ void Qt6CTPlatformTheme::readSettings()
+diff --git a/src/qt6ct-qtplugin/qt6ctplatformtheme.h b/src/qt6ct-qtplugin/qt6ctplatformtheme.h
+index 9327ef0..d057cf6 100644
+--- a/src/qt6ct-qtplugin/qt6ctplatformtheme.h
++++ b/src/qt6ct-qtplugin/qt6ctplatformtheme.h
+@@ -44,6 +44,7 @@
+ #include <memory>
+ 
+ class QStyle;
++class QFileSystemWatcher;
+ 
+ Q_DECLARE_LOGGING_CATEGORY(lqt6ct)
+ 
+@@ -87,12 +88,14 @@ private slots:
+ 
+ private:
+     void readSettings();
++    void watchColorScheme();
+ #ifdef QT_WIDGETS_LIB
+     bool hasWidgets();
+ #endif
+     QString loadStyleSheets(const QStringList &paths);
+     QString m_schemePath, m_iconTheme, m_userStyleSheet, m_prevStyleSheet;
+     std::optional<QPalette> m_palette;
++    QFileSystemWatcher *m_watcher = nullptr;
+     QFont m_generalFont, m_fixedFont;
+     int m_doubleClickInterval;
+     int m_cursorFlashTime;

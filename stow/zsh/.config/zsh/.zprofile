@@ -1,6 +1,12 @@
-# Login-shell setup (runs once when SDDM starts the desktop session through zsh).
-# zsh does not read ~/.profile, so add ~/.local/bin and the npm bin dir to the
-# session PATH here, or user scripts go missing from the niri launcher and keybinds.
-typeset -U path
-path=("$HOME/.local/bin" "${XDG_DATA_HOME:-$HOME/.local/share}/npm/bin" $path)
+# Runs once at login, when the desktop session starts through zsh.
+#
+# zsh skips ~/.profile, so add our own program folders to PATH here.
+# Without this, scripts in ~/.local/bin and apps installed with npm
+# can't be found from the launcher or from keyboard shortcuts.
+typeset -U path   # -U: never list the same folder twice
+path=(
+    "$HOME/.local/bin"
+    "${XDG_DATA_HOME:-$HOME/.local/share}/npm/bin"
+    $path
+)
 export PATH

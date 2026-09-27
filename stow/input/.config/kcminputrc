@@ -1,11 +1,17 @@
-[Libinput][10248][537][ASUF1209:00 2808:0219 Mouse]
-Enabled=true
-PointerAccelerationProfile=2
+# Mouse and touchpad settings for KDE apps.
+# (niri has its own copy of these in niri/cfg/input.kdl.)
 
+[Mouse]
+# No mouse acceleration.
+X11LibInputXAccelProfileFlat=true
+
+# ASUS laptop touchpad: natural scrolling, and it keeps working while you type.
 [Libinput][10248][537][ASUF1209:00 2808:0219 Touchpad]
 DisableWhileTyping=false
 Enabled=true
 NaturalScroll=true
 
-[Mouse]
-X11LibInputXAccelProfileFlat=true
+# The same ASUS touchpad seen as a mouse: flat acceleration.
+[Libinput][10248][537][ASUF1209:00 2808:0219 Mouse]
+Enabled=true
+PointerAccelerationProfile=2

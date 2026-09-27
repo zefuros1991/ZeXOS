@@ -109,6 +109,19 @@ mkdir -p "$WALL_DIR"
 cp --update=none "$WALL_SRC"/*.jpg "$WALL_DIR"/
 echo -e "${GREEN}✔ ZeXOS wallpapers are in $WALL_DIR${RESET}"
 
+# GTK 4 apps get the adw-gtk3 dark look through two links to the installed
+# theme. They point at absolute system paths, which stow refuses to deploy,
+# so they're made here instead of living in the repo.
+ADW_GTK4="/usr/share/themes/adw-gtk3/gtk-4.0"
+if [ -d "$ADW_GTK4" ]; then
+    mkdir -p "$HOME/.config/gtk-4.0"
+    ln -sfn "$ADW_GTK4/assets" "$HOME/.config/gtk-4.0/assets"
+    ln -sfn "$ADW_GTK4/gtk-dark.css" "$HOME/.config/gtk-4.0/gtk-dark.css"
+    echo -e "${GREEN}✔ GTK 4 apps linked to the adw-gtk3 theme${RESET}"
+else
+    echo -e "${RED}✖ adw-gtk3 not found at $ADW_GTK4, skipping the GTK 4 theme links${RESET}"
+fi
+
 # -----------------------------
 # 3. SDDM LOGIN WALLPAPER SYNC (PIXIE THEME)
 # -----------------------------

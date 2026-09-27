@@ -98,6 +98,12 @@ DEPLOYED_WITH_BACKUP=()
 FAILED_PACKAGES=()
 ANY_BACKUP_MADE=0
 
+# Make ~/.config/gtk-4.0 a real folder before stowing. If stow is left to
+# link the whole folder into the repo instead, the adw-gtk3 links that
+# finaltouches.sh adds there would land inside the repo. KDE and GNOME
+# create this folder anyway, so this makes every install work the same.
+mkdir -p "$HOME/.config/gtk-4.0"
+
 for pkg in "$STOW_DIR"/*; do
     [ -d "$pkg" ] || continue
 

@@ -191,6 +191,7 @@ install_pacman "Media Basics" "${MEDIA_PACMAN[@]}"
 #     handing off. Without it, auth succeeds but the root GUI process can't
 #     open the display ("cannot open display" Gtk-WARNING).
 SYSTEM_PACMAN=(
+    btop
     gparted
     xorg-xhost
     polkit-kde-agent
@@ -242,7 +243,7 @@ install_pacman "Noctalia Extras" "${NOCTALIA_PACMAN[@]}"
 # -----------------------------
 # ROLLER (wallpaper picker, Mod+W)
 # -----------------------------
-# Not on the AUR -- built from packaging/roller (upstream pinned to a known
+# Not in the repos -- built from packaging/roller (upstream pinned to a known
 # commit + our wheel/size patch). Config and the waypaper->noctalia shim live
 # in stow/roller. Rebuilt only when the installed pkgrel differs from ours.
 echo -e "\n${YELLOW}[CUSTOM] Roller${RESET}"
@@ -304,66 +305,53 @@ else
 fi
 
 # =========================================================
-# 2. AUR PACKAGES
+# 2. PACKAGES BUILT HERE (no AUR)
 # =========================================================
+# A few things aren't in the CachyOS/Arch repos. Instead of using the AUR,
+# each has a small recipe in packaging/ that downloads it straight from its
+# author and checks it against a fixed checksum. makepkg turns it into a
+# normal package, so pacman can update or remove it like any other.
 
-install_aur() {
-    local label=$1
-    shift
-    local pkgs=("$@")
+install_local() {
+    local label=$1 dir=$2
+    local pkg want
+    pkg="$(. "$REPO_ROOT/packaging/$dir/PKGBUILD"; echo "$pkgname")"
+    want="$(. "$REPO_ROOT/packaging/$dir/PKGBUILD"; echo "$pkgver-$pkgrel")"
 
-    echo -e "\n${YELLOW}[AUR] ${label}${RESET}"
+    echo -e "\n${YELLOW}[LOCAL] ${label}${RESET}"
 
-    if ! command -v yay >/dev/null 2>&1; then
-        echo -e "${RED}yay not installed (run bootstrap first)${RESET}"
-        return
+    if [ "$(pacman -Q "$pkg" 2>/dev/null | awk '{print $2}')" = "$want" ]; then
+        echo -e "${GREEN}✔ $pkg $want already installed${RESET}"
+        return 0
     fi
 
-    for pkg in "${pkgs[@]}"; do
-        if yay -Qi "$pkg" &>/dev/null; then
-            echo -e "${GREEN}✔ $pkg already installed${RESET}"
-        else
-            echo -e "${CYAN}Installing $pkg${RESET}"
-
-            yay -S --needed --noconfirm "$pkg" &
-            spinner $! "Installing $pkg"
-
-            if yay -Qi "$pkg" &>/dev/null; then
-                echo -e "${GREEN}✔ $pkg installed successfully${RESET}"
-            else
-                echo -e "${RED}✖ Failed to install $pkg${RESET}"
-            fi
-        fi
-    done
+    local build
+    build="$(mktemp -d)"
+    cp "$REPO_ROOT/packaging/$dir"/* "$build/"
+    if (cd "$build" && makepkg -si --noconfirm --needed); then
+        echo -e "${GREEN}✔ $pkg $want installed${RESET}"
+    else
+        echo -e "${RED}✖ $pkg build failed${RESET}"
+    fi
+    rm -rf "$build"
 }
 
-# -----------------------------
-# SYSTEM (AUR)
-# -----------------------------
-SYSTEM_AUR=(
-    btop
-    xdg-ninja
-    bibata-cursor-theme
-)
-
-install_aur "System Tools (AUR)" "${SYSTEM_AUR[@]}"
+# Mouse pointer (Bibata Modern Ice). Replaces the old AUR package if present.
+if pacman -Q bibata-cursor-theme &>/dev/null; then
+    sudo pacman -Rdd --noconfirm bibata-cursor-theme
+fi
+install_local "Mouse pointer (Bibata)" bibata-cursor-zexos
 
 # -----------------------------
 # LOGIN MANAGER: SDDM PIXIE
 # -----------------------------
-SDDM_PACMAN=(
-    sddm
-    qt6-declarative
-    qt6-svg
-)
-
-install_pacman "SDDM Pixie Dependencies" "${SDDM_PACMAN[@]}"
-
-SDDM_AUR=(
-    pixie-sddm-git
-)
-
-install_aur "SDDM Pixie Theme" "${SDDM_AUR[@]}"
+# The theme's own package pulls in sddm and the Qt parts it needs.
+# If the old AUR version is installed, swap it out first (--noconfirm
+# would otherwise say "no" to replacing it).
+if pacman -Q pixie-sddm-git &>/dev/null; then
+    sudo pacman -Rdd --noconfirm pixie-sddm-git
+fi
+install_local "Login screen theme (Pixie)" pixie-sddm-zexos
 
 echo -e "\n${YELLOW}[SDDM] Configuration${RESET}"
 
@@ -410,26 +398,16 @@ fi
 
 
 # -----------------------------
-# OTHER AUR
+# QT6CT-KDE (dark theme for Dolphin, Gwenview)
 # -----------------------------
-# qt6ct-kde replaces plain qt6ct: it's the theming bridge that actually gets
-# KDE Frameworks apps (Dolphin, Gwenview) to honor a dark/custom color
-# scheme under a non-Plasma compositor -- plain qt6ct's palette never
-# reaches KColorScheme, so those apps stay stuck on a bright-white default
-# no matter what kdeglobals says (confirmed 2026-09-03, see KDE Discuss
-# "Borken Dolphin Theme" and Arch Forums #311198). Conflicts at the pacman
-# level with qt6ct (yay -S --noconfirm can't answer that [y/N] prompt), so
-# remove qt6ct first if some other package pulled it in as a dependency.
-if pacman -Qi qt6ct &>/dev/null; then
-    echo -e "${YELLOW}⚠ Removing plain qt6ct -- conflicts with qt6ct-kde${RESET}"
-    sudo pacman -R --noconfirm qt6ct
+# Plain qt6ct can't pass the colour scheme to KDE apps outside Plasma, so
+# they stay bright white. This patched build can (see packaging/qt6ct-kde).
+# It replaces plain qt6ct, so remove that first if something installed it.
+if pacman -Q qt6ct &>/dev/null; then
+    echo -e "${YELLOW}⚠ Removing plain qt6ct -- it clashes with qt6ct-kde${RESET}"
+    sudo pacman -Rdd --noconfirm qt6ct
 fi
-
-AUR_PACKAGES=(
-    qt6ct-kde
-)
-
-install_aur "AUR Extras" "${AUR_PACKAGES[@]}"
+install_local "Qt settings for KDE apps (qt6ct-kde)" qt6ct-kde
 
 # =========================================================
 # 3. FLATPAK / FLATHUB

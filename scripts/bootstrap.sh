@@ -75,9 +75,8 @@ echo "--------------------------------------------------"
 echo -e "${BLUE}This script prepares the base system:${RESET}"
 echo "  1. System update"
 echo "  2. Core dependencies"
-echo "  3. AUR helper (yay)"
-echo "  4. Flatpak + Discover"
-echo "  5. Clone repo to ~/.dotfiles"
+echo "  3. Flatpak + Discover"
+echo "  4. Clone repo to ~/.dotfiles"
 echo "--------------------------------------------------"
 
 # -----------------------------
@@ -106,7 +105,7 @@ trap 'kill $SUDO_KEEPALIVE_PID 2>/dev/null || true' EXIT
 # but that's not guaranteed on every profile/distro. Checking pacman.conf directly (not `pacman -Sl
 # multilib`, which needs the repo already synced to answer) and enabling it
 # before the first sync below if needed. Idempotent: no-op if already on.
-echo -e "\n${YELLOW}==> [0/5] MULTILIB REPOSITORY${RESET}"
+echo -e "\n${YELLOW}==> [0/4] MULTILIB REPOSITORY${RESET}"
 
 if grep -q '^\[multilib\]' /etc/pacman.conf; then
     echo -e "${GREEN}✔ multilib already enabled${RESET}"
@@ -121,7 +120,7 @@ fi
 # -----------------------------
 # 1. SYSTEM UPDATE
 # -----------------------------
-echo -e "\n${YELLOW}==> [1/5] SYSTEM UPDATE${RESET}"
+echo -e "\n${YELLOW}==> [1/4] SYSTEM UPDATE${RESET}"
 sudo pacman -Syu --noconfirm
 
 cd "$HOME"
@@ -129,7 +128,7 @@ cd "$HOME"
 # -----------------------------
 # 2. CORE DEPENDENCIES
 # -----------------------------
-echo -e "\n${YELLOW}==> [2/5] CORE DEPENDENCIES${RESET}"
+echo -e "\n${YELLOW}==> [2/4] CORE DEPENDENCIES${RESET}"
 
 sudo pacman -S --needed --noconfirm \
     git curl stow base-devel flatpak discover &
@@ -137,7 +136,7 @@ core_pkgs_pid=$!
 spinner "$core_pkgs_pid" "Installing core packages"
 
 # These packages are load-bearing for the rest of this script (git/stow for
-# the clone below, base-devel for the yay build just after) — the spinner
+# the clone below, base-devel for building the few ZeXOS packages later) — the spinner
 # used to print its checkmark regardless of whether the install actually
 # succeeded, so a real failure here would silently look fine and then blow
 # up confusingly a few steps later instead of here, where the real cause is
@@ -152,44 +151,9 @@ fi
 cd "$HOME"
 
 # -----------------------------
-# 3. AUR HELPER (yay)
+# 3. FLATHUB SETUP
 # -----------------------------
-echo -e "\n${YELLOW}==> [3/5] AUR HELPER (yay)${RESET}"
-
-if command -v yay >/dev/null 2>&1; then
-    echo -e "${GREEN}✔ yay already installed${RESET}"
-else
-    tmpdir=$(mktemp -d)
-
-    git clone https://aur.archlinux.org/yay.git "$tmpdir/yay" &
-    yay_clone_pid=$!
-    spinner "$yay_clone_pid" "Cloning yay"
-
-    # Same silently-swallowed-failure pattern as the core packages above:
-    # without this check, a failed clone still printed a green checkmark,
-    # then crashed on the next `cd` with a confusing "No such file or
-    # directory" instead of a clear error.
-    if ! wait "$yay_clone_pid"; then
-        echo -e "${RED}✖ Failed to clone yay — cannot continue${RESET}"
-        rm -rf "$tmpdir"
-        exit 1
-    fi
-
-    cd "$tmpdir/yay"
-
-    makepkg -si --noconfirm
-
-    cd "$HOME"
-
-    rm -rf "$tmpdir"
-
-    echo -e "${GREEN}✔ yay installed${RESET}"
-fi
-
-# -----------------------------
-# 4. FLATHUB SETUP
-# -----------------------------
-echo -e "\n${YELLOW}==> [4/5] FLATHUB SETUP${RESET}"
+echo -e "\n${YELLOW}==> [3/4] FLATHUB SETUP${RESET}"
 
 if flatpak remotes | grep -q flathub; then
     echo -e "${GREEN}✔ Flathub already configured${RESET}"
@@ -204,9 +168,9 @@ fi
 cd "$HOME"
 
 # -----------------------------
-# 5. REPOSITORY SETUP (CLEAN SOURCE OF TRUTH)
+# 4. REPOSITORY SETUP (CLEAN SOURCE OF TRUTH)
 # -----------------------------
-echo -e "\n${YELLOW}==> [5/5] REPOSITORY SETUP${RESET}"
+echo -e "\n${YELLOW}==> [4/4] REPOSITORY SETUP${RESET}"
 
 OLD_REPO="$HOME/ZeXOS"
 
@@ -230,7 +194,7 @@ else
     repo_clone_pid=$!
     spinner "$repo_clone_pid" "Cloning ZeXOS"
 
-    # Same check as the yay clone above — without it, a failed clone still
+    # Same check as the core packages above — without it, a failed clone still
     # printed "Repo installed" and copied an empty directory into $TARGET,
     # leaving it without a .git folder (so the next run would just try the
     # same broken clone again instead of reporting what actually happened).

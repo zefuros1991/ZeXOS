@@ -1,0 +1,25 @@
+# Pixie login screen theme for SDDM (https://github.com/xCaptaiN09/pixie-sddm).
+# Downloads a tagged release straight from the author's GitHub, checked
+# against a fixed checksum, so nothing comes from the AUR.
+# Built by scripts/packages.sh with `makepkg -si`.
+
+pkgname=pixie-sddm-zexos
+pkgver=3.0
+pkgrel=1
+pkgdesc='Pixie SDDM theme, from the official release (ZeXOS)'
+arch=('any')
+url="https://github.com/xCaptaiN09/pixie-sddm"
+license=('MIT')
+# Version 3 is a Qt 6 theme.
+depends=('sddm' 'qt6-declarative' 'qt6-svg')
+provides=('pixie-sddm')
+conflicts=('pixie-sddm' 'pixie-sddm-git')
+source=("pixie-sddm-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
+sha256sums=('bde5ddfac7c50f188bb1879a00914614c9091a043f14d4b3cba4156208b4efb0')
+
+package() {
+    cd "$srcdir/pixie-sddm-$pkgver"
+    install -d "$pkgdir/usr/share/sddm/themes/pixie"
+    cp -r assets components Main.qml metadata.desktop theme.conf LICENSE \
+        "$pkgdir/usr/share/sddm/themes/pixie/"
+}

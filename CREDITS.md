@@ -11,9 +11,11 @@ people's projects. This page lists whose work is in here.
 | `packaging/roller/zexos-wheel-and-size.patch` | [roller](https://github.com/zyrophix/roller) | zyrophix | MIT |
 | `stow/zsh/.config/zsh/.p10k.zsh` | made with the [Powerlevel10k](https://github.com/romkatv/powerlevel10k) setup wizard | Roman Perepelitsa (romkatv) | MIT |
 
-The two patches are small changes on top of the original programs. The
-PKGBUILDs download the original source from its authors and apply the patch
-while building. Each of those projects keeps its own license.
+The two patches were written for ZeXOS. They change the original programs,
+and each patch also contains a few unchanged lines of the original code so it
+knows where to apply. The PKGBUILDs download the original source from its
+authors and apply the patch while building. Those programs keep their own
+licenses.
 
 ## Software ZeXOS installs
 

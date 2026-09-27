@@ -77,7 +77,9 @@ if command -v zsh >/dev/null 2>&1; then
 
     if [ "$CURRENT_SHELL" != "$(command -v zsh)" ]; then
 
-        chsh -s "$(command -v zsh)"
+        # Run through sudo: plain chsh asks for your password again, and
+        # install.sh already unlocked sudo for the whole install.
+        sudo chsh -s "$(command -v zsh)" "$USER"
 
         echo -e "${GREEN}✔ Default shell changed to zsh${RESET}"
         echo -e "${CYAN}Log out and back in for the change to take effect${RESET}"

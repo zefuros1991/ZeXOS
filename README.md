@@ -19,6 +19,14 @@ What you get:
 - Everyday apps: **kitty** (terminal), **Dolphin** (files), **Gwenview** (images), **Neovim** (text), **Zen** (browser), **VLC** (media)
 - **zsh** as the login shell
 
+## Screenshots
+
+![kitty and Dolphin side by side on niri](docs/screenshots/desktop.webp)
+
+| Launcher | Control center | Overview |
+|---|---|---|
+| ![Noctalia launcher](docs/screenshots/launcher.webp) | ![Noctalia control center](docs/screenshots/control-center.webp) | ![niri overview](docs/screenshots/overview.webp) |
+
 ## Install
 
 On a fresh CachyOS install (the niri profile is the smoothest start):

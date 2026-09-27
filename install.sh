@@ -134,7 +134,14 @@ rm -rf "$tmpclone"
 echo -e "${GREEN}✔ Repository installed${RESET}"
 
 else
-echo -e "${GREEN}✔ Repository already present${RESET}"
+# Already installed: fetch the newest version so running install.sh again
+# works as an update. --ff-only refuses to touch your own local edits;
+# if you have some, the install carries on with what you have.
+if git -C "$TARGET" pull --ff-only -q; then
+    echo -e "${GREEN}✔ Repository already present, updated to the newest version${RESET}"
+else
+    echo -e "${YELLOW}Repository already present, but could not update it (local changes or no network). Using it as it is.${RESET}"
+fi
 fi
 
 # -----------------------------

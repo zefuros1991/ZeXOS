@@ -159,7 +159,11 @@ EOF
     # Give the login screen the same picture as the desktop right away.
     # Without one, Pixie shows its own default until the first wallpaper
     # change. A plain copy is enough: the default is already a JPEG.
-    if [ ! -f "$SDDM_WALLPAPER_DIR/current.jpg" ]; then
+    # Noctalia saves the wallpapers you pick in its settings.toml; if there
+    # is none there, you are still on the default, so the login screen
+    # should be too (this also fixes older installs that got Pixie's picture).
+    NOCTALIA_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/noctalia/settings.toml"
+    if [ ! -f "$SDDM_WALLPAPER_DIR/current.jpg" ] || ! grep -q '^\[wallpaper' "$NOCTALIA_STATE" 2>/dev/null; then
         if cp "$DEFAULT_WALL" "$SDDM_WALLPAPER_DIR/current.jpg"; then
             echo -e "${GREEN}✔ Login background set to $(basename "$DEFAULT_WALL")${RESET}"
         else

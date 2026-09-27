@@ -346,7 +346,6 @@ SDDM_PACMAN=(
     sddm
     qt6-declarative
     qt6-svg
-    qt6-quickcontrols2
 )
 
 install_pacman "SDDM Pixie Dependencies" "${SDDM_PACMAN[@]}"

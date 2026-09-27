@@ -99,9 +99,10 @@ trap 'kill $SUDO_KEEPALIVE_PID 2>/dev/null || true' EXIT
 MAKEPKG_CONF_ZEXOS="$(mktemp)"
 {
     cat /etc/makepkg.conf
-    cat /etc/makepkg.conf.d/*.conf 2>/dev/null
+    cat /etc/makepkg.conf.d/*.conf 2>/dev/null || true
+    # Your own makepkg.conf, if you have one (most people don't).
     cat "${XDG_CONFIG_HOME:-$HOME/.config}/pacman/makepkg.conf" 2>/dev/null \
-        || cat "$HOME/.makepkg.conf" 2>/dev/null
+        || cat "$HOME/.makepkg.conf" 2>/dev/null || true
     echo 'PACMAN_AUTH=(sudo)'
 } > "$MAKEPKG_CONF_ZEXOS"
 trap 'kill $SUDO_KEEPALIVE_PID 2>/dev/null || true; rm -f "$MAKEPKG_CONF_ZEXOS"' EXIT

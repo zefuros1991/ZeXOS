@@ -1,56 +1,73 @@
-# Noctalia v5 config — ported from the v4 settings.json (kept alongside for rollback).
-# v5 reads every *.toml in this folder; GUI changes land in
-# ~/.local/state/noctalia/settings.toml and override this file.
+# Noctalia settings (the top bar, pop-up panels, lock screen and colours).
+#
+# Noctalia reads every .toml file in this folder. Anything you change in
+# its settings window is saved to ~/.local/state/noctalia/settings.toml
+# instead, and wins over this file.
+# Lines marked "ZeXOS patch" only work with the patched build in
+# packaging/noctalia-zexos.
 
-# ── Bar: transparent strip with three islands attached to the top edge ───────────────────────
+# ═══ Top bar ════════════════════════════════════════════════════════════════
+# The bar itself is invisible. What you see are three rounded "islands"
+# (left, middle, right) hanging from the top edge of the screen.
+
 [bar.default]
 position = "top"
+start  = ["group:left"]
+center = ["group:middle"]
+end    = ["group:right"]
+
+# Size
 thickness = 36
-background_opacity = 0.0
-shadow = false
+scale = 1.25
+font_scale = 1.3
+capsule = false
+capsule_thickness = 1.0   # islands are as tall as the bar, so they touch the top (ZeXOS patch)
+
+# Spacing, in pixels
 margin_edge = 0
 margin_ends = 4
 padding = 8
 widget_spacing = 6
-font_scale = 1.3
-scale = 1.25
-capsule = false
-# Islands fill the full bar height so they touch the top edge (ZeXOS patch)
-capsule_thickness = 1.0
-start = ["group:left"]
-center = ["group:middle"]
-end = ["group:right"]
+
+# See-through bar, no shadow
+background_opacity = 0.0
+shadow = false
+
+# The three islands. They look the same; only their contents differ.
+# attached = true gives them square top corners so they hang off the edge (ZeXOS patch).
 
 [[bar.default.capsule_group]]
 id = "left"
-members = ["cpu", "temp", "ram", "arch_updates"]
+members = ["cpu", "temp", "ram", "arch_updates"]   # system load + update counter
 fill = "surface_variant"
 opacity = 0.85
-padding = 10
 radius = 13.0
-attached = true  # ZeXOS noctalia patch: square top corners, hang off the top edge
+padding = 10
 widget_spacing = 8
+attached = true
 
 [[bar.default.capsule_group]]
 id = "middle"
 members = ["active_window", "workspaces", "clock", "media"]
 fill = "surface_variant"
 opacity = 0.85
-padding = 10
 radius = 13.0
-attached = true  # ZeXOS noctalia patch: square top corners, hang off the top edge
+padding = 10
 widget_spacing = 8
+attached = true
 
 [[bar.default.capsule_group]]
 id = "right"
 members = ["tray", "usb", "bluetooth", "volume", "notifications", "battery", "brightness", "network"]
 fill = "surface_variant"
 opacity = 0.85
-padding = 10
 radius = 13.0
-attached = true  # ZeXOS noctalia patch: square top corners, hang off the top edge
+padding = 10
 widget_spacing = 8
+attached = true
 
+# ─── Widget settings ───
+# Long window and song titles get cut off at this width.
 [widget.active_window]
 type = "active_window"
 max_length = 145.0
@@ -59,26 +76,29 @@ max_length = 145.0
 type = "media"
 max_length = 145.0
 
+# Shows e.g. "14:05  Mon, Sep 27"
 [widget.clock]
 type = "clock"
 format = "{:%H:%M  %a, %b %d}"
 
+# These two come from plugins (see below).
 [widget.arch_updates]
 type = "yuuto/arch-updater:widget"
 
 [widget.usb]
 type = "aristides/udiskie:status"
 
-# ── Plugins ──────────────────────────────────────────────────────────────────
-# v4 plugins don't run on v5. arch-updater and USB (udiskie) are community
-# ports. The wallpaper picker is no longer a plugin: Mod+W opens
-# roller (see stow/roller and packaging/roller).
-[plugins]
-auto_update = "none"
-enabled = ["yuuto/arch-updater", "kenn/keybind-cheatsheet", "aristides/udiskie"]
+# ═══ Plugins ════════════════════════════════════════════════════════════════
+# arch-updater: counts waiting updates.  udiskie: USB drives.
+# keybind-cheatsheet: the Mod+F1 shortcut list.
+# (The wallpaper picker is roller, a separate app on Mod+W, not a plugin.)
 
-# Same for plugin panels. "attached" is needed: a floating centre position
-# overrides open-near-click.
+[plugins]
+enabled = ["yuuto/arch-updater", "kenn/keybind-cheatsheet", "aristides/udiskie"]
+auto_update = "none"
+
+# Plugin panels open under the widget you clicked. The USB one needs
+# "attached" for that, otherwise it always opens in the middle.
 [plugin_settings."aristides/udiskie"]
 manager_placement = "attached"
 manager_open_near_click = true
@@ -86,7 +106,10 @@ manager_open_near_click = true
 [plugin_settings."yuuto/arch-updater"]
 panel_open_near_click = true
 
-# ── Look & colours ───────────────────────────────────────────────────────────
+# ═══ Colours ════════════════════════════════════════════════════════════════
+# Dark mode, with colours picked from the wallpaper. The templates pass
+# those colours on to other apps so everything matches.
+
 [theme]
 mode = "dark"
 source = "wallpaper"
@@ -96,32 +119,38 @@ wallpaper_scheme = "faithful"
 builtin_ids = ["gtk3", "gtk4", "qt", "niri", "kitty", "btop"]
 community_ids = ["zen-browser", "fuzzel"]
 
-# Popup sizes. ui_scale enlarges every panel opened from the bar (and the
-# right-click control center), text included: 1.2 ≈ +2-3pt on every font.
-# launcher_scale is a ZeXOS patch option, multiplied on top for the launcher
-# only (1.3 / 1.2 → launcher ends up 1.3× the stock size).
+# ═══ Pop-up size ════════════════════════════════════════════════════════════
+# ui_scale makes every panel and its text bigger (1.2 = 20% bigger).
+# launcher_scale makes only the app launcher bigger again, on top of that:
+# 1.2 × 1.0833 ≈ 1.3 in total (ZeXOS patch).
+
 [accessibility]
-ui_scale       = 1.2
+ui_scale = 1.2
 launcher_scale = 1.0833
 
+# ═══ Shell behaviour ════════════════════════════════════════════════════════
+
 [shell]
-telemetry_enabled = false
-setup_wizard_enabled = false
 time_format = "{:%H:%M}"
+telemetry_enabled = false      # send nothing home
+setup_wizard_enabled = false   # skip the first-start wizard
 
-# Bar panels open under the widget you clicked (still attached to the bar),
-# instead of always at the bar's centre.
 [shell.panel]
+# Panels open under the icon you clicked instead of the middle of the bar.
 open_near_click_control_center = true
-open_near_click_wallpaper      = true
-open_near_click_session        = true
-# see-through, blurred pop-ups (Noctalia has no per-panel switch)
-transparency_mode              = "glass"
+open_near_click_wallpaper = true
+open_near_click_session = true
+# Frosted-glass look for all pop-ups.
+transparency_mode = "glass"
 
+# Apps pinned at the top of the launcher.
 [shell.launcher]
 pinned = ["kitty", "org.kde.dolphin", "zen-browser"]
 
-# Power menu: v4 had hibernate + reboot-to-UEFI, which v5 only offers as custom commands.
+# ─── Power menu (Mod+Escape) ───
+# The buttons, top to bottom. Hibernate and "Reboot to UEFI" have no
+# built-in button, so they run a command instead.
+
 [shell.session]
 show_shortcuts = true
 
@@ -144,29 +173,36 @@ action = "logout"
 
 [[shell.session.actions]]
 action = "shutdown"
-variant = "destructive"
+variant = "destructive"   # shown in red
 
 [[shell.session.actions]]
 action = "command"
 label = "Reboot to UEFI"
 command = "systemctl reboot --firmware-setup"
 
-# ── Wallpaper ────────────────────────────────────────────────────────────────
+# ═══ Wallpaper ══════════════════════════════════════════════════════════════
+
 [wallpaper]
 directory = "~/Pictures/Wallpapers"
 fill_mode = "crop"
-transition = ["fade", "disc", "stripes", "wipe", "pixelate", "honeycomb"]
-transition_duration = 1500.0
+transition_duration = 1500.0   # milliseconds
+transition = ["fade", "disc", "stripes", "wipe", "pixelate", "honeycomb"]   # one is picked at random
 
-# Blurred wallpaper behind niri's overview (needs the matching layer-rule in niri rules.kdl)
+# Every time the wallpaper changes, copy it to the login screen too.
+[hooks]
+wallpaper_changed = ["~/.local/bin/sync-sddm-wallpaper.sh"]
+
+# Blurred, tinted wallpaper behind the overview (Mod+O).
+# Needs the "noctalia-backdrop" rule in niri's rules.kdl.
 [backdrop]
 enabled = true
 blur_intensity = 0.4
 tint_intensity = 0.6
 
-# ── Misc ─────────────────────────────────────────────────────────────────────
+# ═══ Everything else ════════════════════════════════════════════════════════
+
 [location]
-auto_locate = true
+auto_locate = true   # find your town for the weather
 
 [weather]
 enabled = true
@@ -176,7 +212,7 @@ unit = "metric"
 position = "top_right"
 
 [osd]
-position = "top_right"
+position = "top_right"   # volume / brightness pop-up
 
 [dock]
 enabled = false
@@ -184,7 +220,4 @@ enabled = false
 [nightlight]
 enabled = false
 
-# idle: every behaviour is off by default (same as v4); lock-before-suspend is on by default.
-
-[hooks]
-wallpaper_changed = ["~/.local/bin/sync-sddm-wallpaper.sh"]
+# Screen dimming and auto-sleep are left at Noctalia's defaults (off).

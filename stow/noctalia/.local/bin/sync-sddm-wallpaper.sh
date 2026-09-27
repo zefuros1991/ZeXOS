@@ -1,12 +1,16 @@
 #!/bin/sh
-# Called by noctalia's wallpaper hook (v4: $1=path; v5: $NOCTALIA_WALLPAPER_PATH)
-# Mirrors the active wallpaper into the SDDM (pixie theme) login background.
+# Copy the desktop wallpaper to the login screen, so both match.
+# Noctalia runs this every time the wallpaper changes. It gives the picture
+# as the first argument (Noctalia 4) or in $NOCTALIA_WALLPAPER_PATH (Noctalia 5).
 set -eu
 
-SRC="${1:-${NOCTALIA_WALLPAPER_PATH:-}}"  # v4 passed it as $1, v5 sets NOCTALIA_WALLPAPER_PATH
-DEST="/var/lib/sddm-wallpaper/current.jpg"
+picture="${1:-${NOCTALIA_WALLPAPER_PATH:-}}"
+target="/var/lib/sddm-wallpaper/current.jpg"   # the Pixie login theme reads this
 
-[ -f "$SRC" ] || exit 0
+# Nothing to do if there's no picture.
+[ -f "$picture" ] || exit 0
 
-magick "$SRC" -resize 1920x1080^ -gravity center -extent 1920x1080 -quality 85 "$DEST.tmp"
-mv "$DEST.tmp" "$DEST"
+# Fill a 1920x1080 frame (crop the edges if needed), write to a temp file,
+# then swap it in, so the login screen never sees a half-written image.
+magick "$picture" -resize 1920x1080^ -gravity center -extent 1920x1080 -quality 85 "$target.tmp"
+mv "$target.tmp" "$target"

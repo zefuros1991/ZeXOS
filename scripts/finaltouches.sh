@@ -137,7 +137,21 @@ EOF
         echo -e "${GREEN}✔ Pointed pixie theme at $SDDM_WALLPAPER_DIR/current.jpg${RESET}"
     fi
 
-    echo -e "${CYAN}Login background updates on the next desktop wallpaper change${RESET}"
+    # Give the login screen a picture right away. Without one, Pixie shows
+    # a plain black screen until the first wallpaper change on the desktop.
+    # Use the first wallpaper in ~/Pictures/Wallpapers, or Pixie's own picture.
+    if [ ! -f "$SDDM_WALLPAPER_DIR/current.jpg" ]; then
+        first_wall=$(find "$HOME/Pictures/Wallpapers" -maxdepth 1 -type f \
+            \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) 2>/dev/null | sort | head -n 1)
+        [ -n "$first_wall" ] || first_wall="$PIXIE_THEME_DIR/assets/background.jpg"
+        if "$HOME/.local/bin/sync-sddm-wallpaper.sh" "$first_wall" && [ -f "$SDDM_WALLPAPER_DIR/current.jpg" ]; then
+            echo -e "${GREEN}✔ Login background set from $first_wall${RESET}"
+        else
+            echo -e "${RED}✖ Could not set a first login background${RESET}"
+        fi
+    fi
+
+    echo -e "${CYAN}Login background updates on every desktop wallpaper change${RESET}"
 fi
 
 # -----------------------------

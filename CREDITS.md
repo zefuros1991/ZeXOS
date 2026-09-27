@@ -45,3 +45,7 @@ qt6ct's BSD-2-Clause license).
 The patches were written for ZeXOS, but each one also quotes a few lines of
 the original code so it knows where to apply. While building, the PKGBUILDs
 download the original source from its authors and apply the patch to it.
+
+Please feel free to read the patches, PKGBUILDs and scripts before you run
+anything. They are short and plain text on purpose. Checking code before you
+run it is a good habit with any project, this one included.

@@ -92,6 +92,24 @@ sudo -v
 SUDO_KEEPALIVE_PID=$!
 trap 'kill $SUDO_KEEPALIVE_PID 2>/dev/null || true' EXIT
 
+# makepkg normally calls "sudo -k", which forgets the password on purpose
+# and asks for it again each time it installs something. This wrapper runs
+# makepkg with a copy of your normal settings plus PACMAN_AUTH=(sudo), so it
+# uses the password you already typed at the start.
+MAKEPKG_CONF_ZEXOS="$(mktemp)"
+{
+    cat /etc/makepkg.conf
+    cat /etc/makepkg.conf.d/*.conf 2>/dev/null
+    cat "${XDG_CONFIG_HOME:-$HOME/.config}/pacman/makepkg.conf" 2>/dev/null \
+        || cat "$HOME/.makepkg.conf" 2>/dev/null
+    echo 'PACMAN_AUTH=(sudo)'
+} > "$MAKEPKG_CONF_ZEXOS"
+trap 'kill $SUDO_KEEPALIVE_PID 2>/dev/null || true; rm -f "$MAKEPKG_CONF_ZEXOS"' EXIT
+
+zexos_makepkg() {
+    makepkg --config "$MAKEPKG_CONF_ZEXOS" "$@"
+}
+
 # -----------------------------
 # 0.5 SYSTEM UPGRADE
 # -----------------------------
@@ -254,7 +272,7 @@ if [ "$(pacman -Q roller 2>/dev/null | awk '{print $2}')" = "$ROLLER_WANT" ]; th
 else
     roller_build="$(mktemp -d)"
     cp "$REPO_ROOT"/packaging/roller/* "$roller_build/"
-    if (cd "$roller_build" && makepkg -si --noconfirm --needed); then
+    if (cd "$roller_build" && zexos_makepkg -si --noconfirm --needed); then
         echo -e "${GREEN}✔ roller $ROLLER_WANT installed${RESET}"
     else
         echo -e "${RED}✖ roller build failed -- Mod+W won't open a picker${RESET}"
@@ -277,7 +295,7 @@ if [ "$(pacman -Q noctalia-zexos 2>/dev/null | awk '{print $2}')" = "$NOCTALIA_W
 else
     noctalia_build="$(mktemp -d)"
     cp "$REPO_ROOT"/packaging/noctalia-zexos/* "$noctalia_build/"
-    if (cd "$noctalia_build" && makepkg -s --noconfirm --needed); then
+    if (cd "$noctalia_build" && zexos_makepkg -s --noconfirm --needed); then
         # --noconfirm answers "no" to the conflict prompt, so drop stock first
         pacman -Q noctalia >/dev/null 2>&1 && sudo pacman -Rdd --noconfirm noctalia
         sudo pacman -U --noconfirm "$noctalia_build"/noctalia-zexos-*.pkg.tar.zst
@@ -328,7 +346,7 @@ install_local() {
     local build
     build="$(mktemp -d)"
     cp "$REPO_ROOT/packaging/$dir"/* "$build/"
-    if (cd "$build" && makepkg -si --noconfirm --needed); then
+    if (cd "$build" && zexos_makepkg -si --noconfirm --needed); then
         echo -e "${GREEN}✔ $pkg $want installed${RESET}"
     else
         echo -e "${RED}✖ $pkg build failed${RESET}"

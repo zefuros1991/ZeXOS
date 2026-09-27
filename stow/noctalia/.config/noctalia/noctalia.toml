@@ -188,6 +188,12 @@ fill_mode = "crop"
 transition_duration = 1500.0   # milliseconds
 transition = ["fade", "disc", "stripes", "wipe", "pixelate", "honeycomb"]   # one is picked at random
 
+# The wallpaper you start with (the one in the README). finaltouches.sh
+# copies the ZeXOS set from wallpapers/ into ~/Pictures/Wallpapers.
+# Picking another one (Mod+W) is saved separately and wins over this.
+[wallpaper.default]
+path = "~/Pictures/Wallpapers/zexos-aurora.jpg"
+
 # Every time the wallpaper changes, copy it to the login screen too.
 [hooks]
 wallpaper_changed = ["~/.local/bin/sync-sddm-wallpaper.sh"]

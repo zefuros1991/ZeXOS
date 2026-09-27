@@ -1,0 +1,15 @@
+// Add lines like this to spawn processes at startup.
+// Note that running niri as a session supports xdg-desktop-autostart,
+// which may be more convenient to use.
+// See the binds section below for more spawn examples.
+
+hotkey-overlay {
+    // Uncomment this line to disable the "Important Hotkeys" pop-up at startup.
+    skip-at-startup
+}
+
+// This line starts programs.
+spawn-at-startup "noctalia"
+spawn-at-startup "/usr/lib/polkit-kde-authentication-agent-1"
+
+

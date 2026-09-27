@@ -1,0 +1,86 @@
+// Window rules let you adjust behavior for individual windows.
+// Find more information on the wiki:
+// https://yalter.github.io/niri/Configuration:-Window-Rules
+
+// Work around WezTerm's initial configure bug
+// by setting an empty default-column-width.
+window-rule {
+    // This regular expression is intentionally made as specific as possible,
+    // since this is the default config, and we want no false positives.
+    // You can get away with just app-id="wezterm" if you want.
+    match app-id=r"^org.wezfurlong.wezterm$"
+    default-column-width 
+}
+
+// Example: enable rounded corners for all windows.
+// (This example rule is commented out with a "/-" in front.)
+window-rule {
+    geometry-corner-radius 14
+    clip-to-geometry true
+}
+
+// Dim all unfocused windows
+window-rule {
+    match is-focused=false
+    opacity 0.86
+}
+
+// Noctalia v5: blurred wallpaper behind the overview ([backdrop] in noctalia.toml)
+layer-rule {
+  match namespace="^noctalia-backdrop"
+  place-within-backdrop true
+}
+
+// Noctalia v5: blur behind panels, notifications, dock, OSD.
+// xray off = blur what's actually underneath, not just the wallpaper.
+// (docs: noctalia compositor-settings/niri)
+layer-rule {
+  match namespace="^noctalia-(notification|dock|panel|attached-panel|osd)$"
+  background-effect {
+    xray false
+  }
+}
+
+// No blur on the bar: the bar is one see-through strip holding three
+// islands, and blurring it smears the gaps between them (breaks the look).
+layer-rule {
+  match namespace="^noctalia-bar-"
+  background-effect {
+    blur false
+  }
+}
+
+// Noctalia's window switcher doesn't request blur itself
+layer-rule {
+  match namespace="^noctalia-window-switcher"
+  background-effect {
+    blur true
+    xray false
+  }
+}
+
+// Noctalia v5 settings window floats, with blur behind it
+window-rule {
+  match app-id="dev.noctalia.Noctalia"
+  open-floating true
+  background-effect {
+    blur true
+    xray false
+  }
+}
+
+debug {
+  // Allows notification actions and window activation from Noctalia.
+  honor-xdg-activation-with-invalid-serial
+  // Multi-GPU laptops: pin niri to the iGPU so the dGPU can sleep, e.g.
+  // render-drm-device "/dev/dri/by-path/pci-XXXX:XX:XX.X-render"
+}
+
+// Enable blur behind Applications.
+window-rule {
+    match app-id="^(kitty|zen|vlc|org.kde.dolphin)$"
+
+    background-effect {
+        blur true
+    }
+}

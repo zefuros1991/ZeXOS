@@ -1,0 +1,58 @@
+# ZeXOS build of Noctalia: the official Arch PKGBUILD plus one small patch
+# (zexos.patch) that adds two config options:
+#  - `attached = true` on [[bar.*.capsule_group]]: the island gets square
+#    corners on the screen-edge side (hangs off the top like a tab) while its
+#    bottom corners stay rounded.
+#  - `[accessibility] launcher_scale`: an extra size multiplier for the app
+#    launcher only, on top of ui_scale.
+# Separate pkgname so a normal repo update can't silently replace it; bump
+# pkgver (and re-check the patch applies) when upstream releases.
+# Base: https://gitlab.archlinux.org/archlinux/packaging/packages/noctalia
+
+_pkgname=noctalia
+pkgname=noctalia-zexos
+pkgver=5.1.0
+pkgrel=2
+pkgdesc='A sleek, customizable desktop shell crafted for Wayland'
+arch=('x86_64' 'aarch64')
+url='https://github.com/noctalia-dev/noctalia'
+license=('MIT')
+provides=("noctalia=${pkgver}")
+conflicts=('noctalia')
+depends=(
+  'bash' 'cairo' 'curl' 'fontconfig' 'freetype2' 'git' 'glib2' 'glibc'
+  'harfbuzz' 'hicolor-icon-theme' 'jemalloc' 'libgcc' 'libglvnd' 'libical'
+  'libjxl' 'libpipewire' 'libqalculate' 'librsvg' 'libsecret' 'libsndfile'
+  'libsodium' 'libstdc++' 'libwebp' 'libwireplumber' 'libxkbcommon' 'libxml2'
+  'md4c' 'pam' 'polkit' 'pango' 'sdbus-cpp' 'tomlplusplus' 'wayland'
+)
+optdepends=(
+  'ddcutil: monitor brightness control'
+  'power-profiles-daemon: power profile management'
+  'upower: battery and power device integration'
+)
+makedepends=('meson' 'ninja' 'nlohmann-json' 'pkgconf' 'stb' 'wayland-protocols')
+source=("${_pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver//_/-}.tar.gz"
+        'zexos.patch')
+sha256sums=('fcf37d99ecb6093b38df8f0d6a18012f518895cd8d3934fd16164a7d0b7b3062'
+            '9b0805f6db2d73dac368ccbc94869e36a94983612e7b27c1edb6c4b652cddc43')
+
+prepare() {
+  cd "${_pkgname}-${pkgver//_/-}"
+  patch -Np1 -i ../zexos.patch
+}
+
+build() {
+  CXXFLAGS+=" -Wno-unused-result"
+  arch-meson "${_pkgname}-${pkgver//_/-}" build-release \
+    -Db_ndebug=true \
+    -Dtests=disabled
+  meson compile -C build-release
+}
+
+package() {
+  meson install -C build-release --destdir "${pkgdir}"
+
+  install -Dm644 "${_pkgname}-${pkgver//_/-}/LICENSE" "${pkgdir}/usr/share/licenses/${pkgname}/LICENSE"
+  install -Dm644 "${_pkgname}-${pkgver//_/-}/README.md" "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+}

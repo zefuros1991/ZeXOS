@@ -1,0 +1,132 @@
+diff --git a/src/config/config_overrides.cpp b/src/config/config_overrides.cpp
+index 10d03c11e..f3d7083ba 100644
+--- a/src/config/config_overrides.cpp
++++ b/src/config/config_overrides.cpp
+@@ -557,6 +557,9 @@ namespace {
+               row.insert_or_assign(
+                   "accordion_direction", std::string(enumToKey(kBarAccordionDirections, item.accordionDirection))
+               );
++              if (item.attached) {
++                row.insert_or_assign("attached", true);
++              }
+               if (item.widgetSpacing.has_value()) {
+                 row.insert_or_assign("widget_spacing", static_cast<std::int64_t>(*item.widgetSpacing));
+               }
+diff --git a/src/config/config_types.cpp b/src/config/config_types.cpp
+index 2578eace7..955e69a3e 100644
+--- a/src/config/config_types.cpp
++++ b/src/config/config_types.cpp
+@@ -495,6 +495,7 @@ WidgetBarCapsuleSpec capsuleSpecFromGroup(const BarConfig& bar, const BarCapsule
+   spec.opacity = group.opacity;
+   spec.accordion = group.accordion;
+   spec.accordionDirection = group.accordionDirection;
++  spec.attached = group.attached;
+   spec.widgetSpacing =
+       group.widgetSpacing.has_value() ? std::optional<float>{static_cast<float>(*group.widgetSpacing)} : std::nullopt;
+   spec.hoverHighlight = bar.hoverHighlight;
+diff --git a/src/config/config_types.h b/src/config/config_types.h
+index 70b2dce0f..83a278dd6 100644
+--- a/src/config/config_types.h
++++ b/src/config/config_types.h
+@@ -42,6 +42,8 @@ struct BarCapsuleGroupStyle {
+   // Collapse the group to its first member; hovering the capsule reveals the rest inline.
+   bool accordion = false;
+   BarAccordionDirection accordionDirection = BarAccordionDirection::End;
++  // Square off the corners facing the bar's screen edge so the capsule reads as attached to it.
++  bool attached = false;
+   // Gap between members inside the capsule, in logical pixels; unset inherits the bar's widget_spacing.
+   std::optional<std::int32_t> widgetSpacing;
+ 
+@@ -385,6 +387,8 @@ struct WidgetBarCapsuleSpec {
+   BarAccordionDirection accordionDirection = BarAccordionDirection::End;
+   // Gap between group members; unset inherits the bar's widget_spacing. Meaningless for single widgets.
+   std::optional<float> widgetSpacing;
++  // Capsule groups only: square corners on the screen-edge side (see BarCapsuleGroupStyle::attached).
++  bool attached = false;
+ 
+   bool operator==(const WidgetBarCapsuleSpec&) const = default;
+ };
+@@ -1655,6 +1659,7 @@ struct PluginsConfig {
+ 
+ struct AccessibilityConfig {
+   float uiScale = 1.0F;
++  float launcherScale = 1.0F; // ZeXOS patch: extra multiplier for the launcher only
+   bool highContrast = false;
+   bool operator==(const AccessibilityConfig&) const = default;
+ };
+diff --git a/src/config/schema/config_schema.cpp b/src/config/schema/config_schema.cpp
+index d5e35caf6..c4933a50e 100644
+--- a/src/config/schema/config_schema.cpp
++++ b/src/config/schema/config_schema.cpp
+@@ -2149,6 +2149,7 @@ namespace noctalia::config::schema {
+           field(&BarCapsuleGroupStyle::opacity, "opacity", kBarOpacityRange),
+           field(&BarCapsuleGroupStyle::accordion, "accordion"),
+           enumField(&BarCapsuleGroupStyle::accordionDirection, "accordion_direction", kBarAccordionDirections),
++          field(&BarCapsuleGroupStyle::attached, "attached"),
+           optionalIntField(&BarCapsuleGroupStyle::widgetSpacing, "widget_spacing"),
+       };
+       return s;
+@@ -2357,6 +2358,7 @@ namespace noctalia::config::schema {
+   const Schema<AccessibilityConfig>& accessibilitySchema() {
+     static const Schema<AccessibilityConfig> s = {
+         field(&AccessibilityConfig::uiScale, "ui_scale", kScaleRange),
++        field(&AccessibilityConfig::launcherScale, "launcher_scale", kScaleRange),
+         field(&AccessibilityConfig::highContrast, "high_contrast"),
+     };
+     return s;
+diff --git a/src/shell/bar/bar.cpp b/src/shell/bar/bar.cpp
+index 5fe61b9af..449cce9cf 100644
+--- a/src/shell/bar/bar.cpp
++++ b/src/shell/bar/bar.cpp
+@@ -987,6 +987,7 @@ namespace {
+     layoutWidgets(instance.endWidgets);
+ 
+     auto finalizeCapsules = [isVertical, capsuleCross, widgetHoverPadding = instance.barConfig.widgetCapsulePadding,
++                             barPosition = instance.barConfig.position,
+                              &renderer](std::vector<BarCapsuleRun>& runs) {
+       for (auto& run : runs) {
+         Node* shell = run.shell;
+@@ -1109,7 +1110,23 @@ namespace {
+         const Widget* radiusSource = !run.widgets.empty() ? run.widgets.front() : nullptr;
+         const float capsuleRadius = radiusSource != nullptr ? radiusSource->resolvedBarCapsuleRadius(shellW, shellH)
+                                                             : std::max(0.0F, std::min(shellW, shellH) * 0.5F);
+-        bg->setRadius(capsuleRadius);
++        if (run.spec.attached) {
++          // Attached group: square the two corners on the screen-edge side, keep the inner ones rounded.
++          const float r = capsuleRadius;
++          Radii radii{r, r, r, r};
++          if (barPosition == "bottom") {
++            radii.bl = radii.br = 0.0F;
++          } else if (barPosition == "left") {
++            radii.tl = radii.bl = 0.0F;
++          } else if (barPosition == "right") {
++            radii.tr = radii.br = 0.0F;
++          } else {
++            radii.tl = radii.tr = 0.0F;
++          }
++          bg->setRadii(radii);
++        } else {
++          bg->setRadius(capsuleRadius);
++        }
+         if (run.container == nullptr) {
+           placeCapsuleHoverBoxes(
+               run, isVertical, shellW, shellH, contentX, contentY, capsuleRadius, widgetHoverPadding
+diff --git a/src/shell/panel/panel_manager.cpp b/src/shell/panel/panel_manager.cpp
+index 72c65b879..dd0515e8f 100644
+--- a/src/shell/panel/panel_manager.cpp
++++ b/src/shell/panel/panel_manager.cpp
+@@ -589,7 +589,13 @@ void PanelManager::openPanel(const std::string& panelId, PanelOpenRequest reques
+ 
+   m_activePanel = it->second.get();
+   m_activePanelId = panelId;
+-  m_activePanel->setContentScale(shell::panel_surface::contentScale(m_config));
++  {
++    float scale = shell::panel_surface::contentScale(m_config);
++    if (panelId == "launcher" && m_config != nullptr) {
++      scale *= std::max(0.1F, m_config->config().accessibility.launcherScale);
++    }
++    m_activePanel->setContentScale(scale);
++  }
+   m_pendingOpenContext = std::string(request.context);
+   m_activePanel->setPendingOpenContext(request.context);
+ 

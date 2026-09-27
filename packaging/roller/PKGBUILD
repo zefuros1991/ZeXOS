@@ -1,0 +1,47 @@
+# ZeXOS build of roller (https://github.com/zyrophix/roller), the coverflow
+# wallpaper picker bound to Mod+W. Upstream ships no AUR package, only an
+# in-tree PKGBUILD; this is that file pinned to a known-good commit plus our
+# patch:
+#   - mouse wheel moves one card per notch (upstream's tile MouseAreas ate
+#     the wheel, so scrolling did nothing)
+#   - the picker uses 65% of the screen width and scales with panel_height
+# Built by scripts/packages.sh with `makepkg -si`.
+
+pkgname=roller
+_commit=184debe0f6a7dbf077259f8a5d68f0f798cb0ad1
+pkgver=0.1.0.r4.g184debe
+pkgrel=2
+pkgdesc='Coverflow wallpaper picker for wlr-layer-shell desktops (ZeXOS patched)'
+arch=('x86_64')
+url="https://github.com/zyrophix/roller"
+license=('MIT')
+source=("roller::git+${url}.git#commit=${_commit}"
+        'zexos-wheel-and-size.patch')
+b2sums=('SKIP'
+        'SKIP')
+
+# layer-shell-qt is a hard runtime need: the build succeeds without it but the
+# binary then refuses to start.
+depends=('qt6-base' 'qt6-declarative' 'layer-shell-qt')
+makedepends=('git' 'cmake' 'gcc')
+
+prepare() {
+    cd "$srcdir/roller"
+    git apply "$srcdir/zexos-wheel-and-size.patch"
+}
+
+build() {
+    cmake -B build -S "$srcdir/roller" \
+        -DCMAKE_BUILD_TYPE=None \
+        -DCMAKE_INSTALL_PREFIX=/usr \
+        -DBUILD_TESTING=ON
+    cmake --build build
+}
+
+check() {
+    ctest --test-dir build --output-on-failure
+}
+
+package() {
+    DESTDIR="$pkgdir" cmake --install build
+}

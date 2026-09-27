@@ -1,0 +1,5 @@
+#!/bin/sh
+# Stand-in for waypaper: roller calls `waypaper --wallpaper <path>`,
+# we hand the path to Noctalia so its colours follow the wallpaper.
+[ "$1" = "--wallpaper" ] && exec noctalia msg wallpaper-set "$2"
+exit 1

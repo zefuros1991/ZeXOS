@@ -1,0 +1,81 @@
+# caches and runtime data (ignore noisy runtime junk)
+.cache/
+.local/cache/
+.local/state/
+.var/
+
+# OS junk
+*.log
+*.tmp
+*.bak
+*.swp
+
+# system artifacts
+.Trash-*
+.nvidia*
+.pulse-cookie
+.Xauthority
+
+# Zsh runtime artifacts (IMPORTANT)
+.zcompdump*
+
+**/vscode/**/globalStorage/
+.vscode/
+**/globalStorage/
+**/cache/
+
+# stow-adopt backups and stray root symlink — machine-local, never commit
+backup/
+/.config
+
+# Electron / Chromium app DATA (cookies, session tokens, caches) — config only in git!
+**/Cache/
+**/CachedData/
+**/CachedProfilesData/
+**/Code Cache/
+**/GPUCache/
+**/DawnGraphiteCache/
+**/DawnWebGPUCache/
+**/blob_storage/
+**/Session Storage/
+**/Local Storage/
+**/IndexedDB/
+**/databases/
+**/Service Worker/
+**/Crashpad/
+**/Dictionaries/
+**/component_crx_cache/
+**/Cookies*
+**/Network Persistent State*
+**/TransportSecurity*
+**/Trust Tokens*
+**/SharedStorage*
+**/sessionData/
+**/Singleton*
+
+# VSCode/VSCodium: keep settings.json/keybindings/snippets, drop state DBs & history
+**/workspaceStorage/
+**/History/
+**/Backups/
+**/logs/
+**/*.vscdb
+**/*.vscdb.backup
+
+# more Electron/VSCodium data-not-config
+**/CachedExtensionVSIXs/
+**/Shared Dictionary/
+**/DIPS
+**/Preferences
+**/WebStorage/
+**/languagepacks.json
+
+# telemetry state
+**/go/telemetry/
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
+# graft's per-machine Claude Code wiring for this repo (hooks, MCP entry, search
+# re-include). Recreated by `graft init`; not part of the dotfiles.
+/.claude/
+/.mcp.json
+/.ignore

@@ -145,7 +145,7 @@ transparency_mode = "glass"
 
 # Apps pinned at the top of the launcher.
 [shell.launcher]
-pinned = ["kitty", "org.kde.dolphin", "zen-browser"]
+pinned = ["kitty", "org.kde.dolphin", "zen"]
 
 # ─── Power menu (Mod+Escape) ───
 # The buttons, top to bottom. Hibernate and "Reboot to UEFI" have no

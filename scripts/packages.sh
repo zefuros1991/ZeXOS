@@ -308,19 +308,16 @@ else
 fi
 
 # -----------------------------
-# ZEN BROWSER INSTALL
+# ZEN BROWSER
 # -----------------------------
-echo -e "\n${YELLOW}[CUSTOM] Zen Browser${RESET}"
-
-# The installer this script calls actually names its binary "zen" (found at
-# /opt/zen/zen, symlinked to /usr/local/bin/zen), never "zen-browser" — the
-# old check here never matched, so this curl-pipe-to-bash installer used to
-# re-run on every single invocation of this script even when Zen was
-# already installed.
-if command -v zen >/dev/null 2>&1 || [ -x /opt/zen/zen ]; then
-    echo -e "${GREEN}✔ Zen Browser already installed${RESET}"
+# Comes from the CachyOS repo (zen-browser-bin), a repack of Zen's official
+# release. pacman installs and updates it like everything else, with no
+# third-party install script and no "are you sure?" questions.
+if pacman -Si zen-browser-bin &>/dev/null; then
+    install_pacman "Web browser (Zen)" zen-browser-bin
 else
-    bash <(curl -fsSL https://raw.githubusercontent.com/MalikHw/zb-installer-script/main/install-zen.sh)
+    echo -e "${RED}✖ zen-browser-bin is not in your repos (not CachyOS?) -- skipping Zen${RESET}"
+    echo -e "${CYAN}  Get it from https://zen-browser.app/download${RESET}"
 fi
 
 # =========================================================

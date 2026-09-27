@@ -298,7 +298,7 @@ else
     cp "$REPO_ROOT"/packaging/noctalia-zexos/* "$noctalia_build/"
     if (cd "$noctalia_build" && zexos_makepkg -s --noconfirm --needed); then
         # --noconfirm answers "no" to the conflict prompt, so drop stock first
-        pacman -Q noctalia >/dev/null 2>&1 && sudo pacman -Rdd --noconfirm noctalia
+        [ "$(pacman -Qq noctalia 2>/dev/null)" = "noctalia" ] && sudo pacman -Rdd --noconfirm noctalia
         sudo pacman -U --noconfirm "$noctalia_build"/noctalia-zexos-*.pkg.tar.zst
         echo -e "${GREEN}✔ noctalia-zexos $NOCTALIA_WANT installed${RESET}"
     else
@@ -353,7 +353,7 @@ install_local() {
 }
 
 # Mouse pointer (Bibata Modern Ice). Replaces the old AUR package if present.
-if pacman -Q bibata-cursor-theme &>/dev/null; then
+if [ "$(pacman -Qq bibata-cursor-theme 2>/dev/null)" = "bibata-cursor-theme" ]; then
     sudo pacman -Rdd --noconfirm bibata-cursor-theme
 fi
 install_local "Mouse pointer (Bibata)" bibata-cursor-zexos
@@ -364,7 +364,7 @@ install_local "Mouse pointer (Bibata)" bibata-cursor-zexos
 # The theme's own package pulls in sddm and the Qt parts it needs.
 # If the old AUR version is installed, swap it out first (--noconfirm
 # would otherwise say "no" to replacing it).
-if pacman -Q pixie-sddm-git &>/dev/null; then
+if [ "$(pacman -Qq pixie-sddm-git 2>/dev/null)" = "pixie-sddm-git" ]; then
     sudo pacman -Rdd --noconfirm pixie-sddm-git
 fi
 install_local "Login screen theme (Pixie)" pixie-sddm-zexos
@@ -419,7 +419,9 @@ fi
 # Plain qt6ct can't pass the colour scheme to KDE apps outside Plasma, so
 # they stay bright white. This patched build can (see packaging/qt6ct-kde).
 # It replaces plain qt6ct, so remove that first if something installed it.
-if pacman -Q qt6ct &>/dev/null; then
+# `pacman -Q qt6ct` also answers "qt6ct-kde" (it stands in for qt6ct), so
+# check the exact name, or a second run tries to remove a missing package.
+if [ "$(pacman -Qq qt6ct 2>/dev/null)" = "qt6ct" ]; then
     echo -e "${YELLOW}⚠ Removing plain qt6ct -- it clashes with qt6ct-kde${RESET}"
     sudo pacman -Rdd --noconfirm qt6ct
 fi

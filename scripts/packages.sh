@@ -427,6 +427,20 @@ if [ "$(pacman -Qq qt6ct 2>/dev/null)" = "qt6ct" ]; then
 fi
 install_local "Qt settings for KDE apps (qt6ct-kde)" qt6ct-kde
 
+# Qt updates can break qt6ct-kde, and pacman won't rebuild it for us (it
+# isn't in any repo). This pacman hook rebuilds it in the background after
+# every Qt update. See system/qt6ct-rebuild/.
+if [ "$(pacman -Qq qt6ct-kde 2>/dev/null)" = "qt6ct-kde" ]; then
+    rebuild_src="$REPO_ROOT/system/qt6ct-rebuild"
+    sudo install -Dm755 "$rebuild_src/zexos-qt6ct-rebuild" /usr/local/lib/zexos/zexos-qt6ct-rebuild
+    sudo install -Dm644 "$rebuild_src/zexos-qt6ct-rebuild.service" /etc/systemd/system/zexos-qt6ct-rebuild.service
+    sudo install -Dm644 "$rebuild_src/zexos-qt6ct-rebuild.hook" /etc/pacman.d/hooks/zexos-qt6ct-rebuild.hook
+    sudo install -d /etc/zexos
+    printf 'ZEXOS_USER=%q\nZEXOS_REPO=%q\n' "$USER" "$REPO_ROOT" | sudo tee /etc/zexos/qt6ct-rebuild.conf >/dev/null
+    sudo systemctl daemon-reload
+    echo -e "${GREEN}✔ qt6ct-kde will rebuild itself after Qt updates${RESET}"
+fi
+
 # =========================================================
 # 3. FLATPAK / FLATHUB
 # =========================================================

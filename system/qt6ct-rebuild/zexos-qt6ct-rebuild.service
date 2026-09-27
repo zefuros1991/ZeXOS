@@ -1,0 +1,11 @@
+# Started by zexos-qt6ct-rebuild.hook after a Qt update.
+# See what it did with: journalctl -u zexos-qt6ct-rebuild
+
+[Unit]
+Description=Rebuild qt6ct-kde for the new Qt version (ZeXOS)
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/lib/zexos/zexos-qt6ct-rebuild

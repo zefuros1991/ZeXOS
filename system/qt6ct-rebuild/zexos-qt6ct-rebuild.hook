@@ -1,0 +1,16 @@
+# qt6ct-kde uses parts of Qt that change between Qt versions, so a Qt
+# update can leave it broken (KDE apps lose the dark theme). After every
+# Qt update this starts zexos-qt6ct-rebuild.service, which rebuilds it.
+# The hook can't build it itself: pacman is still running at this point.
+# Installed to /etc/pacman.d/hooks/ by scripts/packages.sh.
+
+[Trigger]
+Operation = Upgrade
+Type = Package
+Target = qt6-base
+
+[Action]
+Description = Rebuilding qt6ct-kde for the new Qt in the background (ZeXOS)...
+When = PostTransaction
+Depends = qt6ct-kde
+Exec = /usr/bin/systemctl start --no-block zexos-qt6ct-rebuild.service

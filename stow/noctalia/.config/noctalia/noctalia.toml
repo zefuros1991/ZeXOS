@@ -196,9 +196,10 @@ transition = ["fade", "disc", "stripes", "wipe", "pixelate", "honeycomb"]   # on
 [wallpaper.default]
 path = "~/Pictures/Wallpapers/zexos-aurora.jpg"
 
-# Every time the wallpaper changes, copy it to the login screen too.
+# Every time the wallpaper changes, copy it to the login screen too, and
+# switch to light mode if the new wallpaper is mostly white (dark otherwise).
 [hooks]
-wallpaper_changed = ["~/.local/bin/sync-sddm-wallpaper.sh"]
+wallpaper_changed = ["~/.local/bin/sync-sddm-wallpaper.sh", "~/.local/bin/auto-theme-mode.sh"]
 
 # Blurred, tinted wallpaper behind the overview (Mod+O).
 # Needs the "noctalia-backdrop" rule in niri's rules.kdl.

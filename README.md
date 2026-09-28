@@ -7,7 +7,7 @@
 
 # ZeXOS
 
-ZeXOS is a ready-to-use desktop for CachyOS and other Arch-based systems, built on the [niri](https://github.com/YaLTeR/niri) scrolling window manager and the [Noctalia](https://noctalia.dev) shell. One script installs the packages and puts the config files in place, so a fresh install becomes a complete, themed daily desktop.
+ZeXOS is a ready-to-use desktop for CachyOS, built on the [niri](https://github.com/YaLTeR/niri) scrolling window manager and the [Noctalia](https://noctalia.dev) shell. One script installs the packages and puts the config files in place, so a fresh install becomes a complete, themed daily desktop.
 
 What you get:
 
@@ -35,7 +35,9 @@ The whole desktop takes its colours from the wallpaper, so every screenshot belo
 
 ## Install
 
-On CachyOS or another Arch-based system. It works out of the box on a fresh CachyOS install, and it doesn't matter which desktop you picked when installing (KDE, GNOME, niri or none): ZeXOS adds what's missing, and your old desktop stays available in the login screen's session list.
+On CachyOS. It works out of the box on a fresh CachyOS install, and it doesn't matter which desktop you picked when installing (KDE, GNOME, niri or none): ZeXOS adds what's missing, and your old desktop stays available in the login screen's session list.
+
+Support for plain Arch Linux and other Arch-based distros that use Arch's own repos (such as EndeavourOS) is being worked on and not tested yet. Manjaro (its own delayed repos) and Artix (no systemd) are not planned.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zefuros1991/ZeXOS/main/install.sh -o /tmp/zexos-install.sh; bash /tmp/zexos-install.sh; rm -f /tmp/zexos-install.sh

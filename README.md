@@ -35,7 +35,7 @@ The whole desktop takes its colours from the wallpaper, so every screenshot belo
 
 ## Install
 
-On CachyOS or another Arch-based system. It doesn't matter which desktop you picked when installing (KDE, GNOME, niri or none): ZeXOS adds what's missing, and your old desktop stays available in the login screen's session list.
+On CachyOS or another Arch-based system. It works out of the box on a fresh CachyOS install, and it doesn't matter which desktop you picked when installing (KDE, GNOME, niri or none): ZeXOS adds what's missing, and your old desktop stays available in the login screen's session list.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zefuros1991/ZeXOS/main/install.sh -o /tmp/zexos-install.sh; bash /tmp/zexos-install.sh; rm -f /tmp/zexos-install.sh

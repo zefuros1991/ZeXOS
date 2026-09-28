@@ -72,6 +72,7 @@ Each script writes a log next to itself (`bootstrap.log`, `packages.log`, …). 
 | `Mod+B` | Browser (Zen) |
 | `Mod+E` | Files (Dolphin) |
 | `Mod+W` | Wallpaper picker (roller) |
+| `Mod+M` | Install and update apps (Shelly) |
 | `Mod+Ctrl+W` | Random wallpaper |
 | `Mod+L` | Lock screen |
 | `Mod+Escape` | Power menu |

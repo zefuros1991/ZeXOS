@@ -31,3 +31,6 @@ backup/
 # adw-gtk3 theme, which stow refuses to deploy)
 stow/theme/.config/gtk-4.0/assets
 stow/theme/.config/gtk-4.0/gtk-dark.css
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/

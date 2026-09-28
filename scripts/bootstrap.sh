@@ -104,8 +104,8 @@ trap 'kill $SUDO_KEEPALIVE_PID 2>/dev/null || true' EXIT
 # -----------------------------
 # Many common Arch apps you may add on top of ZeXOS (games, Wine, some
 # drivers) need 32-bit (lib32-*) packages, which only exist in the multilib
-# repo. CachyOS's own niri/noctalia install profile enables this by default,
-# but that's not guaranteed on every profile/distro. Checking pacman.conf directly (not `pacman -Sl
+# repo. CachyOS and EndeavourOS turn it on by default; plain Arch ships it
+# switched off (commented out in pacman.conf). Checking pacman.conf directly (not `pacman -Sl
 # multilib`, which needs the repo already synced to answer) and enabling it
 # before the first sync below if needed. Idempotent: no-op if already on.
 echo -e "\n${YELLOW}==> [0/4] MULTILIB REPOSITORY${RESET}"

@@ -9,7 +9,7 @@ not exist without them. Thank you.
 
 | Project | What it does in ZeXOS |
 |---|---|
-| [CachyOS](https://cachyos.org) | The Linux system underneath (based on [Arch Linux](https://archlinux.org)) |
+| [CachyOS](https://cachyos.org) and [Arch Linux](https://archlinux.org) | The Linux system underneath, and the repos almost every package comes from |
 | [niri](https://github.com/YaLTeR/niri) by Ivan Molodetskikh | The window manager: scrolling columns of windows |
 | [Noctalia](https://github.com/noctalia-dev/noctalia) | The shell: top bar, launcher, notifications, lock screen, colours from the wallpaper |
 | [roller](https://github.com/zyrophix/roller) by zyrophix | The wallpaper picker (Mod+W) |
@@ -17,7 +17,8 @@ not exist without them. Thank you.
 | [fuzzel](https://codeberg.org/dnkl/fuzzel) | Small app launcher and picker menus |
 | [Dolphin](https://apps.kde.org/dolphin/) | File manager |
 | [Zen Browser](https://zen-browser.app) | Web browser |
-| [Shelly](https://github.com/Seafoam-Labs/Shelly-ALPM) | App store for installing and updating software (Mod+M) |
+| [Shelly](https://github.com/Seafoam-Labs/Shelly-ALPM) | App store for installing and updating software (Mod+M, CachyOS) |
+| [Discover](https://apps.kde.org/discover/) | The same job as Shelly on other Arch-based distros |
 | [Powerlevel10k](https://github.com/romkatv/powerlevel10k) | The terminal prompt |
 | [Pixie](https://github.com/xCaptaiN09/pixie-sddm) by xCaptaiN09 | The login screen theme |
 | [qt6ct](https://www.opencode.net/trialuser/qt6ct) by Ilya Kotov | Lets Qt and KDE apps follow the dark theme |
@@ -34,7 +35,8 @@ license.
 
 These are the only files in this repo with someone else's code inside them.
 They keep their original license (MIT, except the qt6ct patches, which follow
-qt6ct's BSD-2-Clause license).
+qt6ct's BSD-2-Clause license, and the recipes taken from Arch and the AUR,
+which follow those projects' 0BSD packaging license).
 
 | File | What it is | Original project |
 |---|---|---|
@@ -42,6 +44,8 @@ qt6ct's BSD-2-Clause license).
 | `packaging/roller/zexos-wheel-and-size.patch` | ZeXOS changes to roller | [roller](https://github.com/zyrophix/roller), zyrophix |
 | `packaging/qt6ct-kde/zexos-live-colors.patch` | ZeXOS change to qt6ct so open apps pick up new colours | [qt6ct](https://www.opencode.net/trialuser/qt6ct), Ilya Kotov |
 | `packaging/qt6ct-kde/qt6ct-shenanigans.patch` | Lets qt6ct pass colours to KDE apps (copied unchanged) | [qt6ct-kde](https://aur.archlinux.org/packages/qt6ct-kde) recipe by Antonio Rojas, for [qt6ct](https://www.opencode.net/trialuser/qt6ct) by Ilya Kotov |
+| `packaging/zsh-theme-powerlevel10k-zexos/PKGBUILD` | Builds Powerlevel10k on distros without it in their repos (only the package name changed) | Arch Linux's former [zsh-theme-powerlevel10k](https://gitlab.archlinux.org/archlinux/packaging/packages/zsh-theme-powerlevel10k) recipe, Christian Rebischke and contributors |
+| `packaging/zen-browser-zexos/` (`zen-browser.sh`, `zen.desktop`, `policies.json`) | Launcher, menu entry and update setting for Zen on distros without it in their repos (copied unchanged; the PKGBUILD is based on theirs) | [zen-browser-bin](https://aur.archlinux.org/packages/zen-browser-bin) recipe, Luis Vervaet, Peter Jung and contributors |
 | `stow/zsh/.config/zsh/.p10k.zsh` | Prompt settings made with the Powerlevel10k setup wizard | [Powerlevel10k](https://github.com/romkatv/powerlevel10k), Roman Perepelitsa |
 
 The patches were written for ZeXOS, but each one also quotes a few lines of

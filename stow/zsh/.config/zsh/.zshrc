@@ -26,8 +26,33 @@ export ZSH_COMPDUMP="$XDG_CACHE_HOME/zsh/zcompdump-$ZSH_VERSION"    # tab-comple
 
 # ── 4. CachyOS defaults ────────────────────────────────
 # Plugins, aliases and tab completion that come with CachyOS.
+# Other Arch-based systems don't have that package, so the same plugins
+# are loaded one by one instead (the installer puts them there).
 cachyos_zsh=/usr/share/cachyos-zsh-config/cachyos-config.zsh
-[[ -r $cachyos_zsh ]] && source "$cachyos_zsh"
+if [[ -r $cachyos_zsh ]]; then
+  source "$cachyos_zsh"
+else
+  mkdir -p "${HISTFILE:h}" "${ZSH_COMPDUMP:h}"
+  HISTSIZE=50000 SAVEHIST=10000
+  setopt extended_history hist_expire_dups_first hist_ignore_dups \
+         hist_ignore_space hist_verify share_history
+  autoload -Uz compinit && compinit -d "$ZSH_COMPDUMP"
+  zstyle ':completion:*' menu select
+  for zexos_zsh in \
+      /usr/share/zsh-theme-powerlevel10k/powerlevel10k.zsh-theme \
+      /usr/share/zsh/plugins/zsh-autosuggestions/zsh-autosuggestions.zsh \
+      /usr/share/zsh/plugins/zsh-history-substring-search/zsh-history-substring-search.zsh \
+      /usr/share/doc/pkgfile/command-not-found.zsh \
+      /usr/share/fzf/key-bindings.zsh /usr/share/fzf/completion.zsh \
+      /usr/share/zsh/plugins/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh; do
+    [[ -r $zexos_zsh ]] && source "$zexos_zsh"
+  done
+  unset zexos_zsh
+  if (( $+widgets[history-substring-search-up] )); then
+    bindkey '^[[A' history-substring-search-up
+    bindkey '^[[B' history-substring-search-down
+  fi
+fi
 unset cachyos_zsh
 
 # ── 5. Prompt look ─────────────────────────────────────

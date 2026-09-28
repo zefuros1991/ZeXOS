@@ -16,7 +16,7 @@ binds {
     Mod+C     hotkey-overlay-title="Terminal (kitty)" { spawn "kitty"; }
     Mod+B     hotkey-overlay-title="Web browser (Zen)" { spawn "zen-browser"; }
     Mod+E     hotkey-overlay-title="Files (Dolphin)" { spawn "dolphin"; }
-    Mod+M     hotkey-overlay-title="Install and update apps (Shelly)" { spawn "shelly-ui"; }
+    Mod+M     hotkey-overlay-title="Install and update apps" { spawn-sh "~/.local/bin/zexos-app-store"; }
 
     // ── Wallpaper ───────────────────────────────────────
     // Mod+W opens the roller picker, or closes it if it is already open.

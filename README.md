@@ -7,7 +7,7 @@
 
 # ZeXOS
 
-ZeXOS is a ready-to-use desktop for CachyOS, built on the [niri](https://github.com/YaLTeR/niri) scrolling window manager and the [Noctalia](https://noctalia.dev) shell. One script installs the packages and puts the config files in place, so a fresh install becomes a complete, themed daily desktop.
+ZeXOS is a ready-to-use desktop for CachyOS and Arch Linux, built on the [niri](https://github.com/YaLTeR/niri) scrolling window manager and the [Noctalia](https://noctalia.dev) shell. One script installs the packages and puts the config files in place, so a fresh install becomes a complete, themed daily desktop.
 
 What you get:
 
@@ -35,9 +35,17 @@ The whole desktop takes its colours from the wallpaper, so every screenshot belo
 
 ## Install
 
-On CachyOS. It works out of the box on a fresh CachyOS install, and it doesn't matter which desktop you picked when installing (KDE, GNOME, niri or none): ZeXOS adds what's missing, and your old desktop stays available in the login screen's session list.
+Works on **CachyOS**, **Arch Linux** and distros that use Arch's own repos, such as **EndeavourOS**. It doesn't matter which desktop you picked when installing (KDE, GNOME, niri or none): ZeXOS adds what's missing, and your old desktop stays available in the login screen's session list. Manjaro (its own delayed repos) and Artix (no systemd) are not supported, and the installer stops with the reason.
 
-Support for plain Arch Linux and other Arch-based distros that use Arch's own repos (such as EndeavourOS) is being worked on and not tested yet. Manjaro (its own delayed repos) and Artix (no systemd) are not planned.
+Almost everything comes from Arch's official repos, which all of these share. Only three things are CachyOS-only, and on other distros ZeXOS uses a stand-in:
+
+| On CachyOS | Elsewhere |
+|---|---|
+| `cachyos-zsh-config` (zsh plugins and prompt) | the same plugins from Arch's repos, plus Powerlevel10k built from Arch's old recipe (`packaging/zsh-theme-powerlevel10k-zexos`) |
+| `zen-browser-bin` | Zen's official release, packaged by `packaging/zen-browser-zexos` |
+| Shelly (app store, `Mod+M`) | KDE Discover |
+
+The installer tells them apart by reading `/etc/os-release` (see `scripts/lib-distro.sh`), then runs `scripts/distro/cachyos.sh` or `scripts/distro/arch.sh`. Each step also asks pacman first, so if you added the CachyOS repos to your Arch install, the real CachyOS package is used. To pick by hand, put `ZEXOS_DISTRO=arch` (or `cachyos`) in front of the install command.
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zefuros1991/ZeXOS/main/install.sh -o /tmp/zexos-install.sh; bash /tmp/zexos-install.sh; rm -f /tmp/zexos-install.sh
@@ -52,14 +60,14 @@ cd ~/.dotfiles
 ./install.sh
 ```
 
-Run it as your normal user, not root. You need an account that can use `sudo` and a network connection. The bootstrap step installs everything else, including `git` and `stow`.
+Run it as your normal user, not root. You need an account that can use `sudo` and a network connection. The installer adds `git` if it's missing, and the bootstrap step installs everything else, including `stow`.
 
 ## What the installer does
 
-`install.sh` runs four scripts from `scripts/`, in order:
+`install.sh` first checks which distro you're on (and stops if it's one ZeXOS can't support), then runs four scripts from `scripts/`, in order:
 
 1. **Bootstrap** (`bootstrap.sh`): enables the `multilib` repo if it's off, updates the system, installs the basics (`git`, `curl`, `stow`, `base-devel`, `flatpak`), adds Flathub, and clones this repo to `~/.dotfiles`.
-2. **Packages** (`packages.sh`): installs the desktop (niri, Noctalia and its patched build, roller, fuzzel, kitty), the basics a non-niri install may lack (portals, keyring, fonts, sound, network, Bluetooth and power services), the everyday apps, fonts, themes, SDDM with Pixie, and the Zen browser. If another login screen is in use (GDM, Plasma Login, ...), it switches to SDDM only after checking SDDM and Pixie are installed and ready. It skips anything already installed. It also adds a pacman hook that rebuilds the patched `qt6ct-kde` (which lets open apps like Dolphin change colour with the wallpaper) after every Qt update, since a new Qt can break it (`journalctl -u zexos-qt6ct-rebuild` shows how it went).
+2. **Packages** (`packages.sh`): installs the desktop (niri, Noctalia and its patched build, roller, fuzzel, kitty), the basics a non-niri install may lack (portals, keyring, fonts, sound, network, Bluetooth and power services), the everyday apps, fonts, themes, SDDM with Pixie, and the Zen browser. The few distro-specific steps come from `scripts/distro/`. If another login screen is in use (GDM, Plasma Login, ...), it switches to SDDM only after checking SDDM and Pixie are installed and ready. It skips anything already installed. It also adds a pacman hook that rebuilds the patched `qt6ct-kde` (which lets open apps like Dolphin change colour with the wallpaper) after every Qt update, since a new Qt can break it (`journalctl -u zexos-qt6ct-rebuild` shows how it went).
 3. **Stow** (`stow.sh`): links every config package under `stow/` into your home folder with [GNU Stow](https://www.gnu.org/software/stow/). Any existing file in the way is first backed up to `backup/stow-<timestamp>/`.
 4. **Final touches** (`finaltouches.sh`): makes zsh your login shell and sets up the login-screen wallpaper sync.
 
@@ -74,7 +82,7 @@ Each script writes a log next to itself (`bootstrap.log`, `packages.log`, …). 
 | `Mod+B` | Browser (Zen) |
 | `Mod+E` | Files (Dolphin) |
 | `Mod+W` | Wallpaper picker (roller) |
-| `Mod+M` | Install and update apps (Shelly) |
+| `Mod+M` | Install and update apps (Shelly on CachyOS, Discover elsewhere) |
 | `Mod+Ctrl+W` | Random wallpaper |
 | `Mod+L` | Lock screen |
 | `Mod+Escape` | Power menu |

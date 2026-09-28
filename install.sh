@@ -121,6 +121,15 @@ SUDO_KEEPALIVE_PID=$!
 
 trap 'kill $SUDO_KEEPALIVE_PID 2>/dev/null || true' EXIT
 
+# A minimal Arch install doesn't come with git, and the next step needs it.
+if ! command -v git >/dev/null 2>&1; then
+    echo -e "${CYAN}Installing git${RESET}"
+    if ! sudo pacman -S --needed --noconfirm git; then
+        echo -e "${RED}✖ Could not install git, which is needed to download ZeXOS${RESET}"
+        exit 1
+    fi
+fi
+
 # -----------------------------
 
 # REPOSITORY CHECK
@@ -180,6 +189,18 @@ fi
 # of only after the next login. See scripts/lib-xdg.sh for the full reasoning.
 . "$TARGET/scripts/lib-xdg.sh"
 zexos_setup_xdg_env
+
+# -----------------------------
+
+# DISTRO CHECK
+
+# -----------------------------
+
+# Works out whether this is CachyOS, plain Arch or a close relative, and
+# stops here with the reason if ZeXOS can't support it. Later steps use
+# the answer to pick scripts/distro/<name>.sh. See scripts/lib-distro.sh.
+. "$TARGET/scripts/lib-distro.sh"
+zexos_require_supported_distro || exit 1
 
 # -----------------------------
 

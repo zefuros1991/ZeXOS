@@ -1,0 +1,9 @@
+#!/bin/sh
+# Opens the app store (Mod+M): Shelly on CachyOS, KDE Discover elsewhere.
+if command -v shelly-ui >/dev/null 2>&1; then
+    exec shelly-ui "$@"
+elif command -v plasma-discover >/dev/null 2>&1; then
+    exec plasma-discover "$@"
+fi
+notify-send "ZeXOS" "No app store found. Install shelly (CachyOS) or discover." 2>/dev/null
+exit 1

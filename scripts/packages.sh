@@ -207,13 +207,6 @@ BASICS_PACMAN=(
 
 install_pacman "Desktop Basics" "${BASICS_PACMAN[@]}"
 
-# The zsh config builds on CachyOS's own zsh setup (prompt, plugins). That
-# package only exists in the CachyOS repos; on plain Arch the zsh config
-# still loads, just without it.
-if pacman -Si cachyos-zsh-config &>/dev/null; then
-    install_pacman "CachyOS zsh config" cachyos-zsh-config
-fi
-
 # -----------------------------
 # MEDIA BASICS
 # -----------------------------
@@ -267,15 +260,6 @@ FILE_MANAGER_PACMAN=(
 )
 
 install_pacman "File Manager (Dolphin)" "${FILE_MANAGER_PACMAN[@]}"
-
-# -----------------------------
-# PACKAGE MANAGER APP (SHELLY)
-# -----------------------------
-# Shelly is a point-and-click app for installing and updating software
-# (Mod+M opens it). It is only in the CachyOS repos, so skip it elsewhere.
-if pacman -Si shelly &>/dev/null; then
-    install_pacman "Package manager app (Shelly)" shelly
-fi
 
 # -----------------------------
 # NOCTALIA EXTRAS
@@ -340,19 +324,6 @@ else
     rm -rf "$noctalia_build"
 fi
 
-# -----------------------------
-# ZEN BROWSER
-# -----------------------------
-# Comes from the CachyOS repo (zen-browser-bin), a repack of Zen's official
-# release. pacman installs and updates it like everything else, with no
-# third-party install script and no "are you sure?" questions.
-if pacman -Si zen-browser-bin &>/dev/null; then
-    install_pacman "Web browser (Zen)" zen-browser-bin
-else
-    echo -e "${RED}✖ zen-browser-bin is not in your repos (not CachyOS?) -- skipping Zen${RESET}"
-    echo -e "${CYAN}  Get it from https://zen-browser.app/download${RESET}"
-fi
-
 # =========================================================
 # 2. PACKAGES BUILT HERE (no AUR)
 # =========================================================
@@ -384,6 +355,21 @@ install_local() {
     fi
     rm -rf "$build"
 }
+
+# -----------------------------
+# DISTRO-SPECIFIC STEPS
+# -----------------------------
+# The few things that differ between CachyOS and other Arch-based systems
+# (zsh plugins, Zen, the app store) live in scripts/distro/<name>.sh.
+# lib-distro.sh works out which one to use; see the notes at its top.
+. "$REPO_ROOT/scripts/lib-distro.sh"
+zexos_detect_distro
+if [ -r "$REPO_ROOT/scripts/distro/$ZEXOS_DISTRO.sh" ]; then
+    echo -e "\n${YELLOW}[DISTRO] Steps for ${ZEXOS_DISTRO_NAME} (${ZEXOS_DISTRO})${RESET}"
+    . "$REPO_ROOT/scripts/distro/$ZEXOS_DISTRO.sh"
+else
+    echo -e "${RED}✖ No distro steps for ${ZEXOS_DISTRO_NAME} (${ZEXOS_DISTRO_WHY:-$ZEXOS_DISTRO}) -- skipping them${RESET}"
+fi
 
 # Mouse pointer (Bibata Modern Ice). Replaces the old AUR package if present.
 if [ "$(pacman -Qq bibata-cursor-theme 2>/dev/null)" = "bibata-cursor-theme" ]; then

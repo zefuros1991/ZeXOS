@@ -38,7 +38,7 @@ shadow = false
 
 [[bar.default.capsule_group]]
 id = "left"
-members = ["cpu", "temp", "ram", "arch_updates"]   # system load + update counter
+members = ["sysmon", "arch_updates", "usb"]   # system monitor, update counter, USB drives
 fill = "surface_variant"
 opacity = 0.85
 radius = 13.0
@@ -48,7 +48,7 @@ attached = true
 
 [[bar.default.capsule_group]]
 id = "middle"
-members = ["active_window", "workspaces", "clock", "media"]
+members = ["workspaces", "clock", "media"]
 fill = "surface_variant"
 opacity = 0.85
 radius = 13.0
@@ -58,7 +58,7 @@ attached = true
 
 [[bar.default.capsule_group]]
 id = "right"
-members = ["tray", "usb", "bluetooth", "volume", "notifications", "battery", "brightness", "network"]
+members = ["tray", "bluetooth", "volume", "notifications", "battery", "brightness", "network"]
 fill = "surface_variant"
 opacity = 0.85
 radius = 13.0
@@ -67,11 +67,7 @@ widget_spacing = 8
 attached = true
 
 # ─── Widget settings ───
-# Long window and song titles get cut off at this width.
-[widget.active_window]
-type = "active_window"
-max_length = 145.0
-
+# Long song titles get cut off at this width.
 [widget.media]
 type = "media"
 max_length = 145.0

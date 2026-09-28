@@ -123,11 +123,6 @@ stow -n -v -d stow -t "$HOME" <package> # dry run: show what would change
 
 Some files in `theme` (and `kdeglobals` in `desktop`) are rewritten live by Noctalia whenever the wallpaper changes. That's expected.
 
-## Troubleshooting
-
-**Login hangs on a black screen after entering your password.** Check `~/.profile`. SDDM's session script reads it with a strict shell, and a line that sources a missing file (often left behind by an uninstalled tool) kills the session before niri starts. ZeXOS doesn't use `~/.profile`: environment variables go in `~/.config/environment.d/`. Keep `~/.profile` empty, or make sure every file it sources exists.
-
-
 ## License
 
 [MIT](LICENSE) covers ZeXOS's own files. [CREDITS.md](CREDITS.md) lists the projects ZeXOS is built on, and the few files here that contain their code (those keep their own licenses).

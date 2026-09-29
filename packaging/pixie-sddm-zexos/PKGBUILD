@@ -5,7 +5,7 @@
 
 pkgname=pixie-sddm-zexos
 pkgver=3.0
-pkgrel=1
+pkgrel=2
 pkgdesc='Pixie SDDM theme, from the official release (ZeXOS)'
 arch=('any')
 url="https://github.com/xCaptaiN09/pixie-sddm"
@@ -14,12 +14,18 @@ license=('MIT')
 depends=('sddm' 'qt6-declarative' 'qt6-svg')
 provides=('pixie-sddm')
 conflicts=('pixie-sddm' 'pixie-sddm-git')
-source=("pixie-sddm-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz")
-sha256sums=('bde5ddfac7c50f188bb1879a00914614c9091a043f14d4b3cba4156208b4efb0')
+# avatar.jpg: the ZeXOS logo for the round picture above the login box,
+# drawn by make-avatar.py.
+source=("pixie-sddm-$pkgver.tar.gz::$url/archive/refs/tags/v$pkgver.tar.gz"
+        "avatar.jpg")
+sha256sums=('bde5ddfac7c50f188bb1879a00914614c9091a043f14d4b3cba4156208b4efb0'
+            'bc80caecbc701af6c3a80890f3a3a96bddbb06164eb2751850585f899adbf827')
 
 package() {
     cd "$srcdir/pixie-sddm-$pkgver"
     install -d "$pkgdir/usr/share/sddm/themes/pixie"
     cp -r assets components Main.qml metadata.desktop theme.conf LICENSE \
         "$pkgdir/usr/share/sddm/themes/pixie/"
+    # Pixie always shows assets/avatar.jpg (see make-avatar.py for why).
+    install -m644 "$srcdir/avatar.jpg" "$pkgdir/usr/share/sddm/themes/pixie/assets/avatar.jpg"
 }

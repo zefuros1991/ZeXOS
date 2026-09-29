@@ -215,6 +215,9 @@ BASICS_PACMAN=(
     power-profiles-daemon
     upower
     brightnessctl
+    # checkupdates, which the bar's update counter needs. EndeavourOS and
+    # CachyOS ship it; a plain Arch install does not.
+    pacman-contrib
 )
 
 install_pacman "Desktop Basics" "${BASICS_PACMAN[@]}"

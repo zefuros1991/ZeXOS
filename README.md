@@ -22,7 +22,7 @@ What you get:
 
 ## Screenshots
 
-The installer starting up (the logo animates while it waits for the password):
+The installer waiting for the sudo password:
 
 <p align="center"><img src="docs/screenshots/install.gif" alt="The ZeXOS installer starting in a terminal: the gradient ZeXOS logo animates while it waits for the sudo password" width="640"></p>
 

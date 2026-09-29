@@ -1,0 +1,41 @@
+// fastfetch's normal look, with one change: a line too long for the
+// window is cut at the edge instead of wrapping. Wrapped lines land under
+// the logo and scramble it, which happens in any half-width kitty window.
+{
+  "$schema": "https://github.com/fastfetch-cli/fastfetch/raw/master/doc/json_schema.json",
+  "display": {
+    "disableLinewrap": true
+  },
+  // The default list. A config file needs it, or fastfetch shows only the logo.
+  "modules": [
+    "title",
+    "separator",
+    "os",
+    "host",
+    "kernel",
+    "uptime",
+    "packages",
+    "shell",
+    "display",
+    "de",
+    "wm",
+    "wmtheme",
+    "theme",
+    "icons",
+    "font",
+    "cursor",
+    "terminal",
+    "terminalfont",
+    "cpu",
+    "gpu",
+    "memory",
+    "swap",
+    "disk",
+    "localip",
+    "battery",
+    "poweradapter",
+    "locale",
+    "break",
+    "colors"
+  ]
+}

@@ -24,15 +24,17 @@ What you get:
 
 The whole desktop takes its colours from the wallpaper, so every screenshot below looks different.
 
-![kitty with fastfetch on the violet topo wallpaper](docs/screenshots/desktop.webp)
+| CachyOS | Arch Linux | EndeavourOS |
+|---|---|---|
+| ![kitty with fastfetch on CachyOS, purple dots wallpaper](docs/screenshots/kitty-cachyos.webp) | ![kitty with fastfetch on Arch Linux, cyan bars wallpaper](docs/screenshots/kitty-arch.webp) | ![kitty with fastfetch on EndeavourOS, green dots wallpaper](docs/screenshots/kitty-eos.webp) |
 
 | Launcher | Control center | Overview |
 |---|---|---|
-| ![Noctalia launcher on an orange wallpaper](docs/screenshots/launcher.webp) | ![Noctalia control center on a blue wallpaper](docs/screenshots/control-center.webp) | ![niri overview on a green wallpaper](docs/screenshots/overview.webp) |
+| ![Noctalia launcher on a blue wallpaper](docs/screenshots/launcher.webp) | ![Noctalia control center on a mint wallpaper](docs/screenshots/control-center.webp) | ![niri overview with no windows on a violet wallpaper](docs/screenshots/overview.webp) |
 
-| Empty desktop | Empty desktop |
-|---|---|
-| ![The red topo wallpaper with only the bar](docs/screenshots/empty-topo-ember.webp) | ![The mark wallpaper with only the bar](docs/screenshots/empty-mark.webp) |
+| Files | Wallpaper picker | Light mode |
+|---|---|---|
+| ![Dolphin on a red topo wallpaper](docs/screenshots/dolphin.webp) | ![The wallpaper picker on a silver wallpaper](docs/screenshots/roller.webp) | ![Light mode with only the bar](docs/screenshots/light-mode.webp) |
 
 ## Install
 

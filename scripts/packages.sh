@@ -111,6 +111,16 @@ zexos_makepkg() {
     makepkg --config "$MAKEPKG_CONF_ZEXOS" "$@"
 }
 
+# Build on the disk, not in /tmp. Arch keeps /tmp in RAM (half of it), and
+# linking noctalia needs more than that on a smaller machine: on a 6 GB VM
+# it failed with "No space left on device". Each build folder is deleted
+# when it's done.
+ZEXOS_BUILD_ROOT="${XDG_CACHE_HOME:-$HOME/.cache}/zexos/build"
+mkdir -p "$ZEXOS_BUILD_ROOT"
+zexos_build_dir() {
+    mktemp -d -p "$ZEXOS_BUILD_ROOT"
+}
+
 # -----------------------------
 # 0.5 SYSTEM UPGRADE
 # -----------------------------
@@ -287,7 +297,7 @@ ROLLER_WANT="$(. "$REPO_ROOT/packaging/roller/PKGBUILD"; echo "$pkgver-$pkgrel")
 if [ "$(pacman -Q roller 2>/dev/null | awk '{print $2}')" = "$ROLLER_WANT" ]; then
     echo -e "${GREEN}✔ roller $ROLLER_WANT already installed${RESET}"
 else
-    roller_build="$(mktemp -d)"
+    roller_build="$(zexos_build_dir)"
     cp "$REPO_ROOT"/packaging/roller/* "$roller_build/"
     if (cd "$roller_build" && zexos_makepkg -si --noconfirm --needed); then
         echo -e "${GREEN}✔ roller $ROLLER_WANT installed${RESET}"
@@ -310,7 +320,7 @@ NOCTALIA_WANT="$(. "$REPO_ROOT/packaging/noctalia-zexos/PKGBUILD"; echo "$pkgver
 if [ "$(pacman -Q noctalia-zexos 2>/dev/null | awk '{print $2}')" = "$NOCTALIA_WANT" ]; then
     echo -e "${GREEN}✔ noctalia-zexos $NOCTALIA_WANT already installed${RESET}"
 else
-    noctalia_build="$(mktemp -d)"
+    noctalia_build="$(zexos_build_dir)"
     cp "$REPO_ROOT"/packaging/noctalia-zexos/* "$noctalia_build/"
     if (cd "$noctalia_build" && zexos_makepkg -s --noconfirm --needed); then
         # --noconfirm answers "no" to the conflict prompt, so drop stock first
@@ -345,7 +355,7 @@ install_local() {
     fi
 
     local build
-    build="$(mktemp -d)"
+    build="$(zexos_build_dir)"
     cp "$REPO_ROOT/packaging/$dir"/* "$build/"
     if (cd "$build" && zexos_makepkg -si --noconfirm --needed); then
         echo -e "${GREEN}✔ $pkg $want installed${RESET}"

@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# kitty starts this instead of your shell (see kitty.conf). It shows
+# fastfetch once, unless your shell already does that on its own (CachyOS's
+# fish does), then starts your normal shell. ZeXOS never edits your shell's
+# own files.
+#
+# Don't want fastfetch in kitty? Create ~/.config/zexos/no-fastfetch.
+
+login_shell=$(getent passwd "$USER" | cut -d: -f7)
+[ -x "$login_shell" ] || login_shell=${SHELL:-/bin/bash}
+
+# True if one of your shell's startup files calls fastfetch. Lines that are
+# only a comment don't count. For a shell we don't know, say yes, so you
+# never get it twice.
+shell_runs_fastfetch() {
+    local cfg=${XDG_CONFIG_HOME:-$HOME/.config}
+    local files=()
+    case "${login_shell##*/}" in
+        bash)
+            files=("$HOME/.bashrc" "$HOME/.bash_profile" "$HOME/.profile"
+                   /etc/bash.bashrc /etc/profile /etc/profile.d/*.sh) ;;
+        zsh)
+            files=("${ZDOTDIR:-$HOME}/.zshrc" "$cfg/zsh/.zshrc" "$HOME/.zshrc"
+                   /etc/zsh/zshrc /etc/zshrc) ;;
+        fish)
+            files=("$cfg/fish/config.fish" "$cfg/fish/conf.d/"*.fish
+                   "$cfg/fish/functions/fish_greeting.fish"
+                   /etc/fish/config.fish /etc/fish/conf.d/*.fish
+                   /usr/share/fish/vendor_conf.d/*.fish
+                   /usr/share/cachyos-fish-config/*.fish) ;;
+        *)
+            return 0 ;;
+    esac
+    grep -qsE '^[^#]*\bfastfetch\b' "${files[@]}"
+}
+
+if command -v fastfetch >/dev/null 2>&1 \
+    && [ ! -e "${XDG_CONFIG_HOME:-$HOME/.config}/zexos/no-fastfetch" ] \
+    && ! shell_runs_fastfetch; then
+    fastfetch
+fi
+
+# kitten run-shell keeps kitty's shell integration working, which a plain
+# exec of the shell from a script would lose.
+if command -v kitten >/dev/null 2>&1; then
+    exec kitten run-shell --shell "$login_shell"
+fi
+exec "$login_shell"

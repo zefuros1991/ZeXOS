@@ -23,10 +23,12 @@ zexos_detect_distro() {
     local id="" id_like="" name=""
 
     # Read the file in a subshell so its variables don't leak into ours.
+    # The separator is | rather than a tab: bash merges runs of tabs, so an
+    # empty ID_LIKE (plain Arch) would shift the name into its place.
     if [ -r /etc/os-release ]; then
-        IFS=$'\t' read -r id id_like name < <(
+        IFS='|' read -r id id_like name < <(
             . /etc/os-release
-            printf '%s\t%s\t%s\n' "${ID:-}" "${ID_LIKE:-}" "${PRETTY_NAME:-${NAME:-}}"
+            printf '%s|%s|%s\n' "${ID:-}" "${ID_LIKE:-}" "${PRETTY_NAME:-${NAME:-}}"
         )
     fi
     ZEXOS_DISTRO_NAME="${name:-${id:-unknown Linux}}"

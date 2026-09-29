@@ -23,7 +23,7 @@ window-rule {
 
 // Frosted-glass blur behind these apps.
 window-rule {
-    match app-id="^(kitty|zen|vlc|org.kde.dolphin)$"
+    match app-id="^(kitty|vlc|org.kde.dolphin)$"
     background-effect {
         blur true
     }

@@ -14,7 +14,7 @@ binds {
     // ── Open apps ───────────────────────────────────────
     Mod+Space hotkey-overlay-title="App launcher" { spawn-sh "noctalia msg panel-toggle launcher"; }
     Mod+C     hotkey-overlay-title="Terminal (kitty)" { spawn "kitty"; }
-    Mod+B     hotkey-overlay-title="Web browser (Zen)" { spawn "zen-browser"; }
+    Mod+B     hotkey-overlay-title="Web browser (your default)" { spawn-sh "~/.local/bin/zexos-browser"; }
     Mod+E     hotkey-overlay-title="Files (Dolphin)" { spawn "dolphin"; }
     Mod+M     hotkey-overlay-title="Install and update apps" { spawn-sh "~/.local/bin/zexos-app-store"; }
 

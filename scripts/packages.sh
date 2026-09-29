@@ -375,7 +375,7 @@ install_local() {
 # DISTRO-SPECIFIC STEPS
 # -----------------------------
 # The few things that differ between CachyOS and other Arch-based systems
-# (Zen, the app store) live in scripts/distro/<name>.sh.
+# (the app store) live in scripts/distro/<name>.sh.
 # lib-distro.sh works out which one to use; see the notes at its top.
 . "$REPO_ROOT/scripts/lib-distro.sh"
 zexos_detect_distro

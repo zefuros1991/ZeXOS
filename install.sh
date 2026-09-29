@@ -66,31 +66,108 @@ echo -e "\b✔"
 
 }
 
+# -----------------------------
+
+# Banner
+
+# -----------------------------
+
+# The ZeXOS logo in the colours of docs/logo/zexos-mark.svg (violet ->
+# purple -> green). This is a copy of scripts/lib-banner.sh, because on a
+# first install this script is downloaded on its own and the repo isn't
+# there yet: change both together. The one extra here is the animation:
+# while sudo waits for the password, the colours slowly flow through the
+# logo. Terminals that can't show exact colours get basic ones, no animation.
+
+ZEXOS_BANNER_ROWS=(
+'███████╗███████╗██╗  ██╗ ██████╗ ███████╗'
+'╚══███╔╝██╔════╝╚██╗██╔╝██╔═══██╗██╔════╝'
+'  ███╔╝ █████╗   ╚███╔╝ ██║   ██║███████╗'
+' ███╔╝  ██╔══╝   ██╔██╗ ██║   ██║╚════██║'
+'███████╗███████╗██╗  ██╗╚██████╔╝███████║'
+'╚══════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝'
+)
+
+case "$COLORTERM" in
+    truecolor|24bit) ZEXOS_TRUECOLOR=1 ;;
+    *) ZEXOS_TRUECOLOR=0 ;;
+esac
+
+if [ "$ZEXOS_TRUECOLOR" = 1 ]; then
+    VIOLET="\e[38;2;154;92;242m"
+else
+    VIOLET="\e[95m"
+fi
+
+# 64 colours: violet to purple to green (0-32), then back again (33-63), so
+# the animation can loop without a jump. Stops: #7C5CFF, #B45CE6, #3DDC97.
+ZEXOS_PALETTE=()
+for (( i = 0; i < 64; i++ )); do
+    s=$(( i <= 32 ? i : 64 - i ))
+    if [ "$ZEXOS_TRUECOLOR" != 1 ]; then
+        if [ "$s" -lt 11 ]; then c=$'\e[94m'; elif [ "$s" -lt 22 ]; then c=$'\e[95m'; else c=$'\e[92m'; fi
+    else
+        if [ "$s" -le 16 ]; then a=(124 92 255); b=(180 92 230); t=$s
+        else a=(180 92 230); b=(61 220 151); t=$((s - 16)); fi
+        c=$'\e[38;2;'"$(( a[0] + (b[0] - a[0]) * t / 16 ));$(( a[1] + (b[1] - a[1]) * t / 16 ));$(( a[2] + (b[2] - a[2]) * t / 16 ))m"
+    fi
+    ZEXOS_PALETTE[i]=$c
+done
+
+# Logo row $1 at animation step $2 (0 = still), in REPLY. The colour runs
+# diagonally from the top left, and each step moves it one place along.
+zexos_banner_row() {
+    local LC_ALL=C.UTF-8
+    local row=${ZEXOS_BANNER_ROWS[$1]} out="" i ch
+    for (( i = 0; i < ${#row}; i++ )); do
+        ch=${row:i:1}
+        if [ "$ch" = " " ]; then out+=" "; continue; fi
+        out+="${ZEXOS_PALETTE[( (i + 2 * $1) * 32 / 50 - $2 ) & 63]}$ch"
+    done
+    REPLY="$out"$'\e[0m'
+}
+
+# Repaints the logo in place (it starts on screen line 2, under the blank
+# line after `clear`) without moving the cursor away from the password
+# prompt. Each row goes out in one write, so it can't split sudo's output.
+zexos_banner_paint() {
+    local r
+    for r in "${!ZEXOS_BANNER_ROWS[@]}"; do
+        zexos_banner_row "$r" "$1"
+        printf '\e7\e[%d;1H%s\e8' $((r + 2)) "$REPLY"
+    done
+}
+
+zexos_banner_animate() {
+    local f=0
+    while kill -0 "$1" 2>/dev/null; do
+        f=$(( (f + 1) & 63 ))
+        zexos_banner_paint "$f"
+        sleep 0.06
+    done
+}
+
 clear
 
-cat << "EOF"
+echo
+for r in "${!ZEXOS_BANNER_ROWS[@]}"; do
+    zexos_banner_row "$r" 0
+    printf '%s\n' "$REPLY"
+done
+echo
+echo -e "${VIOLET}        ZeXOS INSTALLATION SYSTEM"
+echo -e "--------------------------------------------------${RESET}"
 
-███████╗███████╗██╗  ██╗ ██████╗ ███████╗
-╚══███╔╝██╔════╝╚██╗██╔╝██╔═══██╗██╔════╝
-  ███╔╝ █████╗   ╚███╔╝ ██║   ██║███████╗
- ███╔╝  ██╔══╝   ██╔██╗ ██║   ██║╚════██║
-███████╗███████╗██╗  ██╗╚██████╔╝███████║
-╚══════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
+echo -e "${VIOLET}Project: ZeXOS Complete Installer${RESET}"
+echo -e "${VIOLET}GitHub:  ${REPO}${RESET}"
+echo -e "${VIOLET}--------------------------------------------------${RESET}"
 
-        ZeXOS INSTALLATION SYSTEM
---------------------------------------------------
-EOF
-
-echo -e "${BLUE}Project: ZeXOS Complete Installer${RESET}"
-echo -e "${BLUE}GitHub:  ${REPO}${RESET}"
-echo "--------------------------------------------------"
-
-echo -e "${BLUE}This installer performs:${RESET}"
-echo "  1. Bootstrap system"
-echo "  2. Install packages"
-echo "  3. Deploy dotfiles"
-echo "  4. Final touches (wallpapers, login wallpaper)"
-echo "--------------------------------------------------"
+echo -e "${VIOLET}This installer performs:${RESET}"
+echo -e "${VIOLET}  1. Bootstrap system${RESET}"
+echo -e "${VIOLET}  2. Install packages${RESET}"
+echo -e "${VIOLET}  3. Deploy dotfiles${RESET}"
+echo -e "${VIOLET}  4. Final touches (wallpapers, login wallpaper)${RESET}"
+echo -e "${VIOLET}--------------------------------------------------${RESET}"
 
 # -----------------------------
 
@@ -99,7 +176,34 @@ echo "--------------------------------------------------"
 # -----------------------------
 
 echo -e "\n${YELLOW}==> AUTHENTICATION${RESET}"
-sudo -v
+
+# The logo only moves while the password is really being asked for, and
+# only when the whole banner fits on screen (if it scrolled, the repaint
+# would land on the wrong lines).
+animate=0
+if [ "$ZEXOS_TRUECOLOR" = 1 ] && [ -t 0 ] && [ -t 1 ] && ! sudo -n true 2>/dev/null; then
+    read -r rows cols < <(stty size </dev/tty 2>/dev/null) || true
+    if [ "${rows:-0}" -ge 30 ] && [ "${cols:-0}" -ge 41 ]; then
+        animate=1
+    fi
+fi
+
+rc=0
+if [ "$animate" = 1 ]; then
+    zexos_banner_animate $$ &
+    banner_pid=$!
+    # A background job ignores Ctrl+C, so stop it by hand if we're interrupted.
+    trap 'kill $banner_pid 2>/dev/null' EXIT
+    trap 'exit 130' INT
+    sudo -v || rc=$?
+    kill "$banner_pid" 2>/dev/null || true
+    wait "$banner_pid" 2>/dev/null || true
+    trap - EXIT INT
+    zexos_banner_paint 0
+else
+    sudo -v || rc=$?
+fi
+[ "$rc" -eq 0 ] || exit "$rc"
 
 # -----------------------------
 

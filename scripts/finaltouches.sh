@@ -2,6 +2,8 @@
 set -e
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+# The coloured ZeXOS logo at the top (see scripts/lib-banner.sh).
+. "$REPO_ROOT/scripts/lib-banner.sh"
 
 LOGFILE="$REPO_ROOT/finaltouches.log"
 
@@ -44,27 +46,16 @@ spinner() {
 
 clear
 
-cat << "EOF"
+zexos_banner "ZeXOS FINAL TOUCHES"
 
-███████╗███████╗██╗  ██╗ ██████╗ ███████╗
-╚══███╔╝██╔════╝╚██╗██╔╝██╔═══██╗██╔════╝
-  ███╔╝ █████╗   ╚███╔╝ ██║   ██║███████╗
- ███╔╝  ██╔══╝   ██╔██╗ ██║   ██║╚════██║
-███████╗███████╗██╗  ██╗╚██████╔╝███████║
-╚══════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
+echo -e "${VIOLET}Project: ZeXOS Final Touches${RESET}"
+echo -e "${VIOLET}Log:      $LOGFILE${RESET}"
+echo -e "${VIOLET}--------------------------------------------------${RESET}"
 
-        ZeXOS FINAL TOUCHES
---------------------------------------------------
-EOF
-
-echo -e "${BLUE}Project: ZeXOS Final Touches${RESET}"
-echo -e "${BLUE}Log:      $LOGFILE${RESET}"
-echo "--------------------------------------------------"
-
-echo -e "${BLUE}This script applies post-install tweaks:${RESET}"
-echo "  1. Copy the ZeXOS wallpapers to ~/Pictures/Wallpapers"
-echo "  2. Wire up SDDM login wallpaper sync (pixie theme)"
-echo "--------------------------------------------------"
+echo -e "${VIOLET}This script applies post-install tweaks:${RESET}"
+echo -e "${VIOLET}  1. Copy the ZeXOS wallpapers to ~/Pictures/Wallpapers${RESET}"
+echo -e "${VIOLET}  2. Wire up SDDM login wallpaper sync (pixie theme)${RESET}"
+echo -e "${VIOLET}--------------------------------------------------${RESET}"
 
 # -----------------------------
 # 1. WALLPAPERS

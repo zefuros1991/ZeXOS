@@ -14,6 +14,8 @@ LOGFILE="$DOTFILES/stow.log"
 # sure XDG_* target directories exist before any package gets folded into
 # them. Idempotent — see scripts/lib-xdg.sh.
 . "$DOTFILES/scripts/lib-xdg.sh"
+# The coloured ZeXOS logo at the top (see scripts/lib-banner.sh).
+. "$DOTFILES/scripts/lib-banner.sh"
 zexos_setup_xdg_env
 
 # NOTE: BACKUP_DIR is deliberately NOT created here. The inner backup loop
@@ -57,28 +59,17 @@ spinner() {
 
 clear
 
-cat << "EOF"
+zexos_banner "ZeXOS STOW SYSTEM"
 
-███████╗███████╗██╗  ██╗ ██████╗ ███████╗
-╚══███╔╝██╔════╝╚██╗██╔╝██╔═══██╗██╔════╝
-  ███╔╝ █████╗   ╚███╔╝ ██║   ██║███████╗
- ███╔╝  ██╔══╝   ██╔██╗ ██║   ██║╚════██║
-███████╗███████╗██╗  ██╗╚██████╔╝███████║
-╚══════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
+echo -e "${VIOLET}Project: ZeXOS Dotfiles Stow Manager${RESET}"
+echo -e "${VIOLET}GitHub:  https://github.com/zefuros1991/ZeXOS${RESET}"
+echo -e "${VIOLET}--------------------------------------------------${RESET}"
 
-        ZeXOS STOW SYSTEM
---------------------------------------------------
-EOF
-
-echo -e "${BLUE}Project: ZeXOS Dotfiles Stow Manager${RESET}"
-echo -e "${BLUE}GitHub:  https://github.com/zefuros1991/ZeXOS${RESET}"
-echo "--------------------------------------------------"
-
-echo -e "${BLUE}Actions:${RESET}"
-echo "  - Auto-detect stow packages"
-echo "  - Skip already correctly linked files"
-echo "  - Backup real file conflicts safely"
-echo "--------------------------------------------------"
+echo -e "${VIOLET}Actions:${RESET}"
+echo -e "${VIOLET}  - Auto-detect stow packages${RESET}"
+echo -e "${VIOLET}  - Skip already correctly linked files${RESET}"
+echo -e "${VIOLET}  - Backup real file conflicts safely${RESET}"
+echo -e "${VIOLET}--------------------------------------------------${RESET}"
 
 if [ ! -d "$STOW_DIR" ]; then
     echo -e "${RED}ERROR: stow directory not found: $STOW_DIR${RESET}"

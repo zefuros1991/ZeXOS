@@ -15,6 +15,8 @@ TARGET="$HOME/.dotfiles"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=./lib-xdg.sh
 . "$SCRIPT_DIR/lib-xdg.sh"
+# The coloured ZeXOS logo at the top (see scripts/lib-banner.sh).
+. "$SCRIPT_DIR/lib-banner.sh"
 zexos_setup_xdg_env
 
 LOGFILE="$TARGET/bootstrap.log"
@@ -58,29 +60,18 @@ spinner() {
 
 clear
 
-cat << "EOF"
+zexos_banner "ZeXOS BOOTSTRAP SYSTEM"
 
-███████╗███████╗██╗  ██╗ ██████╗ ███████╗
-╚══███╔╝██╔════╝╚██╗██╔╝██╔═══██╗██╔════╝
-  ███╔╝ █████╗   ╚███╔╝ ██║   ██║███████╗
- ███╔╝  ██╔══╝   ██╔██╗ ██║   ██║╚════██║
-███████╗███████╗██╗  ██╗╚██████╔╝███████║
-╚══════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
+echo -e "${VIOLET}Project: ZeXOS Dotfiles Bootstrap${RESET}"
+echo -e "${VIOLET}GitHub:  ${REPO}${RESET}"
+echo -e "${VIOLET}--------------------------------------------------${RESET}"
 
-        zeXOS BOOTSTRAP SYSTEM
---------------------------------------------------
-EOF
-
-echo -e "${BLUE}Project: ZeXOS Dotfiles Bootstrap${RESET}"
-echo -e "${BLUE}GitHub:  ${REPO}${RESET}"
-echo "--------------------------------------------------"
-
-echo -e "${BLUE}This script prepares the base system:${RESET}"
-echo "  1. System update"
-echo "  2. Core dependencies"
-echo "  3. Flatpak + Discover"
-echo "  4. Clone repo to ~/.dotfiles"
-echo "--------------------------------------------------"
+echo -e "${VIOLET}This script prepares the base system:${RESET}"
+echo -e "${VIOLET}  1. System update${RESET}"
+echo -e "${VIOLET}  2. Core dependencies${RESET}"
+echo -e "${VIOLET}  3. Flatpak + Discover${RESET}"
+echo -e "${VIOLET}  4. Clone repo to ~/.dotfiles${RESET}"
+echo -e "${VIOLET}--------------------------------------------------${RESET}"
 
 # -----------------------------
 # SUDO KEEPALIVE

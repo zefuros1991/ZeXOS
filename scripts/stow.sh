@@ -152,7 +152,10 @@ for pkg in "$STOW_DIR"/*; do
     while IFS= read -r file; do
         target="$HOME/${file#$pkg/}"
 
-        if [ -e "$target" ] && [ ! -L "$target" ]; then
+        # -ef: the target is the repo file itself, reached through a folder
+        # stow already linked (like ~/.local/bin). Moving it would take it
+        # out of the repo.
+        if [ -e "$target" ] && [ ! -L "$target" ] && ! [ "$target" -ef "$file" ]; then
             mkdir -p "$BACKUP_DIR/$(dirname "${file#$pkg/}")"
             mv "$target" "$BACKUP_DIR/${file#$pkg/}"
 

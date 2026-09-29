@@ -62,44 +62,17 @@ echo -e "${BLUE}Log:      $LOGFILE${RESET}"
 echo "--------------------------------------------------"
 
 echo -e "${BLUE}This script applies post-install tweaks:${RESET}"
-echo "  1. Set zsh as default shell"
-echo "  2. Copy the ZeXOS wallpapers to ~/Pictures/Wallpapers"
-echo "  3. Wire up SDDM login wallpaper sync (pixie theme)"
+echo "  1. Copy the ZeXOS wallpapers to ~/Pictures/Wallpapers"
+echo "  2. Wire up SDDM login wallpaper sync (pixie theme)"
 echo "--------------------------------------------------"
 
 # -----------------------------
-# 1. DEFAULT SHELL (ZSH)
-# -----------------------------
-echo -e "\n${YELLOW}==> [1/3] DEFAULT SHELL${RESET}"
-
-if command -v zsh >/dev/null 2>&1; then
-
-    CURRENT_SHELL="$(getent passwd "$USER" | cut -d: -f7)"
-
-    if [ "$CURRENT_SHELL" != "$(command -v zsh)" ]; then
-
-        # Run through sudo: plain chsh asks for your password again, and
-        # install.sh already unlocked sudo for the whole install.
-        sudo chsh -s "$(command -v zsh)" "$USER"
-
-        echo -e "${GREEN}✔ Default shell changed to zsh${RESET}"
-        echo -e "${CYAN}Log out and back in for the change to take effect${RESET}"
-
-    else
-        echo -e "${GREEN}✔ zsh already configured as default shell${RESET}"
-    fi
-
-else
-    echo -e "${RED}✖ zsh is not installed${RESET}"
-fi
-
-# -----------------------------
-# 2. WALLPAPERS
+# 1. WALLPAPERS
 # -----------------------------
 # Noctalia and roller both read ~/Pictures/Wallpapers, and noctalia.toml
 # names zexos-aurora.jpg as the starting wallpaper. --update=none never replaces a
 # file that is already there, so your own pictures are safe.
-echo -e "\n${YELLOW}==> [2/3] WALLPAPERS${RESET}"
+echo -e "\n${YELLOW}==> [1/2] WALLPAPERS${RESET}"
 
 WALL_SRC="$REPO_ROOT/wallpapers"
 WALL_DIR="$HOME/Pictures/Wallpapers"
@@ -132,7 +105,7 @@ else
 fi
 
 # -----------------------------
-# 3. SDDM LOGIN WALLPAPER SYNC (PIXIE THEME)
+# 2. SDDM LOGIN WALLPAPER SYNC (PIXIE THEME)
 # -----------------------------
 # noctalia's wallpaper_changed hook ([hooks] in stow/noctalia/.config/noctalia/noctalia.toml)
 # calls stow/noctalia/.local/bin/sync-sddm-wallpaper.sh on every wallpaper
@@ -148,7 +121,7 @@ fi
 #
 # Safe/idempotent: only touches the wallpaper dir and theme.conf.user if
 # they're not already set up correctly.
-echo -e "\n${YELLOW}==> [3/3] SDDM WALLPAPER SYNC${RESET}"
+echo -e "\n${YELLOW}==> [2/2] SDDM WALLPAPER SYNC${RESET}"
 
 SDDM_WALLPAPER_DIR="/var/lib/sddm-wallpaper"
 PIXIE_THEME_DIR="/usr/share/sddm/themes/pixie"

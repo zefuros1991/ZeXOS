@@ -17,7 +17,7 @@ What you get:
 - **roller**, a wallpaper picker (`Mod+W`)
 - **SDDM** with the Pixie theme; the login screen follows your current wallpaper
 - Everyday apps: **kitty** (terminal), **Dolphin** (files), **Gwenview** (images), **Neovim** (text), **Zen** (browser), **VLC** (media)
-- **zsh** as the login shell
+- Your shell stays yours: ZeXOS doesn't change it or add shell config, so bash, zsh or fish all work as before
 
 ## Screenshots
 
@@ -37,11 +37,10 @@ The whole desktop takes its colours from the wallpaper, so every screenshot belo
 
 Works on **CachyOS**, **Arch Linux** and distros that use Arch's own repos, such as **EndeavourOS**. It doesn't matter which desktop you picked when installing (KDE, GNOME, niri or none): ZeXOS adds what's missing, and your old desktop stays available in the login screen's session list. Manjaro (its own delayed repos) and Artix (no systemd) are not supported, and the installer stops with the reason.
 
-Almost everything comes from Arch's official repos, which all of these share. Only three things are CachyOS-only, and on other distros ZeXOS uses a stand-in:
+Almost everything comes from Arch's official repos, which all of these share. Only two things are CachyOS-only, and on other distros ZeXOS uses a stand-in:
 
 | On CachyOS | Elsewhere |
 |---|---|
-| `cachyos-zsh-config` (zsh plugins and prompt) | the same plugins from Arch's repos, plus Powerlevel10k built from Arch's old recipe (`packaging/zsh-theme-powerlevel10k-zexos`) |
 | `zen-browser-bin` | Zen's official release, packaged by `packaging/zen-browser-zexos` |
 | Shelly (app store, `Mod+M`) | KDE Discover |
 
@@ -69,7 +68,7 @@ Run it as your normal user, not root. You need an account that can use `sudo` an
 1. **Bootstrap** (`bootstrap.sh`): enables the `multilib` repo if it's off, updates the system, installs the basics (`git`, `curl`, `stow`, `base-devel`, `flatpak`), adds Flathub, and clones this repo to `~/.dotfiles`.
 2. **Packages** (`packages.sh`): installs the desktop (niri, Noctalia and its patched build, roller, fuzzel, kitty), the basics a non-niri install may lack (portals, keyring, fonts, sound, network, Bluetooth and power services), the everyday apps, fonts, themes, SDDM with Pixie, and the Zen browser. The few distro-specific steps come from `scripts/distro/`. If another login screen is in use (GDM, Plasma Login, ...), it switches to SDDM only after checking SDDM and Pixie are installed and ready. It skips anything already installed. It also adds a pacman hook that rebuilds the patched `qt6ct-kde` (which lets open apps like Dolphin change colour with the wallpaper) after every Qt update, since a new Qt can break it (`journalctl -u zexos-qt6ct-rebuild` shows how it went).
 3. **Stow** (`stow.sh`): links every config package under `stow/` into your home folder with [GNU Stow](https://www.gnu.org/software/stow/). Any existing file in the way is first backed up to `backup/stow-<timestamp>/`.
-4. **Final touches** (`finaltouches.sh`): makes zsh your login shell and sets up the login-screen wallpaper sync.
+4. **Final touches** (`finaltouches.sh`): copies the wallpapers to `~/Pictures/Wallpapers` and sets up the login-screen wallpaper sync.
 
 Each script writes a log next to itself (`bootstrap.log`, `packages.log`, …). Logs are gitignored.
 
@@ -121,7 +120,6 @@ Every folder under `stow/` is one Stow package, a slice of your home folder that
 | `noctalia` | `~/.config/noctalia` (bar layout, plugins, theming), the SDDM wallpaper-sync script, the light/dark switch and the script that makes the folder icons follow the wallpaper |
 | `roller` | `~/.config/roller` and its launcher files |
 | `theme` | GTK 3/4, qt5ct, qt6ct and the Noctalia colour files |
-| `zsh` | `~/.config/zsh` |
 
 To relink a single package after editing it:
 

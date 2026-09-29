@@ -3,10 +3,6 @@
 #
 # CachyOS's repos carry everything here ready-made, so this is just pacman.
 
-# The zsh config builds on CachyOS's own zsh setup (prompt, plugins,
-# aliases). See step 4 of stow/zsh/.config/zsh/.zshrc.
-install_pacman "CachyOS zsh config" cachyos-zsh-config
-
 # Shelly: a point-and-click app for installing and updating software.
 # Mod+M opens it (through zexos-app-store).
 install_pacman "Package manager app (Shelly)" shelly

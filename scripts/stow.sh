@@ -103,6 +103,9 @@ ANY_BACKUP_MADE=0
 # finaltouches.sh adds there would land inside the repo. KDE and GNOME
 # create this folder anyway, so this makes every install work the same.
 mkdir -p "$HOME/.config/gtk-4.0"
+# Same for ~/.config/systemd/user: systemctl --user writes its own links
+# there, and they belong in your home, not in the repo.
+mkdir -p "$HOME/.config/systemd/user"
 
 for pkg in "$STOW_DIR"/*; do
     [ -d "$pkg" ] || continue

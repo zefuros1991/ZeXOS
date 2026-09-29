@@ -17,7 +17,7 @@ What you get:
 - **roller**, a wallpaper picker (`Mod+W`)
 - **SDDM** with the Pixie theme; the login screen follows your current wallpaper and shows the ZeXOS logo as its round picture (`packaging/pixie-sddm-zexos/make-avatar.py` draws it)
 - Everyday apps: **kitty** (terminal), **Dolphin** (files), **Gwenview** (images), **Neovim** (text), **VLC** (media)
-- No browser is installed: keep the one you have. `Mod+B` opens whichever browser is set as your default
+- No browser is chosen for you: keep the one you have. `Mod+B` opens whichever browser is set as your default. Only if the system has no browser at all (a bare Arch install) is Firefox added
 - Your shell stays yours: ZeXOS doesn't change it or add shell config, so bash, zsh or fish all work as before
 
 ## Screenshots

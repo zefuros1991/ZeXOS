@@ -104,8 +104,9 @@ MAKEPKG_CONF_ZEXOS="$(mktemp)"
     cat "${XDG_CONFIG_HOME:-$HOME/.config}/pacman/makepkg.conf" 2>/dev/null \
         || cat "$HOME/.makepkg.conf" 2>/dev/null || true
     echo 'PACMAN_AUTH=(sudo)'
-    # No separate -debug packages (Arch turns them on). A later entry wins.
-    echo 'OPTIONS+=(!debug)'
+    # No separate -debug packages (Arch turns them on), and no LTO: it makes
+    # the final link slow and hungry for memory. A later entry wins.
+    echo 'OPTIONS+=(!debug !lto)'
 } > "$MAKEPKG_CONF_ZEXOS"
 trap 'kill $SUDO_KEEPALIVE_PID 2>/dev/null || true; rm -f "$MAKEPKG_CONF_ZEXOS"' EXIT
 

@@ -104,8 +104,12 @@ ANY_BACKUP_MADE=0
 # create this folder anyway, so this makes every install work the same.
 mkdir -p "$HOME/.config/gtk-4.0"
 # Same for ~/.config/systemd/user: systemctl --user writes its own links
-# there, and they belong in your home, not in the repo.
-mkdir -p "$HOME/.config/systemd/user"
+# there, and they belong in your home, not in the repo. The noctalia
+# drop-in folder must be real too: systemd skips a drop-in folder that is
+# itself a symlink, and only reads the files linked inside a real one.
+NOCTALIA_DROPIN="$HOME/.config/systemd/user/app-niri-noctalia-.scope.d"
+[ -L "$NOCTALIA_DROPIN" ] && rm "$NOCTALIA_DROPIN"
+mkdir -p "$NOCTALIA_DROPIN"
 
 for pkg in "$STOW_DIR"/*; do
     [ -d "$pkg" ] || continue

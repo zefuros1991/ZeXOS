@@ -21,6 +21,9 @@ not exist without them. Thank you.
 | [Pixie](https://github.com/xCaptaiN09/pixie-sddm) by xCaptaiN09 | The login screen theme |
 | [qt6ct](https://www.opencode.net/trialuser/qt6ct) by Ilya Kotov | Lets Qt and KDE apps follow the dark theme |
 | [Bibata](https://github.com/ful1e5/Bibata_Cursor) by ful1e5 | Mouse pointer |
+| [Papirus](https://github.com/PapirusDevelopmentTeam/papirus-icon-theme) | Icon theme; its folder icons are recoloured to follow the wallpaper |
+| [fastfetch](https://github.com/fastfetch-cli/fastfetch) | System info shown in the terminal |
+| [GNU Stow](https://www.gnu.org/software/stow/) | Links the config files from this repo into your home folder |
 | [adw-gtk3](https://github.com/lassekongo83/adw-gtk3) | Makes older GTK apps match the modern GNOME look |
 
 The installer downloads all of these from their official sources: the

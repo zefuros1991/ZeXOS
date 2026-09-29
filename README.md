@@ -7,7 +7,7 @@
 
 # ZeXOS
 
-ZeXOS is a ready-to-use desktop for CachyOS and Arch Linux, built on the [niri](https://github.com/YaLTeR/niri) scrolling window manager and the [Noctalia](https://noctalia.dev) shell. One script installs the packages and puts the config files in place, so a fresh install becomes a complete, themed daily desktop.
+ZeXOS is a ready-to-use desktop for CachyOS, Arch Linux and other Arch-based distros, built on the [niri](https://github.com/YaLTeR/niri) scrolling window manager and the [Noctalia](https://noctalia.dev) shell. One script installs the packages and puts the config files in place, so a fresh install becomes a complete, themed daily desktop.
 
 What you get:
 
@@ -21,6 +21,10 @@ What you get:
 - Your shell stays yours: ZeXOS doesn't change it or add shell config, so bash, zsh or fish all work as before
 
 ## Screenshots
+
+The installer starting up (the logo animates while it waits for the password):
+
+<p align="center"><img src="docs/screenshots/install.gif" alt="The ZeXOS installer starting in a terminal: the gradient ZeXOS logo animates while it waits for the sudo password" width="640"></p>
 
 The whole desktop takes its colours from the wallpaper, so every screenshot below looks different.
 
@@ -38,9 +42,11 @@ The whole desktop takes its colours from the wallpaper, so every screenshot belo
 
 ## Install
 
-Works on **CachyOS**, **Arch Linux** and distros that use Arch's own repos, such as **EndeavourOS**. It doesn't matter which desktop you picked when installing (KDE, GNOME, niri or none): ZeXOS adds what's missing, and your old desktop stays available in the login screen's session list. Manjaro (its own delayed repos) and Artix (no systemd) are not supported, and the installer stops with the reason.
+ZeXOS is made for Arch-based distros that use Arch's own repos, so it should run on most of them. It has been tested on **CachyOS**, **Arch Linux** and **EndeavourOS**; other Arch-based distros are likely to work too, but haven't been tried yet. It doesn't matter which desktop was picked during the distro's install (KDE, GNOME, niri or none): ZeXOS adds what's missing, and the old desktop stays available in the login screen's session list.
 
-Almost everything comes from Arch's official repos, which all of these share. Only one thing is CachyOS-only, and on other distros ZeXOS uses a stand-in:
+Two Arch-based distros are not supported: Manjaro (it has its own, delayed repos) and Artix (it doesn't use systemd). On those the installer stops early and explains why.
+
+Almost everything comes from Arch's official repos, which all of the supported distros share. Only one thing is CachyOS-only, and on other distros ZeXOS uses a stand-in:
 
 | On CachyOS | Elsewhere |
 |---|---|
@@ -114,6 +120,7 @@ Every folder under `stow/` is one Stow package, a slice of your home folder that
 |---|---|
 | `btop` | `~/.config/btop` |
 | `desktop` | default apps (`mimeapps.list`), GTK/Qt/KDE settings |
+| `fastfetch` | `~/.config/fastfetch` (the system info shown in kitty) |
 | `fuzzel` | `~/.config/fuzzel` |
 | `htop` | `~/.config/htop` |
 | `input` | keyboard and touchpad settings read by Qt/KDE apps |

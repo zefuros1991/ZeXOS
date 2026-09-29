@@ -80,12 +80,12 @@ echo -e "\b✔"
 # logo. Terminals that can't show exact colours get basic ones, no animation.
 
 ZEXOS_BANNER_ROWS=(
-'███████╗███████╗██╗  ██╗ ██████╗ ███████╗'
-'╚══███╔╝██╔════╝╚██╗██╔╝██╔═══██╗██╔════╝'
-'  ███╔╝ █████╗   ╚███╔╝ ██║   ██║███████╗'
-' ███╔╝  ██╔══╝   ██╔██╗ ██║   ██║╚════██║'
-'███████╗███████╗██╗  ██╗╚██████╔╝███████║'
-'╚══════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝'
+'███████╗        ██╗    ███╗  ██████╗  ██████╗'
+'╚══███╔╝ ████╗  ╚═██╗  ╚══╝ ██╔═══██╗██╔════╝'
+'  ███╔╝ ██╔═██╗   ╚████╗    ██║   ██║╚█████╗ '
+' ███╔╝  █████╔╝    ╚══██╗   ██║   ██║ ╚═══██╗'
+'███████╗╚█████╗ ███╗  ╚═██╗ ╚██████╔╝██████╔╝'
+'╚══════╝ ╚════╝ ╚══╝    ╚═╝  ╚═════╝ ╚═════╝ '
 )
 
 case "$COLORTERM" in
@@ -122,7 +122,7 @@ zexos_banner_row() {
     for (( i = 0; i < ${#row}; i++ )); do
         ch=${row:i:1}
         if [ "$ch" = " " ]; then out+=" "; continue; fi
-        out+="${ZEXOS_PALETTE[( (i + 2 * $1) * 32 / 50 - $2 ) & 63]}$ch"
+        out+="${ZEXOS_PALETTE[( (i + 2 * $1) * 32 / 55 - $2 ) & 63]}$ch"
     done
     REPLY="$out"$'\e[0m'
 }
@@ -177,13 +177,15 @@ echo -e "${VIOLET}--------------------------------------------------${RESET}"
 
 echo -e "\n${YELLOW}==> AUTHENTICATION${RESET}"
 
-# The logo only moves while the password is really being asked for, and
-# only when the whole banner fits on screen (if it scrolled, the repaint
+# The logo breathes while the password is asked for. If sudo still
+# remembers the password (no prompt), it breathes for a couple of seconds
+# anyway before the install starts. Only when the whole banner fits on
+# screen, even after a few wrong passwords (if it scrolled, the repaint
 # would land on the wrong lines).
 animate=0
-if [ "$ZEXOS_TRUECOLOR" = 1 ] && [ -t 0 ] && [ -t 1 ] && ! sudo -n true 2>/dev/null; then
+if [ "$ZEXOS_TRUECOLOR" = 1 ] && [ -t 0 ] && [ -t 1 ]; then
     read -r rows cols < <(stty size </dev/tty 2>/dev/null) || true
-    if [ "${rows:-0}" -ge 30 ] && [ "${cols:-0}" -ge 41 ]; then
+    if [ "${rows:-0}" -ge 28 ] && [ "${cols:-0}" -ge 45 ]; then
         animate=1
     fi
 fi
@@ -195,7 +197,11 @@ if [ "$animate" = 1 ]; then
     # A background job ignores Ctrl+C, so stop it by hand if we're interrupted.
     trap 'kill $banner_pid 2>/dev/null' EXIT
     trap 'exit 130' INT
-    sudo -v || rc=$?
+    if sudo -n true 2>/dev/null; then
+        sleep 3
+    else
+        sudo -v || rc=$?
+    fi
     kill "$banner_pid" 2>/dev/null || true
     wait "$banner_pid" 2>/dev/null || true
     trap - EXIT INT

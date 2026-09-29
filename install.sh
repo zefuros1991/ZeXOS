@@ -30,15 +30,6 @@ fi
 
 # -----------------------------
 
-# Logging
-
-# -----------------------------
-
-mkdir -p "$HOME/.dotfiles"
-exec > >(tee -a "$LOGFILE") 2>&1
-
-# -----------------------------
-
 # Colors
 
 # -----------------------------
@@ -109,6 +100,18 @@ echo "--------------------------------------------------"
 
 echo -e "\n${YELLOW}==> AUTHENTICATION${RESET}"
 sudo -v
+
+# -----------------------------
+
+# Logging
+
+# -----------------------------
+
+# Starts only after the password prompt. sudo writes its prompt straight
+# to the screen, while everything else goes through tee first, so with
+# logging on the prompt could land out of order and get hidden.
+mkdir -p "$HOME/.dotfiles"
+exec > >(tee -a "$LOGFILE") 2>&1
 
 (
 while true; do

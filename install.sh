@@ -168,6 +168,36 @@ else
 # Already installed: fetch the newest version so running install.sh again
 # works as an update. --ff-only refuses to touch your own local edits;
 # if you have some, the install carries on with what you have.
+#
+# Noctalia rewrites the colour files in the repo on every wallpaper change,
+# so git sees them as your edits, and one the update also changes would
+# block it. Only those get put back to the repo's version first (a copy
+# goes to backup/); noctalia paints your colours over them again at the end.
+NOCTALIA_WRITES=(
+    stow/btop/.config/btop/btop.conf
+    stow/btop/.config/btop/themes/noctalia.theme
+    stow/desktop/.config/kdeglobals
+    stow/fuzzel/.config/fuzzel/fuzzel.ini
+    stow/fuzzel/.config/fuzzel/themes/noctalia
+    stow/kitty/.config/kitty/kitty.conf
+    stow/kitty/.config/kitty/themes/noctalia.conf
+    stow/niri/.config/niri/config.kdl
+    stow/niri/.config/niri/noctalia.kdl
+    stow/theme/.config/gtk-3.0/noctalia.css
+    stow/theme/.config/gtk-4.0/noctalia.css
+    stow/theme/.config/qt5ct/colors/noctalia.conf
+    stow/theme/.config/qt6ct/colors/noctalia.conf
+)
+if git -C "$TARGET" fetch -q 2>/dev/null; then
+    color_backup="$TARGET/backup/update-$(date +%Y%m%d-%H%M%S)"
+    for f in $(git -C "$TARGET" diff --name-only HEAD '@{u}' -- "${NOCTALIA_WRITES[@]}"); do
+        git -C "$TARGET" diff --quiet HEAD -- "$f" && continue
+        mkdir -p "$color_backup/$(dirname "$f")"
+        cp "$TARGET/$f" "$color_backup/$f"
+        git -C "$TARGET" checkout -q HEAD -- "$f"
+        echo -e "${CYAN}Put back $f for the update (your copy: $color_backup/$f)${RESET}"
+    done
+fi
 if git -C "$TARGET" pull --ff-only -q; then
     echo -e "${GREEN}✔ Repository already present, updated to the newest version${RESET}"
 else
@@ -239,6 +269,12 @@ bash "$TARGET/scripts/stow.sh"
 echo -e "\n${YELLOW}==> [4/4] FINAL TOUCHES${RESET}"
 
 bash "$TARGET/scripts/finaltouches.sh"
+
+# On an update with the desktop running, repaint the colour files with the
+# current wallpaper's colours (the update may have put some of them back).
+if pgrep -x noctalia >/dev/null 2>&1; then
+    noctalia msg templates-apply >/dev/null 2>&1 || true
+fi
 
 # -----------------------------
 # DONE

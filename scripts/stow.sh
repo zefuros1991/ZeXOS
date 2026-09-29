@@ -194,6 +194,34 @@ for pkg in "$STOW_DIR"/*; do
 done
 
 # -----------------------------
+# LINKS TO FILES ZeXOS NO LONGER SHIPS
+# -----------------------------
+# When a file or folder leaves the repo (the zsh setup did), its link in
+# your home points at nothing. Instead of leaving it broken, replace it with
+# your own copy of its last version from the repo's history, so nothing you
+# were using disappears. ZeXOS leaves that copy alone from then on.
+while IFS= read -r link; do
+    dest=$(readlink "$link")
+    case "$dest" in *".dotfiles/stow/"*) ;; *) continue ;; esac
+    rel="stow/${dest#*.dotfiles/stow/}"
+    # Still in the repo: broken for some other reason, not ours to guess at.
+    [ -e "$DOTFILES/$rel" ] && continue
+    rm "$link"
+    # The newest commit that touched it is the one that removed it, so the
+    # version before that one is the last one you had.
+    last=$(git -C "$DOTFILES" log -1 --format=%H -- "$rel" 2>/dev/null || true)
+    tmp=$(mktemp -d)
+    if [ -n "$last" ] && git -C "$DOTFILES" archive "$last^" "$rel" 2>/dev/null | tar -x -C "$tmp" 2>/dev/null \
+        && [ -e "$tmp/$rel" ]; then
+        mv "$tmp/$rel" "$link"
+        echo -e "${YELLOW}⚠ ZeXOS no longer ships ${link/#$HOME/\~}, kept your last copy of it${RESET}"
+    else
+        echo -e "${YELLOW}⚠ Removed a broken link: ${link/#$HOME/\~}${RESET}"
+    fi
+    rm -rf "$tmp"
+done < <(find "$HOME" -maxdepth 4 \( -path "$DOTFILES" -o -path "$HOME/.cache" \) -prune -o -xtype l -print 2>/dev/null)
+
+# -----------------------------
 # POST-STOW VERIFICATION SUMMARY
 # -----------------------------
 echo -e "\n${YELLOW}==> STOW SUMMARY${RESET}"

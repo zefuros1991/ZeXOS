@@ -6,11 +6,3 @@
 # Shelly: a point-and-click app for installing and updating software.
 # Mod+M opens it (through zexos-app-store).
 install_pacman "Package manager app (Shelly)" shelly
-
-# Zen browser: CachyOS repacks Zen's official release as zen-browser-bin,
-# so pacman updates it like everything else. Mod+B opens it.
-if zexos_in_repos zen-browser-bin; then
-    install_pacman "Web browser (Zen)" zen-browser-bin
-else
-    install_local "Web browser (Zen)" zen-browser-zexos
-fi

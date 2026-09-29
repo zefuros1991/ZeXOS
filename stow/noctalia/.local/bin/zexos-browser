@@ -1,0 +1,20 @@
+#!/bin/sh
+# Opens your default web browser (Mod+B). ZeXOS doesn't install one, so
+# this asks the system which browser handles web links: the one you set
+# with your browser's "make default" button or your desktop's settings.
+# If none is set, it takes the first installed app that can open web links.
+app=$(xdg-mime query default x-scheme-handler/https 2>/dev/null)
+if [ -z "$app" ]; then
+    app=$(gio mime x-scheme-handler/https 2>/dev/null |
+        sed -n '/^Registered applications:/{n;s/^[[:space:]]*//p;q}')
+fi
+if [ -n "$app" ]; then
+    # gtk-launch starts an app by its .desktop name. If it's missing,
+    # find the .desktop file ourselves and hand it to gio (always there).
+    command -v gtk-launch >/dev/null 2>&1 && exec gtk-launch "$app" "$@"
+    for dir in "${XDG_DATA_HOME:-$HOME/.local/share}" $(echo "${XDG_DATA_DIRS:-/usr/local/share:/usr/share}" | tr ':' ' '); do
+        [ -f "$dir/applications/$app" ] && exec gio launch "$dir/applications/$app" "$@"
+    done
+fi
+notify-send "ZeXOS" "No web browser found. Install one (and set it as default)." 2>/dev/null
+exit 1

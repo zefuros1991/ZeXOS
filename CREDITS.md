@@ -16,7 +16,6 @@ not exist without them. Thank you.
 | [kitty](https://github.com/kovidgoyal/kitty) | Terminal |
 | [fuzzel](https://codeberg.org/dnkl/fuzzel) | Small app launcher and picker menus |
 | [Dolphin](https://apps.kde.org/dolphin/) | File manager |
-| [Zen Browser](https://zen-browser.app) | Web browser |
 | [Shelly](https://github.com/Seafoam-Labs/Shelly-ALPM) | App store for installing and updating software (Mod+M, CachyOS) |
 | [Discover](https://apps.kde.org/discover/) | The same job as Shelly on other Arch-based distros |
 | [Pixie](https://github.com/xCaptaiN09/pixie-sddm) by xCaptaiN09 | The login screen theme |
@@ -43,7 +42,6 @@ which follow those projects' 0BSD packaging license).
 | `packaging/roller/zexos-wheel-and-size.patch` | ZeXOS changes to roller | [roller](https://github.com/zyrophix/roller), zyrophix |
 | `packaging/qt6ct-kde/zexos-live-colors.patch` | ZeXOS change to qt6ct so open apps pick up new colours | [qt6ct](https://www.opencode.net/trialuser/qt6ct), Ilya Kotov |
 | `packaging/qt6ct-kde/qt6ct-shenanigans.patch` | Lets qt6ct pass colours to KDE apps (copied unchanged) | [qt6ct-kde](https://aur.archlinux.org/packages/qt6ct-kde) recipe by Antonio Rojas, for [qt6ct](https://www.opencode.net/trialuser/qt6ct) by Ilya Kotov |
-| `packaging/zen-browser-zexos/` (`zen-browser.sh`, `zen.desktop`, `policies.json`) | Launcher, menu entry and update setting for Zen on distros without it in their repos (copied unchanged; the PKGBUILD is based on theirs) | [zen-browser-bin](https://aur.archlinux.org/packages/zen-browser-bin) recipe, Luis Vervaet, Peter Jung and contributors |
 
 The patches were written for ZeXOS, but each one also quotes a few lines of
 the original code so it knows where to apply. While building, the PKGBUILDs

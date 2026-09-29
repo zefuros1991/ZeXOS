@@ -13,10 +13,11 @@ What you get:
 
 - **niri**, with keybinds, window rules, blur and animations already set up
 - **Noctalia v5** as the bar, launcher, notifications and lock screen. It uses a lightly patched build (`packaging/noctalia-zexos`) that attaches the three bar "islands" to the top edge and adds a launcher-only size option.
-- **Colours from your wallpaper**: Noctalia generates the theme from the current wallpaper and applies it to GTK, Qt and KDE apps, kitty, fuzzel, btop and the Zen browser. Dolphin's folders (Papirus icons) change colour with it. A mostly white wallpaper switches the desktop to light mode with grey-scale colours, so text, icons and the terminal stay readable, and the folders turn white; any other wallpaper switches it back to dark (to choose the mode yourself, create `~/.config/zexos/manual-theme-mode`)
+- **Colours from your wallpaper**: Noctalia generates the theme from the current wallpaper and applies it to GTK, Qt and KDE apps, kitty, fuzzel and btop. Dolphin's folders (Papirus icons) change colour with it. A mostly white wallpaper switches the desktop to light mode with grey-scale colours, so text, icons and the terminal stay readable, and the folders turn white; any other wallpaper switches it back to dark (to choose the mode yourself, create `~/.config/zexos/manual-theme-mode`)
 - **roller**, a wallpaper picker (`Mod+W`)
 - **SDDM** with the Pixie theme; the login screen follows your current wallpaper and shows the ZeXOS logo as its round picture (`packaging/pixie-sddm-zexos/make-avatar.py` draws it)
-- Everyday apps: **kitty** (terminal), **Dolphin** (files), **Gwenview** (images), **Neovim** (text), **Zen** (browser), **VLC** (media)
+- Everyday apps: **kitty** (terminal), **Dolphin** (files), **Gwenview** (images), **Neovim** (text), **VLC** (media)
+- No browser is installed: keep the one you have. `Mod+B` opens whichever browser is set as your default
 - Your shell stays yours: ZeXOS doesn't change it or add shell config, so bash, zsh or fish all work as before
 
 ## Screenshots
@@ -37,11 +38,10 @@ The whole desktop takes its colours from the wallpaper, so every screenshot belo
 
 Works on **CachyOS**, **Arch Linux** and distros that use Arch's own repos, such as **EndeavourOS**. It doesn't matter which desktop you picked when installing (KDE, GNOME, niri or none): ZeXOS adds what's missing, and your old desktop stays available in the login screen's session list. Manjaro (its own delayed repos) and Artix (no systemd) are not supported, and the installer stops with the reason.
 
-Almost everything comes from Arch's official repos, which all of these share. Only two things are CachyOS-only, and on other distros ZeXOS uses a stand-in:
+Almost everything comes from Arch's official repos, which all of these share. Only one thing is CachyOS-only, and on other distros ZeXOS uses a stand-in:
 
 | On CachyOS | Elsewhere |
 |---|---|
-| `zen-browser-bin` | Zen's official release, packaged by `packaging/zen-browser-zexos` |
 | Shelly (app store, `Mod+M`) | KDE Discover |
 
 The installer tells them apart by reading `/etc/os-release` (see `scripts/lib-distro.sh`), then runs `scripts/distro/cachyos.sh` or `scripts/distro/arch.sh`. Each step also asks pacman first, so if you added the CachyOS repos to your Arch install, the real CachyOS package is used. To pick by hand, put `ZEXOS_DISTRO=arch` (or `cachyos`) in front of the install command.
@@ -66,7 +66,7 @@ Run it as your normal user, not root. You need an account that can use `sudo` an
 `install.sh` first checks which distro you're on (and stops if it's one ZeXOS can't support), then runs four scripts from `scripts/`, in order:
 
 1. **Bootstrap** (`bootstrap.sh`): enables the `multilib` repo if it's off, updates the system, installs the basics (`git`, `curl`, `stow`, `base-devel`, `flatpak`), adds Flathub, and clones this repo to `~/.dotfiles`.
-2. **Packages** (`packages.sh`): installs the desktop (niri, Noctalia and its patched build, roller, fuzzel, kitty), the basics a non-niri install may lack (portals, keyring, fonts, sound, network, Bluetooth and power services), the everyday apps, fonts, themes, SDDM with Pixie, and the Zen browser. The few distro-specific steps come from `scripts/distro/`. If another login screen is in use (GDM, Plasma Login, ...), it switches to SDDM only after checking SDDM and Pixie are installed and ready. It skips anything already installed. It also adds a pacman hook that rebuilds the patched `qt6ct-kde` (which lets open apps like Dolphin change colour with the wallpaper) after every Qt update, since a new Qt can break it (`journalctl -u zexos-qt6ct-rebuild` shows how it went).
+2. **Packages** (`packages.sh`): installs the desktop (niri, Noctalia and its patched build, roller, fuzzel, kitty), the basics a non-niri install may lack (portals, keyring, fonts, sound, network, Bluetooth and power services), the everyday apps, fonts, themes, and SDDM with Pixie. The few distro-specific steps come from `scripts/distro/`. If another login screen is in use (GDM, Plasma Login, ...), it switches to SDDM only after checking SDDM and Pixie are installed and ready. It skips anything already installed. It also adds a pacman hook that rebuilds the patched `qt6ct-kde` (which lets open apps like Dolphin change colour with the wallpaper) after every Qt update, since a new Qt can break it (`journalctl -u zexos-qt6ct-rebuild` shows how it went).
 3. **Stow** (`stow.sh`): links every config package under `stow/` into your home folder with [GNU Stow](https://www.gnu.org/software/stow/). Any existing file in the way is first backed up to `backup/stow-<timestamp>/`.
 4. **Final touches** (`finaltouches.sh`): copies the wallpapers to `~/Pictures/Wallpapers` and sets up the login-screen wallpaper sync.
 
@@ -78,7 +78,7 @@ Each script writes a log next to itself (`bootstrap.log`, `packages.log`, …). 
 |---|---|
 | `Mod+Space` | App launcher |
 | `Mod+C` | Terminal (kitty) |
-| `Mod+B` | Browser (Zen) |
+| `Mod+B` | Web browser (your default) |
 | `Mod+E` | Files (Dolphin) |
 | `Mod+W` | Wallpaper picker (roller) |
 | `Mod+M` | Install and update apps (Shelly on CachyOS, Discover elsewhere) |

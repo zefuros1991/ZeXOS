@@ -19,7 +19,6 @@ not exist without them. Thank you.
 | [Zen Browser](https://zen-browser.app) | Web browser |
 | [Shelly](https://github.com/Seafoam-Labs/Shelly-ALPM) | App store for installing and updating software (Mod+M, CachyOS) |
 | [Discover](https://apps.kde.org/discover/) | The same job as Shelly on other Arch-based distros |
-| [Powerlevel10k](https://github.com/romkatv/powerlevel10k) | The terminal prompt |
 | [Pixie](https://github.com/xCaptaiN09/pixie-sddm) by xCaptaiN09 | The login screen theme |
 | [qt6ct](https://www.opencode.net/trialuser/qt6ct) by Ilya Kotov | Lets Qt and KDE apps follow the dark theme |
 | [Bibata](https://github.com/ful1e5/Bibata_Cursor) by ful1e5 | Mouse pointer |
@@ -44,9 +43,7 @@ which follow those projects' 0BSD packaging license).
 | `packaging/roller/zexos-wheel-and-size.patch` | ZeXOS changes to roller | [roller](https://github.com/zyrophix/roller), zyrophix |
 | `packaging/qt6ct-kde/zexos-live-colors.patch` | ZeXOS change to qt6ct so open apps pick up new colours | [qt6ct](https://www.opencode.net/trialuser/qt6ct), Ilya Kotov |
 | `packaging/qt6ct-kde/qt6ct-shenanigans.patch` | Lets qt6ct pass colours to KDE apps (copied unchanged) | [qt6ct-kde](https://aur.archlinux.org/packages/qt6ct-kde) recipe by Antonio Rojas, for [qt6ct](https://www.opencode.net/trialuser/qt6ct) by Ilya Kotov |
-| `packaging/zsh-theme-powerlevel10k-zexos/PKGBUILD` | Builds Powerlevel10k on distros without it in their repos (only the package name changed) | Arch Linux's former [zsh-theme-powerlevel10k](https://gitlab.archlinux.org/archlinux/packaging/packages/zsh-theme-powerlevel10k) recipe, Christian Rebischke and contributors |
 | `packaging/zen-browser-zexos/` (`zen-browser.sh`, `zen.desktop`, `policies.json`) | Launcher, menu entry and update setting for Zen on distros without it in their repos (copied unchanged; the PKGBUILD is based on theirs) | [zen-browser-bin](https://aur.archlinux.org/packages/zen-browser-bin) recipe, Luis Vervaet, Peter Jung and contributors |
-| `stow/zsh/.config/zsh/.p10k.zsh` | Prompt settings made with the Powerlevel10k setup wizard | [Powerlevel10k](https://github.com/romkatv/powerlevel10k), Roman Perepelitsa |
 
 The patches were written for ZeXOS, but each one also quotes a few lines of
 the original code so it knows where to apply. While building, the PKGBUILDs

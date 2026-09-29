@@ -166,7 +166,6 @@ CORE_PACMAN=(
     xwayland-satellite
     fuzzel
     kitty
-    zsh
     neovim
     adw-gtk-theme
     fastfetch
@@ -360,7 +359,7 @@ install_local() {
 # DISTRO-SPECIFIC STEPS
 # -----------------------------
 # The few things that differ between CachyOS and other Arch-based systems
-# (zsh plugins, Zen, the app store) live in scripts/distro/<name>.sh.
+# (Zen, the app store) live in scripts/distro/<name>.sh.
 # lib-distro.sh works out which one to use; see the notes at its top.
 . "$REPO_ROOT/scripts/lib-distro.sh"
 zexos_detect_distro

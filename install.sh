@@ -98,7 +98,7 @@ echo -e "${BLUE}This installer performs:${RESET}"
 echo "  1. Bootstrap system"
 echo "  2. Install packages"
 echo "  3. Deploy dotfiles"
-echo "  4. Final touches (default shell, login wallpaper)"
+echo "  4. Final touches (wallpapers, login wallpaper)"
 echo "--------------------------------------------------"
 
 # -----------------------------

@@ -19,7 +19,6 @@
 # before the repo's own environment.d file has been stowed.
 
 zexos_setup_xdg_env() {
-    zexos_setup_zdotdir
     # Respect anything already set (a prior call to this function earlier
     # in the same run, or a value the user's shell already exported).
     : "${XDG_CONFIG_HOME:=$HOME/.config}"
@@ -71,28 +70,8 @@ XDG_CONFIG_HOME=$XDG_CONFIG_HOME
 XDG_CACHE_HOME=$XDG_CACHE_HOME
 XDG_DATA_HOME=$XDG_DATA_HOME
 XDG_STATE_HOME=$XDG_STATE_HOME
-ZDOTDIR=$XDG_CONFIG_HOME/zsh
 BUN_INSTALL=$XDG_DATA_HOME/bun
 BUN_INSTALL_CACHE_DIR=$XDG_CACHE_HOME/bun
 TRITON_CACHE_DIR=$XDG_CACHE_HOME/triton
 EOF
-}
-
-# zsh reads $ZDOTDIR/.zshrc, but it has to learn ZDOTDIR before reading any
-# user file, so the only place to set it is the system-wide /etc/zsh/zshenv.
-# This keeps ~/.zshrc, ~/.zcompdump etc. out of $HOME. Needs sudo; if sudo
-# isn't available it warns and carries on (zsh then falls back to ~/.zshrc,
-# which no longer exists, so zsh would start unconfigured until this is run).
-zexos_setup_zdotdir() {
-    local f=/etc/zsh/zshenv
-    local line='[[ -z "$ZDOTDIR" ]] && export ZDOTDIR="${XDG_CONFIG_HOME:-$HOME/.config}/zsh"'
-    grep -qF 'export ZDOTDIR=' "$f" 2>/dev/null && return 0
-    if sudo -v 2>/dev/null; then
-        sudo mkdir -p /etc/zsh
-        printf '%s\n%s\n' "# Written by ZeXOS scripts/lib-xdg.sh: keep zsh dotfiles out of \$HOME (XDG)." "$line" \
-            | sudo tee -a "$f" >/dev/null
-    else
-        echo "WARNING: could not write $f (no sudo). Add this line to it by hand:" >&2
-        echo "  $line" >&2
-    fi
 }

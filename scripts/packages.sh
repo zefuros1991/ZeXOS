@@ -13,6 +13,8 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 # runs, but set it up here too in case packages.sh is ever run on its own.
 # Idempotent — see scripts/lib-xdg.sh.
 . "$REPO_ROOT/scripts/lib-xdg.sh"
+# The coloured ZeXOS logo at the top (see scripts/lib-banner.sh).
+. "$REPO_ROOT/scripts/lib-banner.sh"
 zexos_setup_xdg_env
 
 LOGFILE="$REPO_ROOT/packages.log"
@@ -54,21 +56,11 @@ spinner() {
 # ASCII HEADER
 # -----------------------------
 clear
-cat << "EOF"
+zexos_banner "ZeXOS PACKAGE INSTALLER"
 
-███████╗███████╗██╗  ██╗ ██████╗ ███████╗
-╚══███╔╝██╔════╝╚██╗██╔╝██╔═══██╗██╔════╝
-  ███╔╝ █████╗   ╚███╔╝ ██║   ██║███████╗
- ███╔╝  ██╔══╝   ██╔██╗ ██║   ██║╚════██║
-███████╗███████╗██╗  ██╗╚██████╔╝███████║
-╚══════╝╚══════╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
-
-        ZeXOS PACKAGE INSTALLER
-EOF
-
-echo -e "${BLUE}GitHub: https://github.com/zefuros1991/ZeXOS${RESET}"
-echo -e "${BLUE}Log: $LOGFILE${RESET}"
-echo "--------------------------------------------------"
+echo -e "${VIOLET}GitHub: https://github.com/zefuros1991/ZeXOS${RESET}"
+echo -e "${VIOLET}Log: $LOGFILE${RESET}"
+echo -e "${VIOLET}--------------------------------------------------${RESET}"
 
 # -----------------------------
 # SUDO KEEPALIVE (standalone safety)

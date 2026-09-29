@@ -72,7 +72,7 @@ Run it as your normal user, not root. You need an account that can use `sudo` an
 3. **Stow** (`stow.sh`): links every config package under `stow/` into your home folder with [GNU Stow](https://www.gnu.org/software/stow/). Any existing file in the way is first backed up to `backup/stow-<timestamp>/`.
 4. **Final touches** (`finaltouches.sh`): copies the wallpapers to `~/Pictures/Wallpapers` and sets up the login-screen wallpaper sync.
 
-Each script writes a log next to itself (`bootstrap.log`, `packages.log`, …). Logs are gitignored.
+Every step keeps a log in `~/.dotfiles`: `install.log`, `bootstrap.log`, `packages.log`, `stow.log` and `finaltouches.log`. If something goes wrong, look there first. Logs are gitignored.
 
 ## Main keybinds
 

@@ -37,7 +37,10 @@ shell_runs_fastfetch() {
 if command -v fastfetch >/dev/null 2>&1 \
     && [ ! -e "${XDG_CONFIG_HOME:-$HOME/.config}/zexos/no-fastfetch" ] \
     && ! shell_runs_fastfetch; then
-    fastfetch
+    # Started from your shell, so its "Shell:" line names your shell and not
+    # this script. The "; :" stops the shell from handing itself over to
+    # fastfetch, which would make this script its parent again.
+    "$login_shell" -c 'fastfetch; :'
 fi
 
 # kitten run-shell keeps kitty's shell integration working, which a plain

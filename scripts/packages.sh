@@ -365,6 +365,21 @@ MANGO_PACMAN=(
 
 install_pacman "Mango" "${MANGO_PACMAN[@]}"
 
+# -----------------------------
+# HYPRLAND (a third compositor, picked at the login screen)
+# -----------------------------
+# Hyprland tiles windows: each new one takes half of the one you're in.
+# It ships its own login-screen entry. xdg-desktop-portal-hyprland does
+# screen sharing; screenshots reuse Mango's grim, slurp and wl-clipboard.
+# dms-shell-hyprland is DMS's Hyprland support. All in the Arch/CachyOS repos.
+HYPR_PACMAN=(
+    hyprland
+    xdg-desktop-portal-hyprland
+    dms-shell-hyprland
+)
+
+install_pacman "Hyprland" "${HYPR_PACMAN[@]}"
+
 # =========================================================
 # 2. PACKAGES BUILT HERE (no AUR)
 # =========================================================

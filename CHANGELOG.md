@@ -37,13 +37,21 @@ Planned as 1.1.0.
   scrolling layout, gaps, borders, round corners, blur, window rules and
   the same keys. Both shells work in it, with the shell switcher, and
   window colours follow the wallpaper. See
-  [Two compositors](README.md#two-compositors).
-- `zexos-screenshot` takes area, screen and window screenshots on Mango.
+  [Three compositors](README.md#three-compositors).
+- Hyprland as a third compositor, picked on the login screen
+  (`hyprland`, `xdg-desktop-portal-hyprland`, `dms-shell-hyprland`). Its
+  config (new `hyprland` stow package, written in Hyprland's Lua format)
+  tiles windows instead of scrolling them (the "dwindle" layout), and
+  otherwise copies niri: gaps, borders, round corners, blur, window rules
+  and the same keys. Both shells work in it, with the shell switcher, and
+  window colours follow the wallpaper.
+- `zexos-screenshot` takes area, screen and window screenshots on Mango
+  and Hyprland.
 
 ### Changed
 
 - niri starts the desktop shell through `zshell start` instead of starting
-  Noctalia directly. Mango does the same.
+  Noctalia directly. Mango and Hyprland do the same.
 - niri window colours and kitty colours follow whichever shell is running.
 - The roller wallpaper picker sets the wallpaper through `zshell`. After a
   shell switch, the login screen keeps the last wallpaper until the next
@@ -82,6 +90,13 @@ Planned as 1.1.0.
   time.
 - Noctalia's cheat sheet doesn't know Mango, so under Noctalia `Mod+F1`
   shows a simple searchable list instead.
+
+### Known gaps in Hyprland
+
+- It tiles instead of scrolling, so there is no overview (`Mod+O`) and
+  no keys to jump to the first or last window.
+- `Mod+Minus`/`Mod+Equal` move a window's edge by 100 pixels instead of
+  10% at a time.
 
 ## [1.0.0] - 2026-09-30
 

@@ -14,7 +14,7 @@ What you get:
 - **niri**, with keybinds, window rules, blur and animations already set up
 - **Noctalia v5** as the bar, launcher, notifications and lock screen. It uses a lightly patched build (`packaging/noctalia-zexos`) that attaches the three bar "islands" to the top edge and adds a launcher-only size option.
 - **Colours from your wallpaper**: Noctalia generates the theme from the current wallpaper and applies it to GTK, Qt and KDE apps, kitty, fuzzel and btop. Dolphin's folders (Papirus icons) change colour with it. A mostly white wallpaper switches the desktop to light mode with grey-scale colours, so text, icons and the terminal stay readable, and the folders turn white; any other wallpaper switches it back to dark (to choose the mode yourself, create `~/.config/zexos/manual-theme-mode`)
-- **Mango** as a second compositor you can pick at the login screen, set up to work like niri (see [Two compositors](#two-compositors))
+- **Mango** and **Hyprland** as compositors you can pick at the login screen instead of niri, with the same keys (see [Three compositors](#three-compositors))
 - **DankMaterialShell** as a second shell you can switch to with `Mod+Shift+D` (see [Two desktop shells](#two-desktop-shells))
 - **roller**, a wallpaper picker (`Mod+W`)
 - **SDDM** with the Pixie theme; the login screen follows your current wallpaper and shows the ZeXOS logo as its round picture (`packaging/pixie-sddm-zexos/make-avatar.py` draws it)
@@ -99,7 +99,7 @@ Every step keeps a log in `~/.dotfiles`: `install.log`, `bootstrap.log`, `packag
 | `Mod+Shift+Escape` | niri's hotkey overlay |
 | `Mod+Shift+D` | Change desktop shell (Noctalia or DankMaterialShell) |
 
-The full list is in `stow/niri/.config/niri/cfg/keybinds.kdl` (`stow/mango/.config/mango/cfg/keybinds.conf` for Mango). These keys do the same thing in both desktop shells and both compositors.
+The full list is in `stow/niri/.config/niri/cfg/keybinds.kdl` (`stow/mango/.config/mango/cfg/keybinds.conf` for Mango, `stow/hyprland/.config/hypr/cfg/keybinds.lua` for Hyprland). These keys do the same thing in both desktop shells and all three compositors.
 
 ## Two desktop shells
 
@@ -115,9 +115,9 @@ Everything follows the wallpaper in both shells: window borders, kitty, Dolphin 
 
 What DMS can't do yet, compared to Noctalia: there is no USB drive island (drives still mount from Dolphin) and no "Restart to UEFI" in the power menu.
 
-## Two compositors
+## Three compositors
 
-The compositor is the part that draws and arranges your windows. ZeXOS sets up two, and you pick one on the login screen (the session menu next to the password box): **niri** (the default) and [**Mango**](https://github.com/mangowm/mango).
+The compositor is the part that draws and arranges your windows. ZeXOS sets up three, and you pick one on the login screen (the session menu next to the password box): **niri** (the default), [**Mango**](https://github.com/mangowm/mango) and [**Hyprland**](https://hypr.land).
 
 Mango is set up to feel like niri: windows sit side by side in a row that scrolls sideways, each one half the screen wide at first, with the same gaps, borders, round corners, blur and keys. Both shells work in it, `Mod+Shift+D` switches between them, and window colours follow the wallpaper the same way. Mango's config is in `~/.config/mango`.
 
@@ -128,6 +128,14 @@ Some niri things Mango doesn't have, so in Mango:
 - `Mod+Minus` and `Mod+Equal` step through set widths (a quarter, a third, a half, two thirds, three quarters, full) instead of 10% at a time.
 - `Mod+Shift+Escape` shows the same cheat sheet as `Mod+F1` (niri's own hotkey overlay doesn't exist there). Under Noctalia it is a simple searchable list.
 - Screenshots use `zexos-screenshot` (grim and slurp) and are saved and copied the same way.
+
+Hyprland is the odd one out on purpose: it **tiles** instead of scrolling. Each new window takes half of the one you're in, side by side on wide windows and one above the other on tall ones, like folding a sheet of paper in half and then in half again. Nothing is ever off screen. `Mod+J` flips a split between side by side and one above the other. Everything else matches niri: the gaps, borders, round corners, blur, keys and both shells, and window colours follow the wallpaper. Hyprland's config is in `~/.config/hypr`, written in Lua (`hyprland.lua` plus the files in `cfg/`).
+
+What is different in Hyprland:
+
+- There is no overview (`Mod+O`) and no jump to the first or last window (`Mod+Home`/`Mod+End`).
+- `Mod+Minus`/`Mod+Equal` (and with Shift, taller/shorter) move a window's edge by 100 pixels at a time.
+- `Mod+Shift+Escape` shows the same cheat sheet as `Mod+F1`.
 
 ## Wallpapers
 
@@ -143,7 +151,7 @@ The animated one, `zexos-topo-energy`, has green energy running along the purple
 
 ## Screens
 
-niri detects your screens by itself. To set resolution, scale or position, run `niri msg outputs` and add blocks to `stow/niri/.config/niri/monitors.kdl` (there's a commented example in the file). For Mango, run `mmsg get all-monitors` and add `monitorrule=` lines to `stow/mango/.config/mango/monitors.conf`.
+niri detects your screens by itself. To set resolution, scale or position, run `niri msg outputs` and add blocks to `stow/niri/.config/niri/monitors.kdl` (there's a commented example in the file). For Mango, run `mmsg get all-monitors` and add `monitorrule=` lines to `stow/mango/.config/mango/monitors.conf`. For Hyprland, run `hyprctl monitors` and add `hl.monitor` lines to `stow/hyprland/.config/hypr/monitors.lua`.
 
 ## Config packages
 
@@ -152,14 +160,15 @@ Every folder under `stow/` is one Stow package, a slice of your home folder that
 | Package | Manages |
 |---|---|
 | `btop` | `~/.config/btop` |
-| `desktop` | default apps (`mimeapps.list`), GTK/Qt/KDE settings, and `zshell` (the shell switcher) |
+| `desktop` | default apps (`mimeapps.list`), GTK/Qt/KDE settings, `zshell` (the shell switcher) and `zexos-screenshot` (screenshots on Mango and Hyprland) |
 | `dms` | the first-start DankMaterialShell settings (copied, never linked) |
 | `fastfetch` | `~/.config/fastfetch` (the system info shown in kitty) |
 | `fuzzel` | `~/.config/fuzzel` |
 | `htop` | `~/.config/htop` |
 | `input` | keyboard and touchpad settings read by Qt/KDE apps |
 | `kitty` | `~/.config/kitty` |
-| `mango` | `~/.config/mango`, and `zexos-screenshot` |
+| `hyprland` | `~/.config/hypr` |
+| `mango` | `~/.config/mango` |
 | `niri` | `~/.config/niri` |
 | `noctalia` | `~/.config/noctalia` (bar layout, plugins, theming), the SDDM wallpaper-sync script, the light/dark switch and the script that makes the folder icons follow the wallpaper |
 | `roller` | `~/.config/roller` and its launcher files |

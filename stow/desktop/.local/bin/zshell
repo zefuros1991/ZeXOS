@@ -5,7 +5,7 @@
 # passes each action on to whichever shell you picked, so the same keys
 # work in both.
 #
-#   zshell start            start the shell you picked (niri or Mango runs this at login)
+#   zshell start            start the shell you picked (the compositor runs this at login)
 #   zshell switch <name>    change shell now and remember it (noctalia | dms)
 #   zshell menu             pick a shell from a small menu (Mod+Shift+D)
 #   zshell current          print the shell you picked
@@ -30,6 +30,7 @@ CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}"
 CHOICE_FILE="$CONF_DIR/zexos/shell"
 NIRI_DIR="$CONF_DIR/niri"
 MANGO_DIR="$CONF_DIR/mango"
+HYPR_DIR="$CONF_DIR/hypr"
 DMS_DIR="$CONF_DIR/DankMaterialShell"
 DMS_SEED="${XDG_DATA_HOME:-$HOME/.local/share}/zexos/dms"
 WALL_DIR="$HOME/Pictures/Wallpapers"
@@ -62,11 +63,12 @@ current() {
     echo "$shell"
 }
 
-# Window colours (niri and Mango) come from the running shell. config.kdl
-# always loads noctalia.kdl and then shell-colors.kdl; for DMS this file
-# points at the colours DMS writes, so they win. niri reloads it on its
-# own. Mango's config.conf does the same with noctalia.conf and
-# shell-colors.conf, but needs to be told to reload.
+# Window colours (niri, Mango and Hyprland) come from the running shell.
+# config.kdl always loads noctalia.kdl and then shell-colors.kdl; for DMS
+# this file points at the colours DMS writes, so they win. niri reloads it
+# on its own. Mango's config.conf and Hyprland's hyprland.lua do the same
+# (noctalia.conf / noctalia.lua, then shell-colors), but need to be told
+# to reload.
 link_colors() {
     local file="$NIRI_DIR/shell-colors.kdl"
     if [ -d "$NIRI_DIR" ]; then
@@ -88,6 +90,17 @@ link_colors() {
                 '# its colours come from noctalia.conf.' > "$file"
         fi
         [ -n "${MANGO_INSTANCE_SIGNATURE:-}" ] && mmsg dispatch reload_config >/dev/null 2>&1
+    fi
+    file="$HYPR_DIR/shell-colors.lua"
+    if [ -d "$HYPR_DIR" ]; then
+        if [ "$1" = dms ]; then
+            printf '%s\n' '-- Written by zshell: DankMaterialShell is the active shell.' \
+                'pcall(require, "dms.colors")' > "$file"
+        else
+            printf '%s\n' '-- Written by zshell: Noctalia is the active shell,' \
+                '-- its colours come from noctalia.lua.' > "$file"
+        fi
+        [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ] && hyprctl reload >/dev/null 2>&1
     fi
     return 0
 }
@@ -250,6 +263,8 @@ switch() {
         niri msg action spawn -- zshell start
     elif [ -n "${MANGO_INSTANCE_SIGNATURE:-}" ]; then
         mmsg dispatch "spawn,zshell start"
+    elif [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+        hyprctl dispatch 'hl.dsp.exec_cmd("zshell start")' >/dev/null
     else
         setsid -f zshell start >/dev/null 2>&1
     fi
@@ -309,7 +324,9 @@ mango_cheatsheet() {
 
 # The compositor we run in, for the DMS cheat sheet.
 compositor() {
-    if [ -n "${MANGO_INSTANCE_SIGNATURE:-}" ]; then echo mangowc; else echo niri; fi
+    if [ -n "${MANGO_INSTANCE_SIGNATURE:-}" ]; then echo mangowc
+    elif [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then echo hyprland
+    else echo niri; fi
 }
 
 # One action, sent to the shell in use.

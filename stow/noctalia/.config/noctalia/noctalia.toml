@@ -129,7 +129,7 @@ source = "wallpaper"
 wallpaper_scheme = "faithful"
 
 [theme.templates]
-builtin_ids = ["gtk3", "gtk4", "qt", "kcolorscheme", "niri", "kitty", "btop"]
+builtin_ids = ["gtk3", "gtk4", "qt", "kcolorscheme", "niri", "mango", "kitty", "btop"]
 community_ids = ["fuzzel"]
 
 # ═══ Pop-up size ════════════════════════════════════════════════════════════

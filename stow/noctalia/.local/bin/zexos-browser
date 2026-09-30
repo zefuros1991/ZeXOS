@@ -3,10 +3,14 @@
 # this asks the system which browser handles web links: the one you set
 # with your browser's "make default" button or your desktop's settings.
 # If none is set, it takes the first installed app that can open web links.
+# DankMaterialShell's dms-open.desktop also says it opens web links, but it
+# only asks which app to use for a link, and with no link it does nothing.
+# Skip it, so Mod+B still opens a real browser.
 app=$(xdg-mime query default x-scheme-handler/https 2>/dev/null)
-if [ -z "$app" ]; then
+if [ -z "$app" ] || [ "$app" = dms-open.desktop ]; then
     app=$(gio mime x-scheme-handler/https 2>/dev/null |
-        sed -n '/^Registered applications:/{n;s/^[[:space:]]*//p;q}')
+        sed -n '/^Registered applications:/,/^[^[:space:]]/{s/^[[:space:]]\{1,\}//p}' |
+        grep -vx dms-open.desktop | head -n 1)
 fi
 if [ -n "$app" ]; then
     # gtk-launch starts an app by its .desktop name. If it's missing,

@@ -329,9 +329,6 @@ menu() {
     done
     ZX_ITEMS="[$items]" \
     ZX_BG="$(fuzzel_colour background)" \
-    ZX_TEXT="$(fuzzel_colour text)" \
-    ZX_ACCENT="$(fuzzel_colour prompt)" \
-    ZX_SELECTION="$(fuzzel_colour selection)" \
     ZX_BORDER="$(fuzzel_colour border)" \
         setsid -f qs -c zexos-switcher >/dev/null 2>&1
 }

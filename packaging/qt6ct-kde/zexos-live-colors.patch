@@ -1,5 +1,5 @@
 diff --git a/src/qt6ct-common/qt6ct.cpp b/src/qt6ct-common/qt6ct.cpp
-index 250987d..18855fd 100644
+index 250987d..533c3f4 100644
 --- a/src/qt6ct-common/qt6ct.cpp
 +++ b/src/qt6ct-common/qt6ct.cpp
 @@ -170,7 +170,15 @@ std::optional<QPalette> Qt6CT::loadColorScheme(const QString &filePath)
@@ -20,12 +20,16 @@ index 250987d..18855fd 100644
  
      QSettings settings(filePath, QSettings::IniFormat);
 diff --git a/src/qt6ct-qtplugin/qt6ctplatformtheme.cpp b/src/qt6ct-qtplugin/qt6ctplatformtheme.cpp
-index 78c2eae..d500d83 100644
+index 78c2eae..66bd3b5 100644
 --- a/src/qt6ct-qtplugin/qt6ctplatformtheme.cpp
 +++ b/src/qt6ct-qtplugin/qt6ctplatformtheme.cpp
-@@ -290,7 +290,25 @@ void Qt6CTPlatformTheme::createFSWatcher()
+@@ -288,9 +288,28 @@ void Qt6CTPlatformTheme::createFSWatcher()
+ 
+     QTimer *timer = new QTimer(this);
      timer->setSingleShot(true);
-     timer->setInterval(3000);
+-    timer->setInterval(3000);
++    //ZeXOS: reload almost at once, so apps change colour together with the wallpaper
++    timer->setInterval(200);
      connect(watcher, &QFileSystemWatcher::directoryChanged, timer, qOverload<>(&QTimer::start));
 +    //ZeXOS: also reload when the colour scheme file changes, so apps follow
 +    //a new wallpaper without being restarted
@@ -49,7 +53,7 @@ index 78c2eae..d500d83 100644
  }
  
  void Qt6CTPlatformTheme::updateSettings()
-@@ -298,6 +316,7 @@ void Qt6CTPlatformTheme::updateSettings()
+@@ -298,6 +317,7 @@ void Qt6CTPlatformTheme::updateSettings()
      qCDebug(lqt6ct) << "updating settings..";
      readSettings();
      applySettings();

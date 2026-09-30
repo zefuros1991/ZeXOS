@@ -46,6 +46,13 @@ Planned as 1.1.0.
 - Sound, music and brightness keys have readable names on the shortcut
   cheat sheet. Noctalia's cheat sheet shows them after the next login.
 
+### Fixed
+
+- Under DMS, kitty now takes the wallpaper colours. It never loaded them
+  before, and windows that are already open now update too.
+- `Mod+B` opens a real browser when DMS is installed. DMS's link chooser
+  (`dms-open`) says it opens web links, so it was picked by mistake.
+
 ### Known gaps in DMS
 
 - DMS can't group several bar items into one island like Noctalia, so

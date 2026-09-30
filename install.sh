@@ -303,15 +303,27 @@ NOCTALIA_WRITES=(
     stow/theme/.config/qt5ct/colors/noctalia.conf
     stow/theme/.config/qt6ct/colors/noctalia.conf
 )
+# ZEXOS_BRANCH=<branch> on an existing install moves it to that branch
+# (say from main to beta and back), so compare against that branch instead.
+cur_branch="$(git -C "$TARGET" rev-parse --abbrev-ref HEAD 2>/dev/null)"
+new_ref='@{u}'
+[ "$cur_branch" != "$BRANCH" ] && new_ref="origin/$BRANCH"
 if git -C "$TARGET" fetch -q 2>/dev/null; then
     color_backup="$TARGET/backup/update-$(date +%Y%m%d-%H%M%S)"
-    for f in $(git -C "$TARGET" diff --name-only HEAD '@{u}' -- "${NOCTALIA_WRITES[@]}"); do
+    for f in $(git -C "$TARGET" diff --name-only HEAD "$new_ref" -- "${NOCTALIA_WRITES[@]}"); do
         git -C "$TARGET" diff --quiet HEAD -- "$f" && continue
         mkdir -p "$color_backup/$(dirname "$f")"
         cp "$TARGET/$f" "$color_backup/$f"
         git -C "$TARGET" checkout -q HEAD -- "$f"
         echo -e "${CYAN}Put back $f for the update (your copy: $color_backup/$f)${RESET}"
     done
+fi
+if [ "$cur_branch" != "$BRANCH" ]; then
+    if git -C "$TARGET" checkout -q -B "$BRANCH" --track "origin/$BRANCH" 2>/dev/null; then
+        echo -e "${GREEN}✔ Switched ZeXOS from $cur_branch to $BRANCH${RESET}"
+    else
+        echo -e "${YELLOW}Could not switch ZeXOS from $cur_branch to $BRANCH (local changes or no such branch). Staying on $cur_branch.${RESET}"
+    fi
 fi
 if git -C "$TARGET" pull --ff-only -q; then
     echo -e "${GREEN}✔ Repository already present, updated to the newest version${RESET}"

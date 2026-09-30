@@ -237,9 +237,12 @@ SUDO_KEEPALIVE_PID=$!
 trap 'kill $SUDO_KEEPALIVE_PID 2>/dev/null || true' EXIT
 
 # A minimal Arch install doesn't come with git, and the next step needs it.
+# -Syu, not -S: on a system whose package lists are a few days old, -S asks
+# the mirrors for a git version they have already replaced and fails. Arch
+# only supports refreshing the lists together with a full update.
 if ! command -v git >/dev/null 2>&1; then
-    echo -e "${CYAN}Installing git${RESET}"
-    if ! sudo pacman -S --needed --noconfirm git; then
+    echo -e "${CYAN}Updating the system and installing git${RESET}"
+    if ! sudo pacman -Syu --needed --noconfirm git; then
         echo -e "${RED}✖ Could not install git, which is needed to download ZeXOS${RESET}"
         exit 1
     fi

@@ -16,9 +16,12 @@ Planned as 1.1.0.
   default. See [Two desktop shells](README.md#two-desktop-shells).
 - `zshell`, one helper that every shell keybind calls. It passes the action
   to the running shell, so the keys work the same in both.
-- `Mod+Shift+D` opens a menu to switch shells, styled like the shells'
-  launchers, with each shell's logo before its name
-  (`fuzzel/switcher.ini`). The choice is saved per user in
+- `Mod+Shift+D` opens a menu to switch shells: two big choices, each with
+  the shell's logo and its name in Nunito ExtraBold (`ttf-nunito`). It is a
+  small Quickshell window (`~/.config/quickshell/zexos-switcher`) with no
+  search box, so a stray key press can't hide the choices. Arrows, Tab or
+  j/k move, Enter picks, 1/2 pick straight away, Esc or a click outside
+  closes, and the same key closes it again. The choice is saved per user in
   `~/.config/zexos/shell`.
 - A ZeXOS look for DMS on its first start (bar, fonts, wallpaper), in the
   new `dms` stow package. The bar has the same items in the same order as

@@ -40,6 +40,9 @@ stow/kitty/.config/kitty/themes/shell.conf
 stow/kitty/.config/kitty/dank-theme.conf
 stow/niri/.config/niri/shell-colors.kdl
 stow/niri/.config/niri/dms/
+stow/mango/.config/mango/shell-colors.conf
+stow/mango/.config/mango/noctalia.conf
+stow/mango/.config/mango/dms/
 stow/theme/.config/gtk-3.0/shell.css
 stow/theme/.config/gtk-4.0/shell.css
 stow/theme/.config/gtk-3.0/dank-colors.css

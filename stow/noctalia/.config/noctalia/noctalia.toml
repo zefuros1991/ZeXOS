@@ -211,6 +211,8 @@ path = "~/Pictures/Wallpapers/zexos-aurora.jpg"
 # switch to light mode if the new wallpaper is mostly white (dark otherwise).
 [hooks]
 wallpaper_changed = ["~/.local/bin/sync-sddm-wallpaper.sh", "~/.local/bin/auto-theme-mode.sh"]
+# New colours are written: tell open Qt apps (Dolphin) to reload them.
+colors_changed = ["~/.local/bin/zexos-qt-refresh"]
 
 # Blurred, tinted wallpaper behind the overview (Mod+O).
 # Needs the "noctalia-backdrop" rule in niri's rules.kdl.

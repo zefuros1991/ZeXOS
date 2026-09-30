@@ -168,6 +168,8 @@ link_theme() {
     if [ -e "$schemes/$scheme" ]; then
         ln -sfn "$scheme" "$schemes/ZeXOS.colors"
         "$HOME/.local/bin/zexos-kde-colors" "$schemes/$scheme" 2>/dev/null || true
+        # Open Qt apps only reload when told to (see zexos-qt-refresh).
+        "$HOME/.local/bin/zexos-qt-refresh" 2>/dev/null || true
     fi
 
     # GTK: gtk.css imports shell.css last, which loads DMS's colours or

@@ -95,8 +95,9 @@ Planned as 1.1.0.
 
 - It tiles instead of scrolling, so there is no overview (`Mod+O`) and
   no keys to jump to the first or last window.
-- `Mod+Minus`/`Mod+Equal` move a window's edge by 100 pixels instead of
-  10% at a time.
+- `Mod+Minus`/`Mod+Equal` move the line between two windows by 100
+  pixels instead of changing one window's width by 10%, so on the
+  right-hand window `Mod+Equal` makes it smaller.
 
 ## [1.0.0] - 2026-09-30
 

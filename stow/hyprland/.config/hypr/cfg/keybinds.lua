@@ -78,11 +78,13 @@ hl.bind("SUPER + CTRL + down", hl.dsp.window.move({ direction = "down" }), { des
 hl.bind("SUPER + CTRL + J", hl.dsp.window.move({ direction = "down" }), { description = "Move the window down" })
 
 -- 9. Sizes
--- Each press moves the window's edge by 100 pixels.
-hl.bind("SUPER + minus", hl.dsp.window.resize({ x = -100, y = 0, relative = true }), { repeating = true, description = "Narrower window" })
-hl.bind("SUPER + equal", hl.dsp.window.resize({ x = 100, y = 0, relative = true }), { repeating = true, description = "Wider window" })
-hl.bind("SUPER + SHIFT + minus", hl.dsp.window.resize({ x = 0, y = -100, relative = true }), { repeating = true, description = "Shorter window" })
-hl.bind("SUPER + SHIFT + equal", hl.dsp.window.resize({ x = 0, y = 100, relative = true }), { repeating = true, description = "Taller window" })
+-- Each press moves the line between two windows by 100 pixels: one
+-- window grows, its neighbour shrinks. (On the right-hand window,
+-- Mod+Equal therefore makes it smaller: the line moves right.)
+hl.bind("SUPER + minus", hl.dsp.window.resize({ x = -100, y = 0, relative = true }), { repeating = true, description = "Move the split left" })
+hl.bind("SUPER + equal", hl.dsp.window.resize({ x = 100, y = 0, relative = true }), { repeating = true, description = "Move the split right" })
+hl.bind("SUPER + SHIFT + minus", hl.dsp.window.resize({ x = 0, y = -100, relative = true }), { repeating = true, description = "Move the split up" })
+hl.bind("SUPER + SHIFT + equal", hl.dsp.window.resize({ x = 0, y = 100, relative = true }), { repeating = true, description = "Move the split down" })
 
 -- 10. Several screens (add Shift)
 -- ...and Shift+Ctrl carries the window with you.

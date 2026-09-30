@@ -134,7 +134,7 @@ Hyprland is the odd one out on purpose: it **tiles** instead of scrolling. Each 
 What is different in Hyprland:
 
 - There is no overview (`Mod+O`) and no jump to the first or last window (`Mod+Home`/`Mod+End`).
-- `Mod+Minus`/`Mod+Equal` (and with Shift, taller/shorter) move a window's edge by 100 pixels at a time.
+- `Mod+Minus`/`Mod+Equal` move the line between two windows left or right by 100 pixels (with Shift, up or down): one window grows and its neighbour shrinks.
 - `Mod+Shift+Escape` shows the same cheat sheet as `Mod+F1`.
 
 ## Wallpapers

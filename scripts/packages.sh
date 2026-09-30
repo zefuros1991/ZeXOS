@@ -385,6 +385,20 @@ fi
 install_local "Mouse pointer (Bibata)" bibata-cursor-zexos
 
 # -----------------------------
+# VIDEO WALLPAPER (mpvpaper)
+# -----------------------------
+# Plays the animated zexos-topo-energy wallpaper, through Noctalia's
+# "Video Wallpaper" plugin. CachyOS has mpvpaper in its repos; plain Arch
+# and EndeavourOS don't, so there it is built from packaging/mpvpaper.
+# socat is optional: the plugin uses it to keep a video slideshow in step.
+install_pacman "Video Wallpaper" mpv socat
+if pacman -Si mpvpaper &>/dev/null; then
+    install_pacman "Video Wallpaper (mpvpaper)" mpvpaper
+else
+    install_local "Video Wallpaper (mpvpaper)" mpvpaper
+fi
+
+# -----------------------------
 # LOGIN MANAGER: SDDM PIXIE
 # -----------------------------
 # The theme's own package pulls in sddm and the Qt parts it needs.

@@ -87,11 +87,16 @@ type = "aristides/udiskie:status"
 # ═══ Plugins ════════════════════════════════════════════════════════════════
 # arch-updater: counts waiting updates.  udiskie: USB drives.
 # keybind-cheatsheet: the Mod+F1 shortcut list.
+# mpvpaper: video wallpapers (the animated zexos-topo-energy), picked from
+# ~/Videos/Wallpapers in its own panel.
 # (The wallpaper picker is roller, a separate app on Mod+W, not a plugin.)
 
 [plugins]
-enabled = ["yuuto/arch-updater", "kenn/keybind-cheatsheet", "aristides/udiskie"]
+enabled = ["yuuto/arch-updater", "kenn/keybind-cheatsheet", "aristides/udiskie", "noctalia/mpvpaper"]
 auto_update = "none"
+
+[plugin_settings."noctalia/mpvpaper"]
+video_directory = "~/Videos/Wallpapers"
 
 # Plugin panels open under the widget you clicked. The USB one needs
 # "attached" for that, otherwise it always opens in the middle.

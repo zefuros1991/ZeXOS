@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Take a screenshot on Mango, the way niri does it by itself:
+# Take a screenshot on Mango or Hyprland, the way niri does it by itself:
 # save it to ~/Pictures/Screenshots and copy it to the clipboard.
 #
 #   zexos-screenshot area     drag to pick an area
@@ -7,7 +7,8 @@
 #   zexos-screenshot window   just the focused window
 #
 # Needs grim (takes the picture), slurp (lets you pick an area) and
-# wl-copy (clipboard). Mango's keybinds.conf calls this.
+# wl-copy (clipboard). Mango's keybinds.conf and Hyprland's keybinds.lua
+# call this.
 set -euo pipefail
 
 dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
@@ -30,15 +31,31 @@ case "${1:-}" in
         grim -g "$geom" "$file"
         ;;
     screen)
-        # The screen the pointer is on.
-        mon=$(mmsg get cursorpos 2>/dev/null | json_get monitor || true)
+        # The screen the pointer is on (Mango) or the focused screen
+        # (Hyprland).
+        if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+            mon=$(hyprctl -j monitors 2>/dev/null | python3 -c 'import json, sys
+print(next((m["name"] for m in json.load(sys.stdin) if m.get("focused")), ""))' || true)
+        else
+            mon=$(mmsg get cursorpos 2>/dev/null | json_get monitor || true)
+        fi
         if [ -n "$mon" ]; then grim -o "$mon" "$file"; else grim "$file"; fi
         ;;
     window)
-        # mmsg tells where the focused window is and how big it is.
-        info=$(mmsg get focusing-client 2>/dev/null || true)
-        geom=$(json_get x y width height <<<"$info" | tr '\n' ' ' \
-            | awk 'NF==4 {printf "%d,%d %dx%d", $1, $2, $3, $4}' || true)
+        # The compositor tells where the focused window is and how big it is.
+        if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+            info=$(hyprctl -j activewindow 2>/dev/null || true)
+            geom=$(python3 -c 'import json, sys
+try:
+    d = json.load(sys.stdin)
+    print("%d,%d %dx%d" % (*d["at"], *d["size"]))
+except Exception:
+    pass' <<<"$info" || true)
+        else
+            info=$(mmsg get focusing-client 2>/dev/null || true)
+            geom=$(json_get x y width height <<<"$info" | tr '\n' ' ' \
+                | awk 'NF==4 {printf "%d,%d %dx%d", $1, $2, $3, $4}' || true)
+        fi
         if [ -z "$geom" ]; then
             notify-send "Screenshot" "No window is focused." 2>/dev/null || true
             exit 1

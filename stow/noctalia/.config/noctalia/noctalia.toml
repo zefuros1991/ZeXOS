@@ -58,7 +58,7 @@ attached = true
 
 [[bar.default.capsule_group]]
 id = "right"
-members = ["tray", "bluetooth", "volume", "notifications", "battery", "brightness", "network"]
+members = ["tray", "bluetooth", "volume", "notifications", "battery", "brightness", "network", "shell_switch"]
 fill = "surface_variant"
 opacity = 0.85
 radius = 13.0
@@ -76,6 +76,16 @@ max_length = 145.0
 [widget.clock]
 type = "clock"
 format = "{:%H:%M  %a, %b %d}"
+
+# Opens the menu to change the desktop shell, like Mod+Shift+D.
+# DankMaterialShell has the same button on its bar.
+[widget.shell_switch]
+type = "custom_button"
+glyph = "switch-horizontal"
+tooltip = "Change desktop shell"
+
+[widget.shell_switch.actions]
+left = "exec zshell menu"
 
 # These two come from plugins (see below).
 [widget.arch_updates]

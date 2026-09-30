@@ -1,0 +1,13 @@
+# ZeXOS templates for DankMaterialShell. zshell copies this to
+# ~/.config/matugen/dms/configs/zexos.toml (with your home folder filled in),
+# and DMS adds it to every colour update, like its own templates.
+# How DMS reads these: https://danklinux.com/docs/dankmaterialshell/theming
+
+[templates.zexosfuzzel]
+input_path = '@SEED@/matugen/fuzzel.conf'
+output_path = '@CONFIG@/fuzzel/themes/dank'
+
+[templates.zexosbtop]
+input_path = '@SEED@/matugen/btop.theme'
+output_path = '@CONFIG@/btop/themes/dank.theme'
+post_hook = 'pkill -USR2 -x btop || true'

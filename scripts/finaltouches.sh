@@ -103,6 +103,21 @@ else
     echo -e "${RED}✖ Could not build the Papirus-ZeXOS folder icons${RESET}"
 fi
 
+# Point Qt, KDE, GTK, fuzzel and btop colours at the shell in use (see
+# `zshell relink`), and start the watcher that keeps them in step with
+# DankMaterialShell's colours when DMS is the shell (it does nothing under
+# Noctalia, which handles this itself).
+if "$HOME/.local/bin/zshell" relink; then
+    echo -e "${GREEN}✔ App colours follow the desktop shell in use${RESET}"
+else
+    echo -e "${RED}✖ zshell relink failed${RESET}"
+fi
+if systemctl --user daemon-reload && systemctl --user enable --now zexos-dms-sync.path >/dev/null 2>&1; then
+    echo -e "${GREEN}✔ DankMaterialShell colour watcher on (zexos-dms-sync.path)${RESET}"
+else
+    echo -e "${RED}✖ Could not turn on zexos-dms-sync.path${RESET}"
+fi
+
 # -----------------------------
 # 2. SDDM LOGIN WALLPAPER SYNC (PIXIE THEME)
 # -----------------------------

@@ -1,0 +1,7 @@
+[Unit]
+Description=ZeXOS: follow DankMaterialShell colour and wallpaper changes
+
+[Service]
+Type=oneshot
+Environment=PATH=%h/.local/bin:/usr/local/bin:/usr/bin
+ExecStart=%h/.local/bin/zexos-dms-sync

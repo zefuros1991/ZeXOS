@@ -77,12 +77,13 @@ link_colors() {
 }
 
 # Kitty follows the same idea: kitty.conf loads themes/shell.conf last.
-# kitty reads include paths from its config folder, not the including file.
+# An include inside themes/shell.conf is read from themes/, so it gets the
+# full path to DMS's dank-theme.conf (which sits next to kitty.conf).
 link_kitty() {
     local dir="$CONF_DIR/kitty"
     [ -d "$dir/themes" ] || return 0
     if [ "$1" = dms ]; then
-        echo 'include dank-theme.conf' > "$dir/themes/shell.conf"
+        echo "include $dir/dank-theme.conf" > "$dir/themes/shell.conf"
     else
         echo '# Written by zshell: Noctalia is the active shell (themes/noctalia.conf).' > "$dir/themes/shell.conf"
     fi

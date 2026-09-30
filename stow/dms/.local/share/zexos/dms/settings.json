@@ -28,7 +28,6 @@
       "showOnLastDisplay": true,
       "leftWidgets": [
         "cpuUsage",
-        "memUsage",
         "systemUpdate"
       ],
       "centerWidgets": [
@@ -47,10 +46,11 @@
       "iconScale": 1.25,
       "transparency": 0.0,
       "widgetTransparency": 1.0,
-      "island": false,
+      "island": true,
+      "islandSatelliteBackground": true,
       "spacing": 6,
-      "noBackground": false,
-      "widgetOutlineEnabled": true,
+      "noBackground": true,
+      "widgetOutlineEnabled": false,
       "widgetOutlineColor": "outline",
       "widgetOutlineOpacity": 0.5
     }

@@ -24,11 +24,13 @@ Planned as 1.1.0.
   closes, and the same key closes it again. The choice is saved per user in
   `~/.config/zexos/shell`.
 - A ZeXOS look for DMS on its first start (bar, fonts, wallpaper), in the
-  new `dms` stow package. The bar has the same items in the same order as
-  Noctalia's, each in its own small pill: system use and updates on the left; workspaces,
-  clock and music in the middle; tray, quick settings (network, Bluetooth,
-  sound, brightness), notifications, battery and the shell switcher on
-  the right.
+  new `dms` stow package. The bar uses DMS's Dank Island with three groups,
+  like Noctalia's islands: CPU use and updates on the left; the island
+  (workspaces, clock, music) in the middle; tray, quick settings (network,
+  Bluetooth, sound, brightness), notifications, battery and the shell
+  switcher on the right. Each side shares one background (DMS's own
+  satellite background setting, no patch), and CPU is one button, like
+  Noctalia.
 - A shell switcher button on the bar of both shells. It opens the same
   menu as `Mod+Shift+D`.
 - `zexos-dms-sync`, a small watcher (`zexos-dms-sync.path`) that does for

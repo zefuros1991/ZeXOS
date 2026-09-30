@@ -14,6 +14,7 @@ What you get:
 - **niri**, with keybinds, window rules, blur and animations already set up
 - **Noctalia v5** as the bar, launcher, notifications and lock screen. It uses a lightly patched build (`packaging/noctalia-zexos`) that attaches the three bar "islands" to the top edge and adds a launcher-only size option.
 - **Colours from your wallpaper**: Noctalia generates the theme from the current wallpaper and applies it to GTK, Qt and KDE apps, kitty, fuzzel and btop. Dolphin's folders (Papirus icons) change colour with it. A mostly white wallpaper switches the desktop to light mode with grey-scale colours, so text, icons and the terminal stay readable, and the folders turn white; any other wallpaper switches it back to dark (to choose the mode yourself, create `~/.config/zexos/manual-theme-mode`)
+- **DankMaterialShell** as a second shell you can switch to with `Mod+Shift+D` (see [Two desktop shells](#two-desktop-shells))
 - **roller**, a wallpaper picker (`Mod+W`)
 - **SDDM** with the Pixie theme; the login screen follows your current wallpaper and shows the ZeXOS logo as its round picture (`packaging/pixie-sddm-zexos/make-avatar.py` draws it)
 - Everyday apps: **kitty** (terminal), **Dolphin** (files), **Gwenview** (images), **Neovim** (text), **VLC** (media)
@@ -74,7 +75,7 @@ Run it as your normal user, not root. You need an account that can use `sudo` an
 `install.sh` first checks which distro you're on (and stops if it's one ZeXOS can't support), then runs four scripts from `scripts/`, in order:
 
 1. **Bootstrap** (`bootstrap.sh`): enables the `multilib` repo if it's off, updates the system, installs the basics (`git`, `curl`, `stow`, `base-devel`, `flatpak`), adds Flathub, and clones this repo to `~/.dotfiles`.
-2. **Packages** (`packages.sh`): installs the desktop (niri, Noctalia and its patched build, roller, fuzzel, kitty), the basics a non-niri install may lack (portals, keyring, fonts, sound, network, Bluetooth and power services), the everyday apps, fonts, themes, and SDDM with Pixie. The few distro-specific steps come from `scripts/distro/`. If another login screen is in use (GDM, Plasma Login, ...), it switches to SDDM only after checking SDDM and Pixie are installed and ready. It skips anything already installed. It also adds a pacman hook that rebuilds the patched `qt6ct-kde` (which lets open apps like Dolphin change colour with the wallpaper) after every Qt update, since a new Qt can break it (`journalctl -u zexos-qt6ct-rebuild` shows how it went).
+2. **Packages** (`packages.sh`): installs the desktop (niri, Noctalia and its patched build, DankMaterialShell, roller, fuzzel, kitty), the basics a non-niri install may lack (portals, keyring, fonts, sound, network, Bluetooth and power services), the everyday apps, fonts, themes, and SDDM with Pixie. The few distro-specific steps come from `scripts/distro/`. If another login screen is in use (GDM, Plasma Login, ...), it switches to SDDM only after checking SDDM and Pixie are installed and ready. It skips anything already installed. It also adds a pacman hook that rebuilds the patched `qt6ct-kde` (which lets open apps like Dolphin change colour with the wallpaper) after every Qt update, since a new Qt can break it (`journalctl -u zexos-qt6ct-rebuild` shows how it went).
 3. **Stow** (`stow.sh`): links every config package under `stow/` into your home folder with [GNU Stow](https://www.gnu.org/software/stow/). Any existing file in the way is first backed up to `backup/stow-<timestamp>/`.
 4. **Final touches** (`finaltouches.sh`): copies the wallpapers to `~/Pictures/Wallpapers` and sets up the login-screen wallpaper sync.
 
@@ -95,8 +96,21 @@ Every step keeps a log in `~/.dotfiles`: `install.log`, `bootstrap.log`, `packag
 | `Mod+Escape` | Power menu |
 | `Mod+F1` | Keybind cheatsheet |
 | `Mod+Shift+Escape` | niri's hotkey overlay |
+| `Mod+Shift+D` | Change desktop shell (Noctalia or DankMaterialShell) |
 
-The full list is in `stow/niri/.config/niri/cfg/keybinds.kdl`.
+The full list is in `stow/niri/.config/niri/cfg/keybinds.kdl`. These keys do the same thing in both desktop shells.
+
+## Two desktop shells
+
+ZeXOS installs two desktop shells (the top bar, launcher, notifications and lock screen): [Noctalia](https://noctalia.dev) and [DankMaterialShell](https://danklinux.com) (DMS). Noctalia is the default.
+
+Press `Mod+Shift+D` and pick one from the menu. The other shell closes and the new one starts right away. Your choice is saved in `~/.config/zexos/shell`, so it is still there after you log out or restart, and every user on the machine has their own.
+
+Both use the same keys, because the keybinds call a small helper, `zshell`, instead of a shell directly. `zshell` sends each action (launcher, lock, volume, wallpaper, ...) to whichever shell is running. `zshell --help` lists them, and `zshell switch dms` or `zshell switch noctalia` does the same as the menu from a terminal.
+
+The first time DMS starts it gets a ZeXOS look: the bar as a centre island with the clock and music, and the workspaces, system stats, tray and battery as islands at the screen edges, the same font sizes and the ZeXOS wallpaper. It's a copy (`stow/dms/.local/share/zexos/dms/`), so changes you make in DMS's own settings are kept.
+
+The window borders and kitty follow whichever shell is running. One limit for now: GTK, Qt and KDE apps, and fuzzel, keep the colours Noctalia made last, since only Noctalia writes those files.
 
 ## Wallpapers
 
@@ -121,7 +135,8 @@ Every folder under `stow/` is one Stow package, a slice of your home folder that
 | Package | Manages |
 |---|---|
 | `btop` | `~/.config/btop` |
-| `desktop` | default apps (`mimeapps.list`), GTK/Qt/KDE settings |
+| `desktop` | default apps (`mimeapps.list`), GTK/Qt/KDE settings, and `zshell` (the shell switcher) |
+| `dms` | the first-start DankMaterialShell settings (copied, never linked) |
 | `fastfetch` | `~/.config/fastfetch` (the system info shown in kitty) |
 | `fuzzel` | `~/.config/fuzzel` |
 | `htop` | `~/.config/htop` |

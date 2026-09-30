@@ -548,6 +548,12 @@ if [ "$(pacman -Qq qt6ct-kde 2>/dev/null)" = "qt6ct-kde" ]; then
     echo -e "${GREEN}✔ qt6ct-kde will rebuild itself after Qt updates${RESET}"
 fi
 
+# The desktop helpers (zshell and friends) live in ~/.local/bin, and the
+# compositors call them by name. Plain Arch doesn't put that folder on PATH,
+# which left the desktop black. See system/profile.d/.
+sudo install -Dm644 "$REPO_ROOT/system/profile.d/zexos-local-bin.sh" /etc/profile.d/zexos-local-bin.sh
+echo -e "${GREEN}✔ ~/.local/bin is on PATH for every login${RESET}"
+
 # =========================================================
 # 3. FLATPAK / FLATHUB
 # =========================================================

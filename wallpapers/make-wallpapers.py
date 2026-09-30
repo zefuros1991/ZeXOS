@@ -144,14 +144,117 @@ def mark(pal):
     return grain(img if light else vignette(img, 0.3), 1.6)
 
 
-def topo(pal):
-    """Contour lines like a hiking map, with the logo in the middle."""
-    img = base(pal[0])
+def topo_lines():
+    """The contour map: height field (in line units) and the 0..1 line mask."""
     field = smooth_noise(260, seed=7) * 0.5 + smooth_noise(700, seed=3) * 1.5
     levels = field * 7
     frac = np.abs(levels - np.round(levels))
     grad = np.hypot(*np.gradient(levels))  # keeps line width even on steep slopes
     line = np.clip(1.5 - frac / (grad + 1e-6) / (1.1 * S), 0, 1)
+    return levels, line
+
+
+def glow(mask, radius):
+    """Soft halo around a 0..1 mask."""
+    m = Image.fromarray((np.clip(mask, 0, 1) * 255).astype(np.uint8))
+    return np.asarray(m.filter(ImageFilter.GaussianBlur(radius * S)), np.float32) / 255
+
+
+def contour_path(levels, x, y, length, step=1.5):
+    """Points along the contour line through (x, y), `length` pixels long,
+    centred on the start point. Walks the direction that keeps the height
+    the same (at right angles to the slope), so it follows one line."""
+    gy, gx = np.gradient(levels)
+
+    def tangent(px, py):
+        i = int(np.clip(py, 0, H - 1)); j = int(np.clip(px, 0, W - 1))
+        tx, ty = -gy[i, j], gx[i, j]
+        n = np.hypot(tx, ty) + 1e-9
+        return tx / n, ty / n
+
+    def walk(sign):
+        pts, px, py = [], x, y
+        for _ in range(int(length / 2 / (step * S))):
+            tx, ty = tangent(px, py)
+            mx, my = px + sign * tx * step * S / 2, py + sign * ty * step * S / 2
+            tx, ty = tangent(mx, my)            # midpoint step: stays on the line
+            px, py = px + sign * tx * step * S, py + sign * ty * step * S
+            if not (0 <= px < W and 0 <= py < H):
+                break
+            pts.append((px, py))
+        return pts
+    return walk(-1)[::-1] + [(x, y)] + walk(1)
+
+
+def line_starts(levels, line, n, seed, margin=0.04, band=0.13, clear=260):
+    """n random points sitting right on a contour line, none within `clear`
+    pixels (at 1920 wide) of the logo in the middle. `band` keeps them off the
+    top and bottom strips an ultrawide (21:9) screen crops away."""
+    rng = np.random.default_rng(seed)
+    ys, xs = np.nonzero(line[::4, ::4] > 0.95)
+    keep = (xs * 4 > W * margin) & (xs * 4 < W * (1 - margin)) & (ys * 4 > H * band) & (ys * 4 < H * (1 - band))
+    keep &= np.hypot(xs * 4 - W / 2, ys * 4 - H / 2) > clear * S
+    xs, ys = xs[keep] * 4, ys[keep] * 4
+    # One point per cell of a grid, so the streaks spread over the whole
+    # picture instead of bunching up where the lines happen to be dense.
+    cols = max(1, round((n * W / H) ** 0.5))
+    rows = -(-n // cols)
+    top, tall = H * band, H * (1 - 2 * band)
+    cell = (np.minimum(xs * cols // W, cols - 1) * rows
+            + np.minimum(((ys - top) * rows // tall).astype(int), rows - 1))
+    cells = [c for c in rng.permutation(cols * rows) if (cell == c).any()]
+    pts = []
+    for c in cells[:n]:
+        i = rng.choice(np.nonzero(cell == c)[0])
+        pts.append((float(xs[i]), float(ys[i])))
+    return pts
+
+
+def draw_streak(mask, pts, head=None, tail=None, width=2.2):
+    """Paint a streak on a PIL "L" canvas: brightest in the middle (or at
+    `head`, a point index, fading back over `tail` points), dark at the ends."""
+    d = ImageDraw.Draw(mask)
+    n = len(pts)
+    for k in range(n - 1):
+        if head is None:
+            v = np.sin(np.pi * k / max(n - 1, 1)) ** 1.5
+        else:
+            back = head - k
+            v = 0.0 if back < 0 or back > tail else (1 - back / tail) ** 1.6
+        if v > 0.01:
+            d.line([pts[k], pts[k + 1]], fill=int(255 * v), width=max(1, round(width * S)))
+
+
+def energy_layer(img, mask, col, core=0.95, halo=0.9):
+    """Lay a 0..1 streak mask onto the picture as glowing colour."""
+    col = hexrgb(col)
+    img = img * (1 - mask[..., None] * 0.85) + mask[..., None] * col * core
+    img += glow(mask, 7)[..., None] * col * halo
+    img += glow(mask, 26)[..., None] * col * halo * 0.6
+    return img
+
+
+ENERGY_STREAKS = 28
+ENERGY_HALO = 1.2
+
+
+def topo_energy(pal):
+    """topo, plus a few stretches of contour line lit up in the third (green)
+    colour, like energy running through the map. Kept scarce on purpose:
+    purple stays the mood, the green is an accent spread over the picture."""
+    img = topo(pal)
+    levels, line = topo_lines()
+    m = Image.new("L", (W, H), 0)
+    rng = np.random.default_rng(5)
+    for x, y in line_starts(levels, line, ENERGY_STREAKS, seed=13):
+        draw_streak(m, contour_path(levels, x, y, rng.uniform(120, 300) * S))
+    return energy_layer(img, np.asarray(m, np.float32) / 255, pal[3], halo=ENERGY_HALO)
+
+
+def topo(pal):
+    """Contour lines like a hiking map, with the logo in the middle."""
+    img = base(pal[0])
+    levels, line = topo_lines()
     tint = hexrgb(pal[1]) * 0.55 + hexrgb(pal[2]) * 0.45
     img += line[..., None] * tint * 0.35
     img += blob(960, 540, 700, 420, pal[1], 0.12)
@@ -207,6 +310,7 @@ PLAN = [
     ("zexos-mark-light", mark, "light"),
     ("zexos-topo", topo, "violet"),
     ("zexos-topo-ember", topo, "ember"),
+    ("zexos-topo-energy", topo_energy, "violet"),
     ("zexos-bars", bars, "violet"),
     ("zexos-bars-ocean", bars, "ocean"),
     ("zexos-dots", dots, "violet"),

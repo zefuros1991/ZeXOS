@@ -100,13 +100,15 @@ The full list is in `stow/niri/.config/niri/cfg/keybinds.kdl`.
 
 ## Wallpapers
 
-ZeXOS comes with 15 wallpapers of its own, in 5 styles and several colours each. The installer copies them to `~/Pictures/Wallpapers`, and you start on `zexos-aurora`. The login screen starts with it too.
+ZeXOS comes with 16 wallpapers of its own, in 5 styles and several colours each, plus an animated one. The installer copies them to `~/Pictures/Wallpapers`, and you start on `zexos-aurora`. The login screen starts with it too.
 
 ![The ZeXOS wallpapers](docs/screenshots/wallpapers.webp)
 
 Press `Mod+W` to pick another one. Put your own pictures in `~/Pictures/Wallpapers` too: Noctalia and roller read from there, and the colour theme follows whichever one is active.
 
 All of them are drawn by `wallpapers/make-wallpapers.py`, with no photos or downloads. To make them in another size, run `python wallpapers/make-wallpapers.py 2560 1440`.
+
+The animated one, `zexos-topo-energy`, has green energy running along the purple lines of the topo map. It is a looping video, copied to `~/Videos/Wallpapers`. It isn't switched on by default, because a looping 4K video puts a small, constant load on the machine. To use it, open Noctalia's Video Wallpaper panel with `noctalia msg panel-toggle noctalia/mpvpaper:picker` and pick it. `wallpapers/make-energy-video.py` draws it (needs `python-numpy`, `python-pillow` and `ffmpeg`).
 
 ## Screens
 

@@ -33,16 +33,16 @@ binds {
 
     // ── Laptop keys: sound, music, brightness ───────────
     // allow-when-locked: these work even on the lock screen.
-    XF86AudioRaiseVolume  allow-when-locked=true { spawn "zshell" "volume-up"; }
-    XF86AudioLowerVolume  allow-when-locked=true { spawn "zshell" "volume-down"; }
-    XF86AudioMute         allow-when-locked=true { spawn "zshell" "volume-mute"; }
-    XF86AudioMicMute      allow-when-locked=true { spawn "zshell" "mic-mute"; }
-    XF86AudioPlay         allow-when-locked=true { spawn "zshell" "media-toggle"; }
-    XF86AudioPause        allow-when-locked=true { spawn "zshell" "media-toggle"; }
-    XF86AudioNext         allow-when-locked=true { spawn "zshell" "media-next"; }
-    XF86AudioPrev         allow-when-locked=true { spawn "zshell" "media-prev"; }
-    XF86MonBrightnessUp   allow-when-locked=true { spawn "zshell" "brightness-up"; }
-    XF86MonBrightnessDown allow-when-locked=true { spawn "zshell" "brightness-down"; }
+    XF86AudioRaiseVolume  allow-when-locked=true hotkey-overlay-title="Volume up" { spawn "zshell" "volume-up"; }
+    XF86AudioLowerVolume  allow-when-locked=true hotkey-overlay-title="Volume down" { spawn "zshell" "volume-down"; }
+    XF86AudioMute         allow-when-locked=true hotkey-overlay-title="Mute sound" { spawn "zshell" "volume-mute"; }
+    XF86AudioMicMute      allow-when-locked=true hotkey-overlay-title="Mute microphone" { spawn "zshell" "mic-mute"; }
+    XF86AudioPlay         allow-when-locked=true hotkey-overlay-title="Play / pause music" { spawn "zshell" "media-toggle"; }
+    XF86AudioPause        allow-when-locked=true hotkey-overlay-title="Play / pause music" { spawn "zshell" "media-toggle"; }
+    XF86AudioNext         allow-when-locked=true hotkey-overlay-title="Next track" { spawn "zshell" "media-next"; }
+    XF86AudioPrev         allow-when-locked=true hotkey-overlay-title="Previous track" { spawn "zshell" "media-prev"; }
+    XF86MonBrightnessUp   allow-when-locked=true hotkey-overlay-title="Screen brighter" { spawn "zshell" "brightness-up"; }
+    XF86MonBrightnessDown allow-when-locked=true hotkey-overlay-title="Screen dimmer" { spawn "zshell" "brightness-down"; }
 
     // ── Windows ─────────────────────────────────────────
     Mod+Q       { close-window; }

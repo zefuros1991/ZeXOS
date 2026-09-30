@@ -95,6 +95,12 @@ seed_dms() {
     mkdir -p "$DMS_DIR" "${XDG_STATE_HOME:-$HOME/.local/state}/DankMaterialShell"
     if [ ! -e "$DMS_DIR/settings.json" ]; then
         cp "$DMS_SEED/settings.json" "$DMS_DIR/settings.json"
+        # DMS sees a settings file and takes you for an old user, so it opens
+        # its "What's new in 1.x" window. Mark this version as seen; a later
+        # DMS update still shows its own news.
+        local ver
+        ver="$(dms version 2>/dev/null | sed -n 's/^dms v\([0-9]*\.[0-9]*\).*/\1/p')"
+        [ -n "$ver" ] && touch "$DMS_DIR/.changelog-$ver"
     fi
     local session="${XDG_STATE_HOME:-$HOME/.local/state}/DankMaterialShell/session.json"
     if [ ! -e "$session" ]; then
@@ -173,6 +179,13 @@ random_wallpaper() {
         2>/dev/null | shuf -n1
 }
 
+# Noctalia copies each new wallpaper to the login screen by itself (its
+# wallpaper_changed hook). DMS has no such hook, so do it here for DMS.
+dms_wallpaper() {
+    dms ipc call wallpaper set "$1" || return
+    "$HOME/.local/bin/sync-sddm-wallpaper.sh" "$1" >/dev/null 2>&1 || true
+}
+
 # One action, sent to the shell in use.
 act() {
     local shell="$1" action="$2"; shift 2
@@ -201,8 +214,8 @@ act() {
             session)          dms ipc call powermenu toggle ;;
             lock)             dms ipc call lock lock ;;
             cheatsheet)       dms ipc call keybinds toggle niri ;;
-            wallpaper-random) dms ipc call wallpaper set "$(random_wallpaper)" ;;
-            wallpaper-set)    dms ipc call wallpaper set "$1" ;;
+            wallpaper-random) dms_wallpaper "$(random_wallpaper)" ;;
+            wallpaper-set)    dms_wallpaper "$1" ;;
             volume-up)        dms ipc call audio increment 5 ;;
             volume-down)      dms ipc call audio decrement 5 ;;
             volume-mute)      dms ipc call audio mute ;;

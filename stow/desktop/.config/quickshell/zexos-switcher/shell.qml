@@ -5,7 +5,7 @@
 //
 // zshell passes everything in through environment variables:
 //   ZX_ITEMS   JSON list of {id, name, icon, current}
-//   ZX_BG, ZX_TEXT, ZX_ACCENT, ZX_SELECTION, ZX_BORDER
+//   ZX_BG, ZX_BORDER (also used as the theme colour for the names)
 //              colours as #AARRGGBB, from the shell's fuzzel colours
 // Quickshell docs: https://quickshell.org/docs/types/Quickshell.Wayland/WlrLayershell/
 
@@ -19,6 +19,11 @@ ShellRoot {
 
     readonly property var items: JSON.parse(Quickshell.env("ZX_ITEMS") || "[]")
     function colour(name, fallback) { return Quickshell.env(name) || fallback }
+
+    // The shell names take the theme's main colour. The selected row is a
+    // light tint of it with an outline, so the names stay readable on it.
+    readonly property color themeColour: colour("ZX_BORDER", "#ffac67e4")
+    readonly property color selectionTint: Qt.rgba(themeColour.r, themeColour.g, themeColour.b, 0.22)
 
     // Start on the first shell that is not in use, so Enter switches.
     property int selected: Math.max(0, items.findIndex(i => !i.current))
@@ -102,7 +107,9 @@ ShellRoot {
                         Layout.fillWidth: true
                         implicitHeight: 100
                         radius: 17
-                        color: active ? root.colour("ZX_SELECTION", "#80ac67e4") : "transparent"
+                        color: active ? root.selectionTint : "transparent"
+                        border.width: active ? 2 : 0
+                        border.color: root.themeColour
                         Behavior on color { ColorAnimation { duration: 120 } }
 
                         MouseArea {
@@ -137,7 +144,7 @@ ShellRoot {
                                     font.weight: Font.ExtraBold
                                     font.pixelSize: 29
                                     font.letterSpacing: 0.4
-                                    color: root.colour("ZX_TEXT", "#fff2f2f3")
+                                    color: root.themeColour
                                     elide: Text.ElideRight
                                 }
 
@@ -148,7 +155,7 @@ ShellRoot {
                                     font.weight: Font.Bold
                                     font.pixelSize: 13
                                     font.letterSpacing: 2.2
-                                    color: root.colour("ZX_ACCENT", "#ffd65cd1")
+                                    color: "#d6a85c"   // always this orange, whatever the theme
                                 }
                             }
                         }

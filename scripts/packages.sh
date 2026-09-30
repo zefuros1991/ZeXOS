@@ -176,6 +176,8 @@ CORE_PACMAN=(
     fastfetch
     imagemagick
     ttf-jetbrains-mono-nerd
+    # The shell names in the Mod+Shift+D menu.
+    ttf-nunito
 )
 
 install_pacman "Desktop Core" "${CORE_PACMAN[@]}"

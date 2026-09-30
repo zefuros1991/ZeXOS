@@ -160,7 +160,7 @@ Every folder under `stow/` is one Stow package, a slice of your home folder that
 | Package | Manages |
 |---|---|
 | `btop` | `~/.config/btop` |
-| `desktop` | default apps (`mimeapps.list`), GTK/Qt/KDE settings, `zshell` (the shell switcher) and `zexos-screenshot` (screenshots on Mango and Hyprland) |
+| `desktop` | default apps (`mimeapps.list`), GTK/Qt/KDE settings, `zshell` (the shell switcher) and its `Mod+Shift+D` menu (`~/.config/quickshell/zexos-switcher`) and `zexos-screenshot` (screenshots on Mango and Hyprland) |
 | `dms` | the first-start DankMaterialShell settings (copied, never linked) |
 | `fastfetch` | `~/.config/fastfetch` (the system info shown in kitty) |
 | `fuzzel` | `~/.config/fuzzel` |

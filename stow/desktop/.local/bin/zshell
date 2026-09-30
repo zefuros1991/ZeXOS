@@ -306,21 +306,34 @@ logo() {
 }
 
 
+# One colour from the shell's fuzzel colours (themes/shell), turned from
+# fuzzel's RRGGBBAA into Qt's #AARRGGBB. Empty when it isn't there.
+fuzzel_colour() {
+    local hex
+    hex="$(sed -n "s/^$1=\([0-9a-fA-F]\{8\}\)$/\1/p" "$CONF_DIR/fuzzel/themes/shell" 2>/dev/null | head -n1)"
+    [ -n "$hex" ] && echo "#${hex:6:2}${hex:0:6}"
+}
+
+# The menu is a small Quickshell window (~/.config/quickshell/zexos-switcher),
+# not fuzzel: fuzzel always has a search box, and one stray key press there
+# hid both choices. The window runs `zshell switch` itself when you pick.
 menu() {
-    local cur pick
+    # Pressing Mod+Shift+D again closes it.
+    qs kill -c zexos-switcher >/dev/null 2>&1 && return 0
+    local cur items="" sep=""
     cur="$(current)"
-    # "name\0icon\x1f<icon>" puts that icon before the entry (man fuzzel,
-    # --dmenu). A bash variable can't hold the \0, so printf writes it.
-    pick="$(for s in $SHELLS; do
-                installed "$s" || continue
-                name="$(pretty "$s")"
-                [ "$s" = "$cur" ] && name+="   (in use)"
-                printf '%s\0icon\x1f%s\n' "$name" "$(logo "$s")"
-            done | fuzzel --dmenu --config "$CONF_DIR/fuzzel/switcher.ini")" || exit 0
-    case "$pick" in
-        Noctalia*)          switch noctalia ;;
-        DankMaterialShell*) switch dms ;;
-    esac
+    for s in $SHELLS; do
+        installed "$s" || continue
+        items+="$sep{\"id\":\"$s\",\"name\":\"$(pretty "$s")\",\"icon\":\"$(logo "$s")\",\"current\":$([ "$s" = "$cur" ] && echo true || echo false)}"
+        sep=","
+    done
+    ZX_ITEMS="[$items]" \
+    ZX_BG="$(fuzzel_colour background)" \
+    ZX_TEXT="$(fuzzel_colour text)" \
+    ZX_ACCENT="$(fuzzel_colour prompt)" \
+    ZX_SELECTION="$(fuzzel_colour selection)" \
+    ZX_BORDER="$(fuzzel_colour border)" \
+        setsid -f qs -c zexos-switcher >/dev/null 2>&1
 }
 
 random_wallpaper() {

@@ -47,11 +47,11 @@ ShellRoot {
 
         Rectangle {
             id: card
-            // 1.4x the old fuzzel menu, and the two choices fill all of it.
-            width: 560
-            height: column.implicitHeight + 2 * 22
+            // About 1.2x the old fuzzel menu, and the two choices fill all of it.
+            width: 476
+            height: column.implicitHeight + 2 * 19
             anchors.centerIn: parent
-            radius: 32
+            radius: 27
             color: root.colour("ZX_BG", "#cc200f2f")
             border.width: 2
             border.color: root.colour("ZX_BORDER", "#ffac67e4")
@@ -87,8 +87,8 @@ ShellRoot {
 
             ColumnLayout {
                 id: column
-                anchors { fill: parent; margins: 22 }
-                spacing: 12
+                anchors { fill: parent; margins: 19 }
+                spacing: 10
 
                 Repeater {
                     model: root.items
@@ -100,8 +100,8 @@ ShellRoot {
                         readonly property bool active: index === root.selected
 
                         Layout.fillWidth: true
-                        implicitHeight: 118
-                        radius: 20
+                        implicitHeight: 100
+                        radius: 17
                         color: active ? root.colour("ZX_SELECTION", "#80ac67e4") : "transparent"
                         Behavior on color { ColorAnimation { duration: 120 } }
 
@@ -114,14 +114,14 @@ ShellRoot {
                         }
 
                         RowLayout {
-                            anchors { fill: parent; leftMargin: 26; rightMargin: 26 }
-                            spacing: 24
+                            anchors { fill: parent; leftMargin: 22; rightMargin: 22 }
+                            spacing: 20
 
                             Image {
-                                Layout.preferredWidth: 86
-                                Layout.preferredHeight: 86
+                                Layout.preferredWidth: 73
+                                Layout.preferredHeight: 73
                                 source: Quickshell.iconPath(row.modelData.icon, true)
-                                sourceSize: Qt.size(172, 172)
+                                sourceSize: Qt.size(146, 146)
                                 fillMode: Image.PreserveAspectFit
                                 smooth: true
                             }
@@ -135,7 +135,7 @@ ShellRoot {
                                     text: row.modelData.name
                                     font.family: "Nunito"
                                     font.weight: Font.ExtraBold
-                                    font.pixelSize: 34
+                                    font.pixelSize: 29
                                     font.letterSpacing: 0.4
                                     color: root.colour("ZX_TEXT", "#fff2f2f3")
                                     elide: Text.ElideRight
@@ -146,8 +146,8 @@ ShellRoot {
                                     text: "IN USE"
                                     font.family: "Nunito"
                                     font.weight: Font.Bold
-                                    font.pixelSize: 15
-                                    font.letterSpacing: 2.5
+                                    font.pixelSize: 13
+                                    font.letterSpacing: 2.2
                                     color: root.colour("ZX_ACCENT", "#ffd65cd1")
                                 }
                             }

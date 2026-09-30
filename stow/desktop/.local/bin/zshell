@@ -9,6 +9,8 @@
 #   zshell switch <name>    change shell now and remember it (noctalia | dms)
 #   zshell menu             pick a shell from a small menu (Mod+Shift+D)
 #   zshell current          print the shell you picked
+#   zshell relink           point app colours (Qt, GTK, KDE apps, launcher,
+#                           btop) at the shell in use; the DMS watcher runs it
 #   zshell <action>         launcher, session, lock, cheatsheet, wallpaper-random,
 #                           wallpaper-set <file>, volume-up, volume-down,
 #                           volume-mute, mic-mute, media-toggle, media-next,
@@ -108,14 +110,90 @@ seed_dms() {
     fi
 }
 
+# Everything else that takes the wallpaper colours: Qt and KDE apps
+# (Dolphin), GTK apps, the fuzzel menus and btop. Each has one "shell" file
+# or link that points at Noctalia's colours or at DMS's. Safe to run often;
+# the DMS watcher (zexos-dms-sync) runs it after every DMS colour change.
+DATA_DIR="${XDG_DATA_HOME:-$HOME/.local/share}"
+link_theme() {
+    local shell="$1" schemes="$DATA_DIR/color-schemes" scheme css
+    if [ "$shell" = dms ]; then scheme=DankMatugen.colors; else scheme=noctalia.colors; fi
+
+    # Qt apps read ZeXOS.colors (qt6ct.conf); KDE apps read kdeglobals.
+    if [ -e "$schemes/$scheme" ]; then
+        ln -sfn "$scheme" "$schemes/ZeXOS.colors"
+        "$HOME/.local/bin/zexos-kde-colors" "$schemes/$scheme" 2>/dev/null || true
+    fi
+
+    # GTK: gtk.css imports shell.css last, which loads DMS's colours or
+    # nothing (Noctalia's come from noctalia.css). Older gtk.css files get
+    # the import line added once.
+    for css in "$CONF_DIR/gtk-3.0" "$CONF_DIR/gtk-4.0"; do
+        [ -d "$css" ] || continue
+        if [ "$shell" = dms ]; then
+            echo '@import url("dank-colors.css");' > "$css/shell.css"
+        else
+            echo '/* Written by zshell: Noctalia is the active shell (noctalia.css). */' > "$css/shell.css"
+        fi
+        if [ -f "$css/gtk.css" ] && ! grep -q 'shell.css' "$css/gtk.css"; then
+            printf '\n/* Written by zshell: the running shell'"'"'s colours. */\n@import url("shell.css");\n' >> "$css/gtk.css"
+        fi
+    done
+
+    # fuzzel (menus like this one): fuzzel.ini includes themes/shell.
+    local fz="$CONF_DIR/fuzzel/themes"
+    if [ -d "$fz" ]; then
+        if [ "$shell" = dms ] && [ -e "$fz/dank" ]; then
+            ln -sfn dank "$fz/shell"
+        else
+            ln -sfn noctalia "$fz/shell"
+        fi
+    fi
+
+    # btop: pick the theme file by name, then tell running btop to reload.
+    local bt="$CONF_DIR/btop/btop.conf" name=noctalia
+    [ "$shell" = dms ] && [ -e "$CONF_DIR/btop/themes/dank.theme" ] && name=dank
+    if [ -f "$bt" ] && ! grep -q "^color_theme = \"$name\"" "$bt"; then
+        sed -i "s|^color_theme = .*|color_theme = \"$name\"|" "$(realpath "$bt")"
+        pkill -USR2 -x btop 2>/dev/null || true
+    fi
+}
+
+# DMS extras: the ZeXOS colour templates (fuzzel, btop) and the shell
+# switcher button on the bar. Re-copied on every start so updates arrive.
+setup_dms() {
+    [ -d "$DMS_SEED" ] || return 0
+    local mdir="$CONF_DIR/matugen/dms/configs"
+    mkdir -p "$mdir"
+    sed -e "s|@SEED@|$DMS_SEED|g" -e "s|@CONFIG@|$CONF_DIR|g" \
+        "$DMS_SEED/zexos.toml.in" > "$mdir/zexos.toml"
+    if [ -d "$DMS_SEED/plugins" ]; then
+        mkdir -p "$DMS_DIR/plugins"
+        cp -rT "$DMS_SEED/plugins/ZexosShellSwitch" "$DMS_DIR/plugins/ZexosShellSwitch"
+        # Turn the plugin on once; if you turn it off later, it stays off.
+        python3 - "$DMS_DIR/plugin_settings.json" <<'EOF'
+import json, os, sys
+p = sys.argv[1]
+try:
+    d = json.load(open(p))
+except Exception:
+    d = {}
+if "zexosShellSwitch" not in d:
+    d["zexosShellSwitch"] = {"enabled": True}
+    json.dump(d, open(p, "w"), indent=2)
+EOF
+    fi
+}
+
 start() {
     local shell
     shell="$(current)"
     link_colors "$shell"
     link_kitty "$shell"
+    link_theme "$shell"
     case "$shell" in
         noctalia) exec noctalia ;;
-        dms)      seed_dms; exec dms run ;;
+        dms)      seed_dms; setup_dms; exec dms run ;;
     esac
     echo "zshell: no desktop shell installed" >&2
     exit 1
@@ -237,7 +315,8 @@ case "$cmd" in
     switch)  switch "$@" ;;
     menu)    menu ;;
     current) current ;;
-    ""|-h|--help) sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//' ;;
+    relink)  link_theme "$(current)" ;;
+    ""|-h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//' ;;
     *)
         act "$(current)" "$cmd" "$@"
         rc=$?

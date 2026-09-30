@@ -1,0 +1,10 @@
+{
+    "id": "zexosShellSwitch",
+    "name": "Shell switcher",
+    "description": "ZeXOS: a bar button that opens the menu to change the desktop shell (Noctalia or DankMaterialShell).",
+    "version": "1.0.0",
+    "author": "ZeXOS",
+    "icon": "swap_horiz",
+    "type": "widget",
+    "component": "./ShellSwitch.qml"
+}

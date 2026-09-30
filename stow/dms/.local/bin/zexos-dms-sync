@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# zexos-dms-sync -- the DankMaterialShell half of what Noctalia does by itself
+# after each wallpaper change. systemd starts it (zexos-dms-sync.path) when
+# DMS writes new colours or saves its session (the wallpaper you picked).
+#
+#   1. Apps DMS does not colour on its own follow the new colours:
+#      KDE apps like Dolphin, fuzzel menus, btop (`zshell relink`), and open
+#      GTK apps get a theme nudge, like DMS gives them on a Plasma install.
+#   2. A new wallpaper also goes to the login screen, and picks dark or
+#      light mode, the same as Noctalia's hooks (auto-theme-mode.sh).
+#
+# Does nothing while Noctalia is the shell in use.
+set -u
+
+[ "$(zshell current)" = dms ] || exit 0
+
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}"
+SESSION="$STATE_DIR/DankMaterialShell/session.json"
+SCHEME="${XDG_DATA_HOME:-$HOME/.local/share}/color-schemes/DankMatugen.colors"
+MEMO="$STATE_DIR/zexos/dms-sync"
+mkdir -p "$MEMO"
+
+# Remember what we saw last time, so each change is handled once.
+changed() {   # changed <name> <value>
+    [ "$(cat "$MEMO/$1" 2>/dev/null)" = "$2" ] && return 1
+    printf '%s' "$2" > "$MEMO/$1"
+}
+
+# 1. Colours.
+if [ -f "$SCHEME" ] && changed colors "$(md5sum < "$SCHEME")"; then
+    zshell relink
+    theme="$(gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null | tr -d "'")"
+    if [ -n "$theme" ]; then
+        gsettings set org.gnome.desktop.interface gtk-theme ''
+        gsettings set org.gnome.desktop.interface gtk-theme "$theme"
+    fi
+fi
+
+# 2. Wallpaper.
+wall="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("wallpaperPath",""))' "$SESSION" 2>/dev/null)"
+if [ -f "$wall" ] && changed wallpaper "$wall"; then
+    "$HOME/.local/bin/sync-sddm-wallpaper.sh" "$wall" >/dev/null 2>&1 || true
+    if [ ! -e "${XDG_CONFIG_HOME:-$HOME/.config}/zexos/manual-theme-mode" ]; then
+        # Same test and threshold as auto-theme-mode.sh.
+        b="$(magick "$wall" -resize 64x64! -colorspace Gray -format '%[fx:mean]' info: 2>/dev/null)"
+        if [ -n "$b" ]; then
+            if awk -v b="$b" 'BEGIN { exit !(b >= 0.6) }'; then want=light; folders=light
+            else want=dark; folders=accent; fi
+            "$HOME/.local/bin/make-papirus-zexos.py" >/dev/null 2>&1 || true
+            for size in "${XDG_DATA_HOME:-$HOME/.local/share}"/icons/Papirus-ZeXOS/*/; do
+                [ -L "${size}places" ] && ln -sfn "places-$folders" "${size}places"
+            done
+            [ "$(dms ipc call theme getMode 2>/dev/null)" = "$want" ] || dms ipc call theme "$want" >/dev/null
+        fi
+    fi
+fi

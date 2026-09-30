@@ -40,3 +40,11 @@ stow/kitty/.config/kitty/themes/shell.conf
 stow/kitty/.config/kitty/dank-theme.conf
 stow/niri/.config/niri/shell-colors.kdl
 stow/niri/.config/niri/dms/
+stow/theme/.config/gtk-3.0/shell.css
+stow/theme/.config/gtk-4.0/shell.css
+stow/theme/.config/gtk-3.0/dank-colors.css
+stow/theme/.config/gtk-4.0/dank-colors.css
+stow/fuzzel/.config/fuzzel/themes/shell
+stow/fuzzel/.config/fuzzel/themes/dank
+stow/btop/.config/btop/themes/shell.theme
+stow/btop/.config/btop/themes/dank.theme

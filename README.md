@@ -104,13 +104,15 @@ The full list is in `stow/niri/.config/niri/cfg/keybinds.kdl`. These keys do the
 
 ZeXOS installs two desktop shells (the top bar, launcher, notifications and lock screen): [Noctalia](https://noctalia.dev) and [DankMaterialShell](https://danklinux.com) (DMS). Noctalia is the default.
 
-Press `Mod+Shift+D` and pick one from the menu. The other shell closes and the new one starts right away. Your choice is saved in `~/.config/zexos/shell`, so it is still there after you log out or restart, and every user on the machine has their own.
+Press `Mod+Shift+D`, or click the ⇄ button at the right end of the bar (it is in both shells), and pick one from the menu. The other shell closes and the new one starts right away. Your choice is saved in `~/.config/zexos/shell`, so it is still there after you log out or restart, and every user on the machine has their own.
 
 Both use the same keys, because the keybinds call a small helper, `zshell`, instead of a shell directly. `zshell` sends each action (launcher, lock, volume, wallpaper, ...) to whichever shell is running. `zshell --help` lists them, and `zshell switch dms` or `zshell switch noctalia` does the same as the menu from a terminal.
 
-The first time DMS starts it gets a ZeXOS look: the bar as a centre island with the clock and music, and the workspaces, system stats, tray and battery as islands at the screen edges, the same font sizes and the ZeXOS wallpaper. It's a copy (`stow/dms/.local/share/zexos/dms/`), so changes you make in DMS's own settings are kept.
+The first time DMS starts it gets a ZeXOS look copied from `stow/dms/.local/share/zexos/dms/`: the same islands as Noctalia, in the same order (system use and updates on the left; workspaces, clock and music in the middle; tray, quick settings, notifications, battery and the shell switcher on the right), the same font sizes and the ZeXOS wallpaper. It's a copy, so changes you make in DMS's own settings are kept.
 
-The window borders and kitty follow whichever shell is running. One limit for now: GTK, Qt and KDE apps, and fuzzel, keep the colours Noctalia made last, since only Noctalia writes those files.
+Everything follows the wallpaper in both shells: window borders, kitty, Dolphin and other KDE apps, GTK apps, fuzzel menus, btop, the folder icons and the login screen. A very bright wallpaper switches to light mode. Noctalia does this by itself; for DMS a small watcher, `zexos-dms-sync`, does the parts DMS doesn't (`systemctl --user status zexos-dms-sync.path`). To pick dark or light mode yourself, create `~/.config/zexos/manual-theme-mode`.
+
+What DMS can't do yet, compared to Noctalia: there is no USB drive island (drives still mount from Dolphin) and no "Restart to UEFI" in the power menu.
 
 ## Wallpapers
 

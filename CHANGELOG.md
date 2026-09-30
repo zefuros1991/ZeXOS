@@ -18,9 +18,9 @@ Planned as 1.1.0.
   to the running shell, so the keys work the same in both.
 - `Mod+Shift+D` opens a menu to switch shells. The choice is saved per user
   in `~/.config/zexos/shell`.
-- A ZeXOS look for DMS on its first start (island bar, fonts, wallpaper),
-  in the new `dms` stow package. The bar has the same islands in the same
-  order as Noctalia's: system use and updates on the left; workspaces,
+- A ZeXOS look for DMS on its first start (bar, fonts, wallpaper), in the
+  new `dms` stow package. The bar has the same items in the same order as
+  Noctalia's, each in its own small pill: system use and updates on the left; workspaces,
   clock and music in the middle; tray, quick settings (network, Bluetooth,
   sound, brightness), notifications, battery and the shell switcher on
   the right.
@@ -48,6 +48,9 @@ Planned as 1.1.0.
 
 ### Known gaps in DMS
 
+- DMS can't group several bar items into one island like Noctalia, so
+  each item has its own pill. (DMS's own "island" mode is a different
+  thing, a single pop-up pill that hides the workspaces.)
 - No USB drive island: DMS has no widget for it (Noctalia uses the
   udiskie plugin). Drives still mount from Dolphin.
 - No "Restart to UEFI" in the DMS power menu.

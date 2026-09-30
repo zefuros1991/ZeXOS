@@ -39,7 +39,7 @@ hl.bind("SUPER + Escape", exec("zshell session"), { description = "Log out / res
 hl.bind("SUPER + SHIFT + D", exec("zshell menu"), { description = "Change desktop shell (Noctalia / DMS)" })
 hl.bind("SUPER + SHIFT + P", screens_off, { description = "Screens off (press a key to wake them)" })
 hl.bind("CTRL + ALT + Delete", hl.dsp.exit(), { description = "Leave Hyprland and go back to the login screen" })
-hl.bind("SUPER + SHIFT + R", hl.dsp.reload_config(), { description = "Reload this configuration" })
+hl.bind("SUPER + SHIFT + R", exec("hyprctl reload"), { description = "Reload this configuration" })
 
 -- 5. Laptop keys: sound, music, brightness
 -- These work even on the lock screen (locked = true).

@@ -164,9 +164,12 @@ link_theme() {
 setup_dms() {
     [ -d "$DMS_SEED" ] || return 0
     local mdir="$CONF_DIR/matugen/dms/configs"
-    mkdir -p "$mdir"
-    sed -e "s|@SEED@|$DMS_SEED|g" -e "s|@CONFIG@|$CONF_DIR|g" \
-        "$DMS_SEED/zexos.toml.in" > "$mdir/zexos.toml"
+    if [ -f "$DMS_SEED/matugen/zexos.toml.in" ]; then
+        mkdir -p "$mdir"
+        sed -e "s|@SEED@|$DMS_SEED|g" -e "s|@CONFIG@|$CONF_DIR|g" \
+            "$DMS_SEED/matugen/zexos.toml.in" > "$mdir/zexos.toml.tmp" &&
+            mv "$mdir/zexos.toml.tmp" "$mdir/zexos.toml"
+    fi
     if [ -d "$DMS_SEED/plugins" ]; then
         mkdir -p "$DMS_DIR/plugins"
         cp -rT "$DMS_SEED/plugins/ZexosShellSwitch" "$DMS_DIR/plugins/ZexosShellSwitch"

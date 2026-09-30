@@ -34,3 +34,9 @@ stow/theme/.config/gtk-4.0/gtk-dark.css
 
 # graft's local graph cache — regenerable, not committed (run `graft build`).
 /graft/
+
+# written at run time by zshell and DankMaterialShell (per user, per machine)
+stow/kitty/.config/kitty/themes/shell.conf
+stow/kitty/.config/kitty/dank-theme.conf
+stow/niri/.config/niri/shell-colors.kdl
+stow/niri/.config/niri/dms/

@@ -331,6 +331,23 @@ else
     rm -rf "$noctalia_build"
 fi
 
+# -----------------------------
+# DANKMATERIALSHELL (the second desktop shell)
+# -----------------------------
+# Installed next to Noctalia; Noctalia stays the default. Mod+Shift+D
+# (`zshell menu`) switches between them, per user. dms-shell-niri pulls in
+# the niri support, matugen makes the colours from the wallpaper.
+# All three are in the Arch/CachyOS repos. dms-shell-niri goes first: on
+# Arch, dms-shell needs "a compositor" package, and --noconfirm would
+# otherwise pick the first one offered instead of the niri one.
+DMS_PACMAN=(
+    dms-shell-niri
+    dms-shell
+    matugen
+)
+
+install_pacman "DankMaterialShell" "${DMS_PACMAN[@]}"
+
 # =========================================================
 # 2. PACKAGES BUILT HERE (no AUR)
 # =========================================================

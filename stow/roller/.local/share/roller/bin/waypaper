@@ -1,9 +1,10 @@
 #!/bin/sh
 # roller expects a program called waypaper to set the wallpaper.
-# This small stand-in passes the picture to Noctalia instead, so the
-# colours of the whole desktop follow the new wallpaper.
+# This small stand-in passes the picture to the desktop shell instead
+# (Noctalia or DankMaterialShell, through zshell), so the colours of the
+# whole desktop follow the new wallpaper.
 # roller calls:  waypaper --wallpaper <picture>
 if [ "$1" = "--wallpaper" ]; then
-    exec noctalia msg wallpaper-set "$2"
+    exec zshell wallpaper-set "$2"
 fi
 exit 1

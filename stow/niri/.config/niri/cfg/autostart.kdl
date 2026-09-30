@@ -1,7 +1,9 @@
 // Things that start when you log in
 
 // The desktop shell: top bar, launcher, notifications, lock screen.
-spawn-at-startup "noctalia"
+// zshell starts the one you picked (Noctalia or DankMaterialShell);
+// press Mod+Shift+D to change it.
+spawn-at-startup "zshell" "start"
 
 // The small window that asks for your password when an app needs admin rights.
 spawn-at-startup "/usr/lib/polkit-kde-authentication-agent-1"

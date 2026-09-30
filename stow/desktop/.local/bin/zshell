@@ -1,0 +1,234 @@
+#!/usr/bin/env bash
+# zshell -- one front door for the desktop shell (the top bar, launcher,
+# notifications, lock screen). ZeXOS ships two: Noctalia and
+# DankMaterialShell (DMS). Your keyboard shortcuts call zshell, and zshell
+# passes each action on to whichever shell you picked, so the same keys
+# work in both.
+#
+#   zshell start            start the shell you picked (niri runs this at login)
+#   zshell switch <name>    change shell now and remember it (noctalia | dms)
+#   zshell menu             pick a shell from a small menu (Mod+Shift+D)
+#   zshell current          print the shell you picked
+#   zshell <action>         launcher, session, lock, cheatsheet, wallpaper-random,
+#                           wallpaper-set <file>, volume-up, volume-down,
+#                           volume-mute, mic-mute, media-toggle, media-next,
+#                           media-prev, brightness-up, brightness-down
+#
+# Your choice is saved in ~/.config/zexos/shell, so it stays after a
+# restart. Each user has their own.
+#
+# Commands used:
+#   Noctalia: `noctalia msg --help`
+#   DMS:      `dms ipc call ...`, see /usr/share/doc/dms-shell/IPC.md or
+#             https://danklinux.com/docs/dankmaterialshell/keybinds-ipc
+
+set -u
+
+CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}"
+CHOICE_FILE="$CONF_DIR/zexos/shell"
+NIRI_DIR="$CONF_DIR/niri"
+DMS_DIR="$CONF_DIR/DankMaterialShell"
+DMS_SEED="${XDG_DATA_HOME:-$HOME/.local/share}/zexos/dms"
+WALL_DIR="$HOME/Pictures/Wallpapers"
+SHELLS="noctalia dms"
+
+installed() {
+    case "$1" in
+        noctalia) command -v noctalia >/dev/null 2>&1 ;;
+        dms)      command -v dms >/dev/null 2>&1 ;;
+        *)        return 1 ;;
+    esac
+}
+
+pretty() {
+    case "$1" in
+        noctalia) echo "Noctalia" ;;
+        dms)      echo "DankMaterialShell" ;;
+    esac
+}
+
+# The saved choice, or Noctalia when nothing was saved yet. If the saved
+# shell was uninstalled, fall back to one that is there.
+current() {
+    local shell=""
+    [ -r "$CHOICE_FILE" ] && shell="$(head -n1 "$CHOICE_FILE")"
+    case " $SHELLS " in *" $shell "*) ;; *) shell=noctalia ;; esac
+    if ! installed "$shell"; then
+        for s in $SHELLS; do installed "$s" && { shell="$s"; break; }; done
+    fi
+    echo "$shell"
+}
+
+# niri's window colours come from the running shell. config.kdl always
+# loads noctalia.kdl and then shell-colors.kdl; for DMS this file points at
+# the colours DMS writes, so they win. niri reloads it on its own.
+link_colors() {
+    local file="$NIRI_DIR/shell-colors.kdl"
+    [ -d "$NIRI_DIR" ] || return 0
+    if [ "$1" = dms ]; then
+        printf '%s\n' '// Written by zshell: DankMaterialShell is the active shell.' \
+            'include optional=true "./dms/colors.kdl"' > "$file"
+    else
+        printf '%s\n' '// Written by zshell: Noctalia is the active shell,' \
+            '// its colours come from noctalia.kdl.' > "$file"
+    fi
+}
+
+# Kitty follows the same idea: kitty.conf loads themes/shell.conf last.
+# kitty reads include paths from its config folder, not the including file.
+link_kitty() {
+    local dir="$CONF_DIR/kitty"
+    [ -d "$dir/themes" ] || return 0
+    if [ "$1" = dms ]; then
+        echo 'include dank-theme.conf' > "$dir/themes/shell.conf"
+    else
+        echo '# Written by zshell: Noctalia is the active shell (themes/noctalia.conf).' > "$dir/themes/shell.conf"
+    fi
+    # Running kitty windows pick the new colours up right away.
+    pkill -USR1 -x kitty 2>/dev/null || true
+}
+
+# First DMS start: give it the ZeXOS look (a copy, so DMS can save your own
+# changes over it). Never touches settings you already have.
+seed_dms() {
+    [ -d "$DMS_SEED" ] || return 0
+    mkdir -p "$DMS_DIR" "${XDG_STATE_HOME:-$HOME/.local/state}/DankMaterialShell"
+    if [ ! -e "$DMS_DIR/settings.json" ]; then
+        cp "$DMS_SEED/settings.json" "$DMS_DIR/settings.json"
+    fi
+    local session="${XDG_STATE_HOME:-$HOME/.local/state}/DankMaterialShell/session.json"
+    if [ ! -e "$session" ]; then
+        sed "s|@HOME@|$HOME|g" "$DMS_SEED/session.json" > "$session"
+    fi
+}
+
+start() {
+    local shell
+    shell="$(current)"
+    link_colors "$shell"
+    link_kitty "$shell"
+    case "$shell" in
+        noctalia) exec noctalia ;;
+        dms)      seed_dms; exec dms run ;;
+    esac
+    echo "zshell: no desktop shell installed" >&2
+    exit 1
+}
+
+running() {
+    case "$1" in
+        noctalia) pgrep -x noctalia >/dev/null ;;
+        dms)      pgrep -x dms >/dev/null ;;
+    esac
+}
+
+stop() {
+    case "$1" in
+        noctalia) pkill -x noctalia ;;
+        dms)      dms kill >/dev/null 2>&1 || pkill -x dms ;;
+    esac
+    for _ in $(seq 50); do running "$1" || return 0; sleep 0.1; done
+    return 1
+}
+
+switch() {
+    local new="${1:-}"
+    case " $SHELLS " in *" $new "*) ;; *) echo "zshell: pick one of: $SHELLS" >&2; exit 2 ;; esac
+    installed "$new" || { echo "zshell: $(pretty "$new") is not installed" >&2; exit 1; }
+    mkdir -p "$(dirname "$CHOICE_FILE")"
+    echo "$new" > "$CHOICE_FILE"
+    for s in $SHELLS; do
+        [ "$s" = "$new" ] || stop "$s"
+    done
+    running "$new" && return 0
+    # Let niri start it, the same way it does at login.
+    if [ -n "${NIRI_SOCKET:-}" ]; then
+        niri msg action spawn -- zshell start
+    else
+        setsid -f zshell start >/dev/null 2>&1
+    fi
+}
+
+menu() {
+    local cur pick lines=""
+    cur="$(current)"
+    for s in $SHELLS; do
+        installed "$s" || continue
+        if [ "$s" = "$cur" ]; then
+            lines+="$(pretty "$s")  (in use)"$'\n'
+        else
+            lines+="$(pretty "$s")"$'\n'
+        fi
+    done
+    pick="$(printf '%s' "$lines" | fuzzel --dmenu --prompt 'Desktop shell: ' --lines 2)" || exit 0
+    case "$pick" in
+        Noctalia*)          switch noctalia ;;
+        DankMaterialShell*) switch dms ;;
+    esac
+}
+
+random_wallpaper() {
+    find "$WALL_DIR" -maxdepth 1 -type f \
+        \( -iname '*.jpg' -o -iname '*.jpeg' -o -iname '*.png' -o -iname '*.webp' \) \
+        2>/dev/null | shuf -n1
+}
+
+# One action, sent to the shell in use.
+act() {
+    local shell="$1" action="$2"; shift 2
+    if [ "$shell" = noctalia ]; then
+        case "$action" in
+            launcher)         noctalia msg panel-toggle launcher ;;
+            session)          noctalia msg panel-toggle session ;;
+            lock)             noctalia msg session lock ;;
+            cheatsheet)       noctalia msg panel-toggle kenn/keybind-cheatsheet:cheatsheet ;;
+            wallpaper-random) noctalia msg wallpaper-random ;;
+            wallpaper-set)    noctalia msg wallpaper-set "$1" ;;
+            volume-up)        noctalia msg volume-up ;;
+            volume-down)      noctalia msg volume-down ;;
+            volume-mute)      noctalia msg volume-mute ;;
+            mic-mute)         noctalia msg mic-mute ;;
+            media-toggle)     noctalia msg media toggle ;;
+            media-next)       noctalia msg media next ;;
+            media-prev)       noctalia msg media previous ;;
+            brightness-up)    noctalia msg brightness-up ;;
+            brightness-down)  noctalia msg brightness-down ;;
+            *) return 2 ;;
+        esac
+    else
+        case "$action" in
+            launcher)         dms ipc call spotlight toggle ;;
+            session)          dms ipc call powermenu toggle ;;
+            lock)             dms ipc call lock lock ;;
+            cheatsheet)       dms ipc call keybinds toggle niri ;;
+            wallpaper-random) dms ipc call wallpaper set "$(random_wallpaper)" ;;
+            wallpaper-set)    dms ipc call wallpaper set "$1" ;;
+            volume-up)        dms ipc call audio increment 5 ;;
+            volume-down)      dms ipc call audio decrement 5 ;;
+            volume-mute)      dms ipc call audio mute ;;
+            mic-mute)         dms ipc call audio micmute ;;
+            media-toggle)     dms ipc call mpris playPause ;;
+            media-next)       dms ipc call mpris next ;;
+            media-prev)       dms ipc call mpris previous ;;
+            brightness-up)    dms ipc call brightness increment 5 "" ;;
+            brightness-down)  dms ipc call brightness decrement 5 "" ;;
+            *) return 2 ;;
+        esac
+    fi
+}
+
+cmd="${1:-}"
+[ $# -gt 0 ] && shift
+case "$cmd" in
+    start)   start ;;
+    switch)  switch "$@" ;;
+    menu)    menu ;;
+    current) current ;;
+    ""|-h|--help) sed -n '2,23p' "$0" | sed 's/^# \{0,1\}//' ;;
+    *)
+        act "$(current)" "$cmd" "$@"
+        rc=$?
+        [ $rc -eq 2 ] && echo "zshell: unknown action '$cmd' (see zshell --help)" >&2
+        exit $rc
+        ;;
+esac

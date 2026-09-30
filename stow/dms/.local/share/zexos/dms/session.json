@@ -1,0 +1,8 @@
+{
+  "isLightMode": false,
+  "wallpaperPath": "@HOME@/Pictures/Wallpapers/zexos-aurora.jpg",
+  "wallpaperPathDark": "@HOME@/Pictures/Wallpapers/zexos-aurora.jpg",
+  "wallpaperTransition": "fade",
+  "wallpaperCyclingFolderPath": "@HOME@/Pictures/Wallpapers",
+  "pinnedApps": ["kitty", "org.kde.dolphin"]
+}

@@ -3,16 +3,17 @@
 // "Mod" is the Super key (the one with the Windows logo).
 // Each line reads: keys  { what happens; }
 // Text in hotkey-overlay-title is the label shown on the Mod+Shift+Escape cheat sheet.
-// `noctalia msg --help` lists every command the shell understands.
+// Shell actions go through `zshell`, so they work the same in Noctalia and
+// DankMaterialShell. `zshell --help` lists them.
 // All options: https://yalter.github.io/niri/Configuration:-Key-Bindings
 
 binds {
     // ── Help ────────────────────────────────────────────
     Mod+Shift+Escape { show-hotkey-overlay; }
-    Mod+F1 hotkey-overlay-title="Shortcut cheat sheet (Noctalia)" { spawn-sh "noctalia msg panel-toggle kenn/keybind-cheatsheet:cheatsheet"; }
+    Mod+F1 hotkey-overlay-title="Shortcut cheat sheet" { spawn "zshell" "cheatsheet"; }
 
     // ── Open apps ───────────────────────────────────────
-    Mod+Space hotkey-overlay-title="App launcher" { spawn-sh "noctalia msg panel-toggle launcher"; }
+    Mod+Space hotkey-overlay-title="App launcher" { spawn "zshell" "launcher"; }
     Mod+C     hotkey-overlay-title="Terminal (kitty)" { spawn "kitty"; }
     Mod+B     hotkey-overlay-title="Web browser (your default)" { spawn-sh "~/.local/bin/zexos-browser"; }
     Mod+E     hotkey-overlay-title="Files (Dolphin)" { spawn "dolphin"; }
@@ -21,26 +22,27 @@ binds {
     // ── Wallpaper ───────────────────────────────────────
     // Mod+W opens the roller picker, or closes it if it is already open.
     Mod+W      hotkey-overlay-title="Pick a wallpaper (roller)" { spawn-sh "pkill -x roller || PATH=$HOME/.local/share/roller/bin:$PATH roller"; }
-    Mod+Ctrl+W hotkey-overlay-title="Random wallpaper" { spawn-sh "noctalia msg wallpaper-random"; }
+    Mod+Ctrl+W hotkey-overlay-title="Random wallpaper" { spawn "zshell" "wallpaper-random"; }
 
     // ── Session ─────────────────────────────────────────
-    Mod+L      hotkey-overlay-title="Lock the screen" { spawn-sh "noctalia msg session lock"; }
-    Mod+Escape hotkey-overlay-title="Log out / restart / shut down" { spawn-sh "noctalia msg panel-toggle session"; }
+    Mod+L      hotkey-overlay-title="Lock the screen" { spawn "zshell" "lock"; }
+    Mod+Escape hotkey-overlay-title="Log out / restart / shut down" { spawn "zshell" "session"; }
+    Mod+Shift+D hotkey-overlay-title="Change desktop shell (Noctalia / DMS)" { spawn "zshell" "menu"; }
     Mod+Shift+P { power-off-monitors; }   // screens go dark; move the mouse to wake them
     Ctrl+Alt+Delete { quit; }              // leave niri and go back to the login screen
 
     // ── Laptop keys: sound, music, brightness ───────────
     // allow-when-locked: these work even on the lock screen.
-    XF86AudioRaiseVolume  allow-when-locked=true { spawn-sh "noctalia msg volume-up"; }
-    XF86AudioLowerVolume  allow-when-locked=true { spawn-sh "noctalia msg volume-down"; }
-    XF86AudioMute         allow-when-locked=true { spawn-sh "noctalia msg volume-mute"; }
-    XF86AudioMicMute      allow-when-locked=true { spawn-sh "noctalia msg mic-mute"; }
-    XF86AudioPlay         allow-when-locked=true { spawn-sh "noctalia msg media toggle"; }
-    XF86AudioPause        allow-when-locked=true { spawn-sh "noctalia msg media toggle"; }
-    XF86AudioNext         allow-when-locked=true { spawn-sh "noctalia msg media next"; }
-    XF86AudioPrev         allow-when-locked=true { spawn-sh "noctalia msg media previous"; }
-    XF86MonBrightnessUp   allow-when-locked=true { spawn-sh "noctalia msg brightness-up"; }
-    XF86MonBrightnessDown allow-when-locked=true { spawn-sh "noctalia msg brightness-down"; }
+    XF86AudioRaiseVolume  allow-when-locked=true { spawn "zshell" "volume-up"; }
+    XF86AudioLowerVolume  allow-when-locked=true { spawn "zshell" "volume-down"; }
+    XF86AudioMute         allow-when-locked=true { spawn "zshell" "volume-mute"; }
+    XF86AudioMicMute      allow-when-locked=true { spawn "zshell" "mic-mute"; }
+    XF86AudioPlay         allow-when-locked=true { spawn "zshell" "media-toggle"; }
+    XF86AudioPause        allow-when-locked=true { spawn "zshell" "media-toggle"; }
+    XF86AudioNext         allow-when-locked=true { spawn "zshell" "media-next"; }
+    XF86AudioPrev         allow-when-locked=true { spawn "zshell" "media-prev"; }
+    XF86MonBrightnessUp   allow-when-locked=true { spawn "zshell" "brightness-up"; }
+    XF86MonBrightnessDown allow-when-locked=true { spawn "zshell" "brightness-down"; }
 
     // ── Windows ─────────────────────────────────────────
     Mod+Q       { close-window; }

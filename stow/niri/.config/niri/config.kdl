@@ -16,6 +16,11 @@ include "./cfg/misc.kdl"        // screenshots, env vars, small extras
 // so don't edit it. It comes after layout.kdl so its colours win.
 include "./noctalia.kdl"
 
+// When you use DankMaterialShell instead, `zshell` writes this file so it
+// loads DMS's wallpaper colours, which then win over Noctalia's. With
+// Noctalia it is only a comment. Don't edit it by hand.
+include optional=true "./shell-colors.kdl"
+
 // Mouse pointer look
 cursor {
     xcursor-theme "Bibata-Modern-Ice"

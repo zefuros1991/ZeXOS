@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# zexos-qt-refresh -- make open Qt apps (Dolphin, VLC...) take new colours.
+#
+# Qt apps get their colours from qt6ct, and a running app only reads them
+# again when something in ~/.config/qt6ct changes (qt6ct watches that folder
+# and reloads 3 seconds later). The colours themselves live somewhere else
+# (color-schemes/ZeXOS.colors), so a new wallpaper alone never wakes them.
+# This makes and removes an empty file in the folder: like knocking on the
+# door so they look at the new colours.
+#
+# Run by zshell after every colour change and by Noctalia's colors_changed hook.
+dir="${XDG_CONFIG_HOME:-$HOME/.config}/qt6ct"
+[ -d "$dir" ] || exit 0
+f="$(mktemp -p "$dir" .zexos-refresh.XXXXXX)" && rm -f "$f"

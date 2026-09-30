@@ -9,7 +9,7 @@
 #   zshell switch <name>    change shell now and remember it (noctalia | dms)
 #   zshell menu             pick a shell from a small menu (Mod+Shift+D)
 #   zshell current          print the shell you picked
-#   zshell relink           point app colours (Qt, GTK, KDE apps, launcher,
+#   zshell relink           point app colours (kitty, Qt, GTK, KDE apps, launcher,
 #                           btop) at the shell in use; the DMS watcher runs it
 #   zshell <action>         launcher, session, lock, cheatsheet, wallpaper-random,
 #                           wallpaper-set <file>, volume-up, volume-down,
@@ -319,7 +319,7 @@ case "$cmd" in
     switch)  switch "$@" ;;
     menu)    menu ;;
     current) current ;;
-    relink)  link_theme "$(current)" ;;
+    relink)  link_kitty "$(current)"; link_theme "$(current)" ;;
     ""|-h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//' ;;
     *)
         act "$(current)" "$cmd" "$@"

@@ -26,7 +26,11 @@ Planned as 1.1.0.
 - niri starts the desktop shell through `zshell start` instead of starting
   Noctalia directly.
 - niri window colours and kitty colours follow whichever shell is running.
-- The roller wallpaper picker sets the wallpaper through `zshell`.
+- The roller wallpaper picker sets the wallpaper through `zshell`. With DMS,
+  wallpapers set this way (`Mod+W`, `Mod+Ctrl+W`) also go to the login
+  screen. Wallpapers picked in DMS's own settings do not, yet.
+- Sound, music and brightness keys have readable names on the shortcut
+  cheat sheet.
 
 ## [1.0.0] - 2026-09-30
 

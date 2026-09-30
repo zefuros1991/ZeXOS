@@ -16,8 +16,10 @@ Planned as 1.1.0.
   default. See [Two desktop shells](README.md#two-desktop-shells).
 - `zshell`, one helper that every shell keybind calls. It passes the action
   to the running shell, so the keys work the same in both.
-- `Mod+Shift+D` opens a menu to switch shells. The choice is saved per user
-  in `~/.config/zexos/shell`.
+- `Mod+Shift+D` opens a menu to switch shells, styled like the shells'
+  launchers, with each shell's logo before its name
+  (`fuzzel/switcher.ini`). The choice is saved per user in
+  `~/.config/zexos/shell`.
 - A ZeXOS look for DMS on its first start (bar, fonts, wallpaper), in the
   new `dms` stow package. The bar has the same items in the same order as
   Noctalia's, each in its own small pill: system use and updates on the left; workspaces,
@@ -63,6 +65,10 @@ Planned as 1.1.0.
 
 ### Fixed
 
+- Under DMS, the shell switcher and other fuzzel menus now take the
+  wallpaper colours. Noctalia's fuzzel hook had pointed `fuzzel.ini` at
+  Noctalia's colours for good, so they stayed on the last Noctalia
+  colours.
 - Under DMS, kitty now takes the wallpaper colours. It never loaded them
   before, and windows that are already open now update too.
 - `Mod+B` opens a real browser when DMS is installed. DMS's link chooser

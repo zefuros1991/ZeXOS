@@ -193,6 +193,16 @@ link_theme() {
         else
             ln -sfn noctalia "$fz/shell"
         fi
+        # Noctalia's fuzzel hook changes fuzzel.ini to include its own
+        # colours (themes/noctalia) for good, which left the menus green
+        # under DMS. Put themes/shell back. Writing with > (not sed -i)
+        # goes through the stow link instead of replacing it.
+        local ini="$CONF_DIR/fuzzel/fuzzel.ini" want='include=~/.config/fuzzel/themes/shell'
+        if [ -f "$ini" ] && ! grep -qxF "$want" "$ini"; then
+            local fixed
+            fixed="$(sed "s|^include=.*themes.*|$want|" "$ini")"
+            printf '%s\n' "$fixed" > "$ini"
+        fi
     fi
 
     # btop: pick the theme file by name, then tell running btop to reload.
@@ -285,18 +295,26 @@ switch() {
     fi
 }
 
+# Each shell's official logo, as an icon name (hicolor theme).
+logo() {
+    case "$1" in
+        noctalia) echo noctalia ;;
+        dms)      echo danklogo ;;
+    esac
+}
+
+
 menu() {
-    local cur pick lines=""
+    local cur pick
     cur="$(current)"
-    for s in $SHELLS; do
-        installed "$s" || continue
-        if [ "$s" = "$cur" ]; then
-            lines+="$(pretty "$s")  (in use)"$'\n'
-        else
-            lines+="$(pretty "$s")"$'\n'
-        fi
-    done
-    pick="$(printf '%s' "$lines" | fuzzel --dmenu --prompt 'Desktop shell: ' --lines 2)" || exit 0
+    # "name\0icon\x1f<icon>" puts that icon before the entry (man fuzzel,
+    # --dmenu). A bash variable can't hold the \0, so printf writes it.
+    pick="$(for s in $SHELLS; do
+                installed "$s" || continue
+                name="$(pretty "$s")"
+                [ "$s" = "$cur" ] && name+="   (in use)"
+                printf '%s\0icon\x1f%s\n' "$name" "$(logo "$s")"
+            done | fuzzel --dmenu --config "$CONF_DIR/fuzzel/switcher.ini")" || exit 0
     case "$pick" in
         Noctalia*)          switch noctalia ;;
         DankMaterialShell*) switch dms ;;

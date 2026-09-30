@@ -5,13 +5,13 @@
 # pinned by checksum. The patch is copied from the qt6ct-kde recipe by
 # Antonio Rojas (Arch Linux developer) so we don't have to fetch it from
 # the AUR. zexos-live-colors.patch is ours: it lets running apps pick up
-# new colours when the wallpaper changes, without a restart.
+# new colours right away when the wallpaper changes, without a restart.
 # Built by scripts/packages.sh with `makepkg -si`.
 
 pkgname=qt6ct-kde
 _pkgname=qt6ct
 pkgver=0.11
-pkgrel=10
+pkgrel=11
 pkgdesc='Qt 6 settings tool, patched to work with KDE apps (ZeXOS)'
 arch=('x86_64')
 url='https://www.opencode.net/trialuser/qt6ct'
@@ -25,7 +25,7 @@ source=("git+$url#tag=$pkgver"
         "zexos-live-colors.patch")
 sha256sums=('76bfc26838b8ec7dd049da54bd812d8c526986024845a30d1e546e43555e52bf'
             'baab2b714ad490de3a12edd5d4ec0f6223eded034d66a694989e746b86d1f420'
-            '15e72c3d836c783922fa545c9662bd0b1e819b1fc1b94dd2c1bdf57e7dfb0e33')
+            '2775779f0c5089cea23d661b274cd13014fde4a9a19821614698058f75641a28')
 
 prepare() {
     patch -d "$_pkgname" -p1 < "$_pkgname-shenanigans.patch"

@@ -28,9 +28,11 @@ Planned as 1.1.0.
 - niri window colours and kitty colours follow whichever shell is running.
 - The roller wallpaper picker sets the wallpaper through `zshell`. With DMS,
   wallpapers set this way (`Mod+W`, `Mod+Ctrl+W`) also go to the login
-  screen. Wallpapers picked in DMS's own settings do not, yet.
+  screen. Wallpapers picked in DMS's own settings do not, yet. After a
+  shell switch, the login screen keeps the last wallpaper until the next
+  wallpaper change.
 - Sound, music and brightness keys have readable names on the shortcut
-  cheat sheet.
+  cheat sheet. Noctalia's cheat sheet shows them after the next login.
 
 ## [1.0.0] - 2026-09-30
 

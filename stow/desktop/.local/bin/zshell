@@ -5,7 +5,7 @@
 # passes each action on to whichever shell you picked, so the same keys
 # work in both.
 #
-#   zshell start            start the shell you picked (niri runs this at login)
+#   zshell start            start the shell you picked (niri or Mango runs this at login)
 #   zshell switch <name>    change shell now and remember it (noctalia | dms)
 #   zshell menu             pick a shell from a small menu (Mod+Shift+D)
 #   zshell current          print the shell you picked
@@ -29,6 +29,7 @@ set -u
 CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}"
 CHOICE_FILE="$CONF_DIR/zexos/shell"
 NIRI_DIR="$CONF_DIR/niri"
+MANGO_DIR="$CONF_DIR/mango"
 DMS_DIR="$CONF_DIR/DankMaterialShell"
 DMS_SEED="${XDG_DATA_HOME:-$HOME/.local/share}/zexos/dms"
 WALL_DIR="$HOME/Pictures/Wallpapers"
@@ -61,19 +62,34 @@ current() {
     echo "$shell"
 }
 
-# niri's window colours come from the running shell. config.kdl always
-# loads noctalia.kdl and then shell-colors.kdl; for DMS this file points at
-# the colours DMS writes, so they win. niri reloads it on its own.
+# Window colours (niri and Mango) come from the running shell. config.kdl
+# always loads noctalia.kdl and then shell-colors.kdl; for DMS this file
+# points at the colours DMS writes, so they win. niri reloads it on its
+# own. Mango's config.conf does the same with noctalia.conf and
+# shell-colors.conf, but needs to be told to reload.
 link_colors() {
     local file="$NIRI_DIR/shell-colors.kdl"
-    [ -d "$NIRI_DIR" ] || return 0
-    if [ "$1" = dms ]; then
-        printf '%s\n' '// Written by zshell: DankMaterialShell is the active shell.' \
-            'include optional=true "./dms/colors.kdl"' > "$file"
-    else
-        printf '%s\n' '// Written by zshell: Noctalia is the active shell,' \
-            '// its colours come from noctalia.kdl.' > "$file"
+    if [ -d "$NIRI_DIR" ]; then
+        if [ "$1" = dms ]; then
+            printf '%s\n' '// Written by zshell: DankMaterialShell is the active shell.' \
+                'include optional=true "./dms/colors.kdl"' > "$file"
+        else
+            printf '%s\n' '// Written by zshell: Noctalia is the active shell,' \
+                '// its colours come from noctalia.kdl.' > "$file"
+        fi
     fi
+    file="$MANGO_DIR/shell-colors.conf"
+    if [ -d "$MANGO_DIR" ]; then
+        if [ "$1" = dms ]; then
+            printf '%s\n' '# Written by zshell: DankMaterialShell is the active shell.' \
+                'source-optional=./dms/colors.conf' > "$file"
+        else
+            printf '%s\n' '# Written by zshell: Noctalia is the active shell,' \
+                '# its colours come from noctalia.conf.' > "$file"
+        fi
+        [ -n "${MANGO_INSTANCE_SIGNATURE:-}" ] && mmsg dispatch reload_config >/dev/null 2>&1
+    fi
+    return 0
 }
 
 # Kitty follows the same idea: kitty.conf loads themes/shell.conf last.
@@ -229,9 +245,11 @@ switch() {
         [ "$s" = "$new" ] || stop "$s"
     done
     running "$new" && return 0
-    # Let niri start it, the same way it does at login.
+    # Let the compositor start it, the same way it does at login.
     if [ -n "${NIRI_SOCKET:-}" ]; then
         niri msg action spawn -- zshell start
+    elif [ -n "${MANGO_INSTANCE_SIGNATURE:-}" ]; then
+        mmsg dispatch "spawn,zshell start"
     else
         setsid -f zshell start >/dev/null 2>&1
     fi
@@ -268,6 +286,32 @@ dms_wallpaper() {
     "$HOME/.local/bin/sync-sddm-wallpaper.sh" "$1" >/dev/null 2>&1 || true
 }
 
+# Mango's shortcut list, for shells that can't show it themselves
+# (Noctalia's cheat sheet knows niri and Hyprland, not Mango). Each bind in
+# keybinds.conf has its name on the "# ..." line above it.
+mango_cheatsheet() {
+    pkill -x fuzzel 2>/dev/null && return 0
+    awk '
+        /^# === / { next }
+        /^#/ { desc = substr($0, 3); next }
+        /^bind[a-z]*=/ {
+            sub(/^bind[a-z]*=/, ""); split($0, f, ",")
+            keys = (f[1] == "NONE" ? "" : f[1] "+") f[2]
+            gsub(/SUPER/, "Mod", keys); gsub(/CTRL/, "Ctrl", keys)
+            gsub(/SHIFT/, "Shift", keys); gsub(/ALT/, "Alt", keys)
+            if (desc != "") printf "%-24s %s\n", keys, desc
+        }
+        { desc = "" }
+    ' "$MANGO_DIR/cfg/keybinds.conf" |
+        fuzzel --dmenu --prompt 'Shortcuts: ' --width 70 --lines 20 >/dev/null
+    return 0
+}
+
+# The compositor we run in, for the DMS cheat sheet.
+compositor() {
+    if [ -n "${MANGO_INSTANCE_SIGNATURE:-}" ]; then echo mangowc; else echo niri; fi
+}
+
 # One action, sent to the shell in use.
 act() {
     local shell="$1" action="$2"; shift 2
@@ -276,7 +320,9 @@ act() {
             launcher)         noctalia msg panel-toggle launcher ;;
             session)          noctalia msg panel-toggle session ;;
             lock)             noctalia msg session lock ;;
-            cheatsheet)       noctalia msg panel-toggle kenn/keybind-cheatsheet:cheatsheet ;;
+            cheatsheet)
+                if [ "$(compositor)" = mangowc ]; then mango_cheatsheet
+                else noctalia msg panel-toggle kenn/keybind-cheatsheet:cheatsheet; fi ;;
             wallpaper-random) noctalia msg wallpaper-random ;;
             wallpaper-set)    noctalia msg wallpaper-set "$1" ;;
             volume-up)        noctalia msg volume-up ;;
@@ -295,7 +341,7 @@ act() {
             launcher)         dms ipc call spotlight toggle ;;
             session)          dms ipc call powermenu toggle ;;
             lock)             dms ipc call lock lock ;;
-            cheatsheet)       dms ipc call keybinds toggle niri ;;
+            cheatsheet)       dms ipc call keybinds toggle "$(compositor)" ;;
             wallpaper-random) dms_wallpaper "$(random_wallpaper)" ;;
             wallpaper-set)    dms_wallpaper "$1" ;;
             volume-up)        dms ipc call audio increment 5 ;;

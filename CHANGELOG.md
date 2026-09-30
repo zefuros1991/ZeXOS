@@ -32,11 +32,18 @@ Planned as 1.1.0.
   the login screen gets the new wallpaper, and a very bright wallpaper
   turns on light mode.
 - `zshell relink` and `zexos-kde-colors`, which the watcher uses.
+- Mango (`mangowm`) as a second compositor, picked on the login screen.
+  Its config (new `mango` stow package) copies the niri one: the
+  scrolling layout, gaps, borders, round corners, blur, window rules and
+  the same keys. Both shells work in it, with the shell switcher, and
+  window colours follow the wallpaper. See
+  [Two compositors](README.md#two-compositors).
+- `zexos-screenshot` takes area, screen and window screenshots on Mango.
 
 ### Changed
 
 - niri starts the desktop shell through `zshell start` instead of starting
-  Noctalia directly.
+  Noctalia directly. Mango does the same.
 - niri window colours and kitty colours follow whichever shell is running.
 - The roller wallpaper picker sets the wallpaper through `zshell`. After a
   shell switch, the login screen keeps the last wallpaper until the next
@@ -63,6 +70,15 @@ Planned as 1.1.0.
 - No "Restart to UEFI" in the DMS power menu.
 - If you already used DMS before, your own DMS bar is kept; the ZeXOS bar
   only comes with a fresh DMS setup.
+
+### Known gaps in Mango
+
+- No keys to jump to the first or last window, or to make a window taller
+  or shorter. Mango has nothing for these.
+- `Mod+Minus`/`Mod+Equal` step through set widths instead of 10% at a
+  time.
+- Noctalia's cheat sheet doesn't know Mango, so under Noctalia `Mod+F1`
+  shows a simple searchable list instead.
 
 ## [1.0.0] - 2026-09-30
 

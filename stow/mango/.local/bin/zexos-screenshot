@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Take a screenshot on Mango, the way niri does it by itself:
+# save it to ~/Pictures/Screenshots and copy it to the clipboard.
+#
+#   zexos-screenshot area     drag to pick an area
+#   zexos-screenshot screen   the screen the pointer is on
+#   zexos-screenshot window   just the focused window
+#
+# Needs grim (takes the picture), slurp (lets you pick an area) and
+# wl-copy (clipboard). Mango's keybinds.conf calls this.
+set -euo pipefail
+
+dir="${XDG_PICTURES_DIR:-$HOME/Pictures}/Screenshots"
+file="$dir/Screenshot from $(date '+%Y-%m-%d %H-%M-%S').png"
+mkdir -p "$dir"   # grim won't make the folder itself
+
+# Print the named fields of the JSON object on stdin, one per line.
+json_get() {
+    python3 -c 'import json, sys
+d = json.load(sys.stdin)
+d = d[0] if isinstance(d, list) and d else d
+for k in sys.argv[1:]:
+    if k in d: print(d[k])' "$@"
+}
+
+case "${1:-}" in
+    area)
+        # Esc or a click outside cancels; that's not an error.
+        geom=$(slurp) || exit 0
+        grim -g "$geom" "$file"
+        ;;
+    screen)
+        # The screen the pointer is on.
+        mon=$(mmsg get cursorpos 2>/dev/null | json_get monitor || true)
+        if [ -n "$mon" ]; then grim -o "$mon" "$file"; else grim "$file"; fi
+        ;;
+    window)
+        # mmsg tells where the focused window is and how big it is.
+        info=$(mmsg get focusing-client 2>/dev/null || true)
+        geom=$(json_get x y width height <<<"$info" | tr '\n' ' ' \
+            | awk 'NF==4 {printf "%d,%d %dx%d", $1, $2, $3, $4}' || true)
+        if [ -z "$geom" ]; then
+            notify-send "Screenshot" "No window is focused." 2>/dev/null || true
+            exit 1
+        fi
+        grim -g "$geom" "$file"
+        ;;
+    *)
+        echo "usage: zexos-screenshot area|screen|window" >&2
+        exit 2
+        ;;
+esac
+
+wl-copy --type image/png < "$file"
+notify-send -i "$file" "Screenshot saved" "${file/#$HOME/\~}" 2>/dev/null || true

@@ -348,6 +348,23 @@ DMS_PACMAN=(
 
 install_pacman "DankMaterialShell" "${DMS_PACMAN[@]}"
 
+# -----------------------------
+# MANGO (a second compositor, picked at the login screen)
+# -----------------------------
+# Mango (mangowm) scrolls windows sideways like niri. It ships its own
+# login-screen entry and portal settings. xdg-desktop-portal-wlr does screen
+# sharing; grim, slurp and wl-clipboard do screenshots (zexos-screenshot).
+# All in the Arch/CachyOS repos.
+MANGO_PACMAN=(
+    mangowm
+    xdg-desktop-portal-wlr
+    grim
+    slurp
+    wl-clipboard
+)
+
+install_pacman "Mango" "${MANGO_PACMAN[@]}"
+
 # =========================================================
 # 2. PACKAGES BUILT HERE (no AUR)
 # =========================================================

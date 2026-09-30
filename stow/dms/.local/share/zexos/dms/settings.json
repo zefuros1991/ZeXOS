@@ -21,7 +21,6 @@
       "id": "default",
       "name": "Main Bar",
       "enabled": true,
-      "island": true,
       "position": 0,
       "screenPreferences": [
         "all"
@@ -46,16 +45,14 @@
       ],
       "fontScale": 1.3,
       "iconScale": 1.25,
-      "transparency": 0.85,
-      "widgetTransparency": 0.85,
-      "islandTransparency": 0.85,
-      "islandSatellitesEnabled": true,
-      "islandSatellitePosition": "edges",
-      "islandSatelliteBackground": true,
-      "islandSatelliteGothCorners": true,
-      "islandSatelliteTransparency": 0.85,
-      "islandCornerRadius": 13,
-      "islandMediaClockVisible": true
+      "transparency": 0.0,
+      "widgetTransparency": 1.0,
+      "island": false,
+      "spacing": 6,
+      "noBackground": false,
+      "widgetOutlineEnabled": true,
+      "widgetOutlineColor": "outline",
+      "widgetOutlineOpacity": 0.5
     }
   ],
   "configVersion": 18,

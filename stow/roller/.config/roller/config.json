@@ -6,5 +6,6 @@
     "panel_height": 300,
     "thumbnail_height": 512,
     "show_search_hint": false,
-    "restore_last": true
+    "restore_last": true,
+    "post_apply_command": "sleep 0.2; pkill -x roller"
 }

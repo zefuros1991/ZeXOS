@@ -71,6 +71,14 @@ Planned as 1.1.0.
   colours.
 - Under DMS, kitty now takes the wallpaper colours. It never loaded them
   before, and windows that are already open now update too.
+- Qt and KDE apps that are already open (like Dolphin) now change colour
+  with the wallpaper or a shell switch, on every compositor and with both
+  shells. qt6ct only re-reads colours when its own folder changes, so the
+  new `zexos-qt-refresh` touches that folder after each colour update.
+- Under DMS, a wallpaper change no longer misses the new colours now and
+  then. DMS saves the colours a moment after the wallpaper, and systemd
+  drops changes that arrive while the sync is still running, so
+  `zexos-dms-sync` keeps checking for a few more seconds.
 - `Mod+B` opens a real browser when DMS is installed. DMS's link chooser
   (`dms-open`) says it opens web links, so it was picked by mistake.
 
@@ -84,9 +92,6 @@ Planned as 1.1.0.
 - No "Restart to UEFI" in the DMS power menu.
 - If you already used DMS before, your own DMS bar is kept; the ZeXOS bar
   only comes with a fresh DMS setup.
-- After a shell switch, KDE apps that were already open (like Dolphin)
-  keep their old colours until you reopen them. New windows get the new
-  colours straight away.
 
 ### Known gaps in Mango
 
@@ -104,6 +109,10 @@ Planned as 1.1.0.
 - `Mod+Minus`/`Mod+Equal` move the line between two windows by 100
   pixels instead of changing one window's width by 10%, so on the
   right-hand window `Mod+Equal` makes it smaller.
+- Once in testing, Hyprland 0.56.2 closed the whole session during a DMS
+  wallpaper change (DMS rewrites Hyprland's colour file, which makes
+  Hyprland reload). It left no crash report and did not happen again in
+  17 more tries. Upstream reports crashes on repeated reloads in 0.55/0.56.
 
 ## [1.0.0] - 2026-09-30
 

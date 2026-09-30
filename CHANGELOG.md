@@ -70,6 +70,9 @@ Planned as 1.1.0.
 - No "Restart to UEFI" in the DMS power menu.
 - If you already used DMS before, your own DMS bar is kept; the ZeXOS bar
   only comes with a fresh DMS setup.
+- After a shell switch, KDE apps that were already open (like Dolphin)
+  keep their old colours until you reopen them. New windows get the new
+  colours straight away.
 
 ### Known gaps in Mango
 

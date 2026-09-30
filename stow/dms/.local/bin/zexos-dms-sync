@@ -27,14 +27,16 @@ changed() {   # changed <name> <value>
 }
 
 # 1. Colours.
-if [ -f "$SCHEME" ] && changed colors "$(md5sum < "$SCHEME")"; then
+sync_colors() {
+    [ -f "$SCHEME" ] && changed colors "$(md5sum < "$SCHEME")" || return 0
     zshell relink
     theme="$(gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null | tr -d "'")"
     if [ -n "$theme" ]; then
         gsettings set org.gnome.desktop.interface gtk-theme ''
         gsettings set org.gnome.desktop.interface gtk-theme "$theme"
     fi
-fi
+}
+sync_colors
 
 # 2. Wallpaper.
 wall="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("wallpaperPath",""))' "$SESSION" 2>/dev/null)"
@@ -54,3 +56,12 @@ if [ -f "$wall" ] && changed wallpaper "$wall"; then
         fi
     fi
 fi
+
+# 3. DMS saves the wallpaper first and writes the new colours a moment
+# later. systemd ignores changes that land while this script is still
+# running, so the colours would be missed: keep an eye on them for a few
+# seconds more, like staying on the phone until the second half of the news.
+for _ in 1 2 3 4 5 6; do
+    sleep 1
+    sync_colors
+done

@@ -416,13 +416,17 @@ poster() {
 
 video() { noctalia msg plugin noctalia/mpvpaper:service all "$@"; }
 
+# For a video, the plugin moves to its poster (the first frame) with Noctalia's
+# usual transition, then starts the video on top of it. With a video playing,
+# a picture also goes through the plugin: it hands the screen back to Noctalia
+# before stopping the video, so the transition runs instead of a grey flash.
 noctalia_wallpaper() {
     if is_video "$1"; then
         local p; p="$(poster "$1")" || return
-        video set "$1" || return
-        noctalia msg wallpaper-set "$p"
+        video set "$1"$'\t'"$p"
+    elif pgrep -x mpvpaper >/dev/null; then
+        video picture "$1"
     else
-        video clear-all 2>/dev/null
         noctalia msg wallpaper-set "$1"
     fi
 }

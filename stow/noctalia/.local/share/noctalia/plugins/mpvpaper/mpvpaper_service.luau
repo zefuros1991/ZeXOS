@@ -447,7 +447,18 @@ local function startMpvpaper(connector, path)
 
     -- Run mpvpaper in background
     noctalia.runAsync("exec " .. cmd .. " >/dev/null 2>&1 &", function() end)
-    noctalia.runAsync("sleep 0.8", function()
+    -- ZeXOS change: upstream hid Noctalia's wallpaper after a fixed 0.8 s, but
+    -- mpvpaper's surface stays see-through until mpv has decoded a frame, which
+    -- can take longer, and then the compositor's grey background showed. Ask
+    -- mpv until it has shown a few frames (5 s at most), then wait one beat.
+    local waitCmd = "sleep 0.8"
+    if noctalia.commandExists("socat") then
+      waitCmd = "s=" .. shellQuote("UNIX-CONNECT:" .. ipcSocketPath(connector)) .. "; i=0; " ..
+        "while [ $i -lt 50 ]; do i=$((i+1)); " ..
+        "case $(printf '{\"command\":[\"get_property\",\"estimated-frame-number\"]}\\n' | socat - \"$s\" 2>/dev/null) in " ..
+        "*'\"data\":'[3-9]*|*'\"data\":'[1-9][0-9]*) break ;; esac; sleep 0.1; done; sleep 0.15"
+    end
+    noctalia.runAsync(waitCmd, function()
       forEachOutput(connector, function(name) noctalia.setWallpaperEnabled(name, false) end)
     end)
   end)
@@ -546,6 +557,109 @@ local function setVideo(connector, path)
 end
 
 -- ==============================================================================
+-- ── ZeXOS: SMOOTH SWITCHES ─────────────────────────────────────────────────
+-- ==============================================================================
+
+-- Upstream stops the old video while Noctalia's own wallpaper is still switched
+-- off, so the bare grey backdrop shows until the next picture or video draws.
+-- ZeXOS hands the screen back to Noctalia first, showing the frame the video
+-- was on, and only then stops the video. Noctalia then plays its normal
+-- transition to the next picture. For a video that picture is its poster (its
+-- first frame), and the video starts once the transition is over, on top of
+-- an identical picture.
+
+-- Bumped by every switch, so a delayed step from an older switch gives up.
+local switchSeq = 0
+
+local function after(seconds, fn)
+  noctalia.runAsync("sleep " .. string.format("%.2f", seconds), fn)
+end
+
+local function transitionSeconds()
+  local ms = noctalia.getSetting("wallpaper.transition_duration")
+  if type(ms) ~= "number" or ms < 0 then ms = 1500 end
+  return ms / 1000
+end
+
+-- Saves the frame the playing video shows right now. Calls back with its path,
+-- or nil when there is no video or the frame could not be saved. Each frame
+-- gets a new name, so Noctalia never reuses an older picture it has cached.
+local function grabCurrentFrame(callback)
+  local connector = next(assignments)
+  if not connector or not noctalia.fileExists(ipcSocketPath(connector)) or not noctalia.commandExists("socat") then
+    callback(nil)
+    return
+  end
+  local cmd = "d=" .. shellQuote(CACHE_DIR) .. "; mkdir -p \"$d\"; rm -f \"$d\"/zexos-frame-*.jpg; " ..
+    "f=\"$d/zexos-frame-$(date +%s%N).jpg\"; " ..
+    "printf '{\"command\":[\"screenshot-to-file\",\"%s\",\"video\"]}\\n' \"$f\" | socat - " ..
+    shellQuote("UNIX-CONNECT:" .. ipcSocketPath(connector)) .. " >/dev/null && [ -s \"$f\" ] && printf %s \"$f\""
+  noctalia.runAsync(cmd, function(result)
+    local path = type(result) == "table" and type(result.stdout) == "string" and result.stdout or ""
+    callback(path ~= "" and noctalia.fileExists(path) and path or nil)
+  end)
+end
+
+-- Gives every output back to Noctalia, showing the video's current frame, then
+-- stops all videos. Calls back once the videos are gone.
+local function handBackToNoctalia(callback)
+  if next(assignments) == nil then
+    forEachOutput("*", function(name) noctalia.setWallpaperEnabled(name, true) end)
+    callback()
+    return
+  end
+  grabCurrentFrame(function(frame)
+    forEachOutput("*", function(name)
+      if frame then noctalia.setWallpaper(name, frame) end
+      noctalia.setWallpaperEnabled(name, true)
+    end)
+    snapshotAssignments()
+    local playing = assignments
+    assignments = {}
+    persist()
+    publish()
+    -- Give Noctalia a moment to draw before the video goes away.
+    after(0.2, function()
+      local left = 0
+      for _ in pairs(playing) do left = left + 1 end
+      for connector in pairs(playing) do
+        killMpvpaper(connector, function()
+          left = left - 1
+          if left == 0 then callback() end
+        end)
+      end
+    end)
+  end)
+end
+
+-- `set <video>\t<poster>`: transition to the poster, then play the video.
+local function switchToVideo(path, poster)
+  switchSeq = switchSeq + 1
+  local seq = switchSeq
+  handBackToNoctalia(function()
+    if seq ~= switchSeq then return end
+    if not poster or not noctalia.fileExists(poster) then
+      setVideo("*", path)
+      return
+    end
+    forEachOutput("*", function(name) noctalia.setWallpaper(name, poster) end)
+    after(transitionSeconds() + 0.1, function()
+      if seq == switchSeq then setVideo("*", path) end
+    end)
+  end)
+end
+
+-- `picture <image>`: stop any video and transition to a picture.
+local function switchToPicture(path)
+  switchSeq = switchSeq + 1
+  local seq = switchSeq
+  handBackToNoctalia(function()
+    if seq ~= switchSeq then return end
+    forEachOutput("*", function(name) noctalia.setWallpaper(name, path) end)
+  end)
+end
+
+-- ==============================================================================
 -- ── LIFECYCLE ──────────────────────────────────────────────────────────────
 -- ==============================================================================
 
@@ -636,28 +750,25 @@ end
 -- ==============================================================================
 
 function onIpc(event, payload)
+  -- ZeXOS change: hand the screen back to Noctalia before stopping the videos
+  -- (see SMOOTH SWITCHES), instead of stopping them first.
   if event == "clear-all" then
-    snapshotAssignments()
-    for connector, path in pairs(assignments) do
-      killMpvpaper(connector, function()
-        if path then
-          extractStaticWallpaper(connector, path)
-        else
-          forEachOutput(connector, function(name) noctalia.setWallpaperEnabled(name, true) end)
-        end
-      end)
-    end
-    assignments = {}
-    persist()
-    publish()
+    switchSeq = switchSeq + 1
+    handBackToNoctalia(function() end)
 
   elseif event == "clear" then
     clearVideo(payload)
 
-  -- ZeXOS addition: `set <video>` plays a video on every output, so the
-  -- wallpaper picker (roller) can start one without opening this panel.
+  -- ZeXOS additions: `set <video>[\t<poster>]` plays a video on every output,
+  -- after a transition to its poster when one is given; `picture <image>`
+  -- stops any video and transitions to a picture. The wallpaper picker
+  -- (roller) uses these so it never has to open this panel.
   elseif event == "set" then
-    setVideo("*", payload)
+    local path, poster = tostring(payload or ""):match("^([^\t]*)\t?(.*)$")
+    if path and path ~= "" then switchToVideo(path, poster ~= "" and poster or nil) end
+
+  elseif event == "picture" then
+    if type(payload) == "string" and payload ~= "" then switchToPicture(payload) end
 
   elseif event == "reapply" then
     if not available then

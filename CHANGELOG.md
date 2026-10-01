@@ -112,7 +112,9 @@ Planned as 1.1.0.
 ### Fixed
 
 - niri's gradient border never showed: its template path in
-  `noctalia.toml` was relative, and Noctalia only takes full paths.
+  `noctalia.toml` was relative, and Noctalia only takes full paths. And
+  niri drew no border at all: it keeps borders off unless the config says
+  `on`, which `cfg/layout.kdl` didn't.
 - After using Mango, the shortcut list (`Mod+F1`) on niri showed Mango's
   shortcuts. An empty Mango variable left from that session made
   Noctalia think it was still in Mango; `zshell start` now drops it.

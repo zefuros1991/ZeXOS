@@ -39,7 +39,9 @@ layout {
 
     // Frame around every window. The colours here are placeholders:
     // noctalia.kdl replaces them with colours from your wallpaper.
+    // niri leaves the border off unless told `on`.
     border {
+        on
         width 4
         active-color "#ffc87f"
         inactive-color "#505050"

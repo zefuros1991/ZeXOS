@@ -91,6 +91,7 @@ Every step keeps a log in `~/.dotfiles`: `install.log`, `bootstrap.log`, `packag
 | `Mod+B` | Web browser (your default) |
 | `Mod+E` | Files (Dolphin) |
 | `Mod+W` | Wallpaper picker (roller) |
+| `Mod+Shift+W` | Animated wallpaper picker |
 | `Mod+M` | Install and update apps (Shelly on CachyOS, Discover elsewhere) |
 | `Mod+Ctrl+W` | Random wallpaper |
 | `Mod+L` | Lock screen |
@@ -139,7 +140,7 @@ What is different in Hyprland:
 
 ## Wallpapers
 
-ZeXOS comes with 16 wallpapers of its own, in 5 styles and several colours each, plus an animated one. The installer copies them to `~/Pictures/Wallpapers`, and you start on `zexos-aurora`. The login screen starts with it too.
+ZeXOS comes with 16 wallpapers of its own, in 5 styles and several colours each, plus 9 animated ones. The installer copies them to `~/Pictures/Wallpapers`, and you start on `zexos-aurora`. The login screen starts with it too.
 
 ![The ZeXOS wallpapers](docs/screenshots/wallpapers.webp)
 
@@ -147,7 +148,21 @@ Press `Mod+W` to pick another one. Put your own pictures in `~/Pictures/Wallpape
 
 All of them are drawn by `wallpapers/make-wallpapers.py`, with no photos or downloads. To make them in another size, run `python wallpapers/make-wallpapers.py 2560 1440`.
 
-The animated one, `zexos-topo-energy`, has green energy running along the purple lines of the topo map. It is a looping video, copied to `~/Videos/Wallpapers`. It isn't switched on by default, because a looping 4K video puts a small, constant load on the machine. To use it, open Noctalia's Video Wallpaper panel with `noctalia msg panel-toggle noctalia/mpvpaper:picker` and pick it. `wallpapers/make-energy-video.py` draws it (needs `python-numpy`, `python-pillow` and `ffmpeg`).
+### Animated wallpapers
+
+Nine of the wallpapers also come as 12-second looping videos, covering every style and colour family. They go in `~/Pictures/Wallpapers/Animated`. None is switched on by default, because a looping 4K video puts a small, constant load on the machine.
+
+| Video | What moves |
+|---|---|
+| `zexos-aurora`, `-ocean`, `-mono` | the three light ribbons ripple, sway and drift |
+| `zexos-topo-energy`, `zexos-topo-ember` | energy runs along the contour lines |
+| `zexos-mark-ember`, `-light` | the logo's glow breathes and a sheen passes over it; the logo stays still |
+| `zexos-bars` | the bars rise and fall gently, like a slow equaliser |
+| `zexos-dots-forest` | a wave of light passes through the dots, and some twinkle |
+
+roller shows the pictures and the videos as two groups: `Mod+W` opens it on the pictures, `Mod+Shift+W` on the videos, and `Tab` switches between them. Video cards carry a ▶ badge. Picking a video plays it with Noctalia's Video Wallpaper plugin (ZeXOS ships a copy of it with one extra command, see `ZEXOS.md` in `~/.local/share/noctalia/plugins/mpvpaper`), and its first frame becomes the picture the colour theme follows. Picking a picture stops the video. Under DMS, which can't play videos, you get the first frame as a still.
+
+The `wallpapers/make-*-video.py` scripts draw them (they need `python-numpy`, `python-pillow` and `ffmpeg`).
 
 ## Screens
 

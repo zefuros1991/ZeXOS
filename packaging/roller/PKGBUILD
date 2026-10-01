@@ -5,19 +5,27 @@
 #   - mouse wheel moves one card per notch (upstream's tile MouseAreas ate
 #     the wheel, so scrolling did nothing)
 #   - the picker uses 65% of the screen width and scales with panel_height
+# and a second one (zexos-video-groups.patch):
+#   - still pictures and video wallpapers are two groups; Tab switches,
+#     `roller --animated` opens on the videos, and video cards get a play badge
+#   - with the waypaper backend roller hands videos to the stand-in script
+#     too, instead of starting (and killing) its own mpvpaper, because the
+#     shell's video wallpaper plugin owns the player
 # Built by scripts/packages.sh with `makepkg -si`.
 
 pkgname=roller
 _commit=184debe0f6a7dbf077259f8a5d68f0f798cb0ad1
 pkgver=0.1.0.r4.g184debe
-pkgrel=2
+pkgrel=3
 pkgdesc='Coverflow wallpaper picker for wlr-layer-shell desktops (ZeXOS patched)'
 arch=('x86_64')
 url="https://github.com/zyrophix/roller"
 license=('MIT')
 source=("roller::git+${url}.git#commit=${_commit}"
-        'zexos-wheel-and-size.patch')
+        'zexos-wheel-and-size.patch'
+        'zexos-video-groups.patch')
 b2sums=('SKIP'
+        'SKIP'
         'SKIP')
 
 # layer-shell-qt is a hard runtime need: the build succeeds without it but the
@@ -28,6 +36,7 @@ makedepends=('git' 'cmake' 'gcc')
 prepare() {
     cd "$srcdir/roller"
     git apply "$srcdir/zexos-wheel-and-size.patch"
+    git apply "$srcdir/zexos-video-groups.patch"
 }
 
 build() {

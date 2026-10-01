@@ -4,10 +4,16 @@ purple contour lines, then fade out, and the line goes back to purple behind
 them. A slow, soft two-part swell (like a resting pulse, but far subtler)
 nudges their brightness and speed so the picture feels alive.
 
+Give it a colour set name (from make-wallpapers.py) to animate another topo
+still the same way, e.g. "ember": gold comets on the red-pink lines of
+zexos-topo-ember.jpg. The comets always use the set's third colour.
+
 The video loops seamlessly: every comet repeats exactly once per LOOP seconds.
 
-  python make-energy-video.py              # 3840x2160 -> zexos-topo-energy.mp4
-  python make-energy-video.py 1920 1080    # smaller, faster test render
+  python make-energy-video.py                  # 3840x2160 -> zexos-topo-energy.mp4
+  python make-energy-video.py 1920 1080        # smaller, faster test render
+  python make-energy-video.py ember            # 3840x2160 -> zexos-topo-ember.mp4
+  python make-energy-video.py ember 1920 1080  # ember test render
 
 Needs ffmpeg. Play it with mpvpaper (the Noctalia "Video Wallpaper" plugin).
 """
@@ -21,7 +27,10 @@ import numpy as np
 from PIL import Image, ImageDraw, ImageFilter
 
 HERE = Path(__file__).resolve().parent
-W, H = (int(sys.argv[1]), int(sys.argv[2])) if len(sys.argv) >= 3 else (3840, 2160)
+# Arguments: an optional colour set name, then an optional width and height.
+ARGS = sys.argv[1:]
+PAL_NAME = ARGS.pop(0) if ARGS and not ARGS[0].isdigit() else "violet"
+W, H = (int(ARGS[0]), int(ARGS[1])) if len(ARGS) >= 2 else (3840, 2160)
 
 # Borrow the drawing code from the still-wallpaper script, at our size.
 sys.argv = [sys.argv[0], str(W), str(H)]
@@ -34,7 +43,9 @@ LOOP = 12.0      # seconds before the video repeats
 FPS = 30
 COMETS = 40      # how many comets take turns (about a third are on screen at once)
 BEAT = 2.0       # seconds per swell: 6 per loop
-PAL = wp.PALETTES["violet"]
+PAL = wp.PALETTES[PAL_NAME]
+# violet keeps its original name; any other set animates zexos-topo-<name>.jpg.
+OUT_NAME = "zexos-topo-energy.mp4" if PAL_NAME == "violet" else f"zexos-topo-{PAL_NAME}.mp4"
 
 
 def swell(phase):
@@ -109,7 +120,7 @@ def frame(k):
 
 
 if __name__ == "__main__":
-    out = HERE / "zexos-topo-energy.mp4"
+    out = HERE / OUT_NAME
     frames = int(LOOP * FPS)
     print(f"Drawing {frames} frames at {W}x{H} into {out.name}")
     BASE = wp.topo(PAL).astype(np.float32)
@@ -125,7 +136,7 @@ if __name__ == "__main__":
         "-c:v", "libx264", "-preset", "slow", "-crf", "20", "-pix_fmt", "yuv420p",
         "-movflags", "+faststart", str(out)], stdin=subprocess.PIPE)
     # fork: workers share the big arrays above instead of copying them in
-    with mp.get_context("fork").Pool(max(1, mp.cpu_count() - 2)) as pool:
+    with mp.get_context("fork").Pool(min(5, max(1, mp.cpu_count() - 2))) as pool:
         for i, data in enumerate(pool.imap(frame, range(frames), chunksize=2)):
             enc.stdin.write(data)
             if i % FPS == 0:

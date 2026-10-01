@@ -31,6 +31,7 @@ hl.bind("SUPER + M", exec("~/.local/bin/zexos-app-store"), { description = "Inst
 
 -- 3. Wallpaper
 hl.bind("SUPER + W", exec("pkill -x roller || PATH=$HOME/.local/share/roller/bin:$PATH roller"), { description = "Pick a wallpaper (roller)" })
+hl.bind("SUPER + SHIFT + W", exec("pkill -x roller || PATH=$HOME/.local/share/roller/bin:$PATH roller --animated"), { description = "Pick an animated wallpaper" })
 hl.bind("SUPER + CTRL + W", exec("zshell wallpaper-random"), { description = "Random wallpaper" })
 
 -- 4. Session

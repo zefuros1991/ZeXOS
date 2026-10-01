@@ -97,16 +97,20 @@ type = "aristides/udiskie:status"
 # ═══ Plugins ════════════════════════════════════════════════════════════════
 # arch-updater: counts waiting updates.  udiskie: USB drives.
 # keybind-cheatsheet: the Mod+F1 shortcut list.
-# mpvpaper: video wallpapers (the animated zexos-topo-energy), picked from
-# ~/Videos/Wallpapers in its own panel.
-# (The wallpaper picker is roller, a separate app on Mod+W, not a plugin.)
+# mpvpaper: plays the animated wallpapers in ~/Pictures/Wallpapers/Animated.
+# The ZeXOS copy in ~/.local/share/noctalia/plugins/mpvpaper adds a `set`
+# command so the wallpaper picker can start a video (see ZEXOS.md there).
+# (The wallpaper picker is roller, a separate app on Mod+W / Mod+Shift+W.)
 
 [plugins]
 enabled = ["yuuto/arch-updater", "kenn/keybind-cheatsheet", "aristides/udiskie", "noctalia/mpvpaper"]
 auto_update = "none"
 
 [plugin_settings."noctalia/mpvpaper"]
-video_directory = "~/Videos/Wallpapers"
+video_directory = "~/Pictures/Wallpapers/Animated"
+# The picker sets the picture itself (the video's first frame), so the plugin
+# must not swap in its own extracted frame when a video stops.
+extract_last_frame = false
 
 # Plugin panels open under the widget you clicked. The USB one needs
 # "attached" for that, otherwise it always opens in the middle.

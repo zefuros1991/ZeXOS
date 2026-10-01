@@ -1,6 +1,6 @@
 // The shell switcher (Mod+Shift+D), started by `zshell menu`.
 // It has no search box on purpose: a stray key press can't hide the choices.
-// Keys: Up/Down (or Tab, j/k) to move, Enter/Space to pick, 1/2 to pick
+// Keys: Up/Down (or W/S, Tab, j/k) to move, Enter/Space to pick, 1/2 to pick
 // straight away, Esc or a click outside to close.
 //
 // zshell passes everything in through environment variables:
@@ -69,9 +69,9 @@ ShellRoot {
                     Qt.quit(); break
                 case Qt.Key_Return: case Qt.Key_Enter: case Qt.Key_Space:
                     root.pick(root.selected); break
-                case Qt.Key_Up: case Qt.Key_Left: case Qt.Key_K: case Qt.Key_Backtab:
+                case Qt.Key_Up: case Qt.Key_Left: case Qt.Key_W: case Qt.Key_K: case Qt.Key_Backtab:
                     root.selected = (root.selected - 1 + n) % n; break
-                case Qt.Key_Down: case Qt.Key_Right: case Qt.Key_J: case Qt.Key_Tab:
+                case Qt.Key_Down: case Qt.Key_Right: case Qt.Key_S: case Qt.Key_J: case Qt.Key_Tab:
                     root.selected = (root.selected + 1) % n; break
                 default:
                     const digit = event.key - Qt.Key_1

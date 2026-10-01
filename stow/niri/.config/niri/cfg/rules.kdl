@@ -80,3 +80,13 @@ layer-rule {
     match namespace="^noctalia-backdrop"
     place-within-backdrop true
 }
+
+// ── DankMaterialShell ───────────────────────────────────
+
+// DMS draws its wallpaper on a layer named "quickshell". Put it behind the
+// overview too, so Mod+O shows your (blurred) wallpaper instead of grey.
+// Same rule as DMS's own niri config.
+layer-rule {
+    match namespace="^quickshell$"
+    place-within-backdrop true
+}

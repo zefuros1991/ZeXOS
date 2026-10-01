@@ -132,6 +132,13 @@ wallpaper_scheme = "faithful"
 builtin_ids = ["gtk3", "gtk4", "qt", "kcolorscheme", "niri", "mango", "hyprland", "kitty", "btop"]
 community_ids = ["fuzzel"]
 
+# niri's window borders: a gradient in the wallpaper colours round the
+# focused window (our own template, used only while Noctalia is the shell).
+[theme.templates.user.zexos_niri_border]
+input_path  = "templates/niri-border.kdl"
+output_path = "$XDG_CONFIG_HOME/niri/zexos-border.kdl"
+requires_path = "$XDG_CONFIG_HOME/niri"
+
 # ═══ Pop-up size ════════════════════════════════════════════════════════════
 # ui_scale makes every panel and its text bigger (1.2 = 20% bigger).
 # launcher_scale makes only the app launcher bigger again, on top of that:

@@ -13,12 +13,6 @@ window-rule {
     clip-to-geometry true
 }
 
-// Windows you're not using fade slightly, so the active one stands out.
-window-rule {
-    match is-focused=false
-    opacity 0.86
-}
-
 // ── Apps ────────────────────────────────────────────────
 
 // Frosted-glass blur behind these apps.
@@ -44,6 +38,47 @@ window-rule {
     match app-id=r"^org.wezfurlong.wezterm$"
     default-column-width {
     }
+}
+
+// ── Dim unfocused windows ───────────────────────────────
+
+// niri normally paints the border as a solid plate behind the whole window,
+// so it shows through see-through windows (kitty, and every dimmed window)
+// as a purple-grey haze. Draw it as a frame round the edge only.
+window-rule {
+    draw-border-with-background false
+}
+
+// Windows you're not using are slightly dimmed, so the active one stands
+// out. This rule comes after the app rules above so it wins over them.
+// niri has no "dim" setting, so we fake one: a solid dark layer sits
+// right behind the window (a shadow with no blur or spread), and the window
+// turns a little see-through over it. Dark layer + window = a darker
+// window, with no wallpaper showing through.
+window-rule {
+    match is-focused=false
+    opacity 0.62
+    shadow {
+        on
+        softness 0
+        spread 0
+        offset x=0 y=0
+        color "#000000"
+        inactive-color "#000000"
+        draw-behind-window true
+    }
+    // No frosted glass on them: the blur would sit in front of the dark
+    // layer and turn the window grey instead of darker.
+    background-effect {
+        blur false
+    }
+}
+
+// kitty is already see-through by itself, so the same setting makes it
+// much darker than other apps. It gets a lighter dim so they all match.
+window-rule {
+    match app-id="^kitty$" is-focused=false
+    opacity 0.75
 }
 
 // ── Noctalia shell ──────────────────────────────────────

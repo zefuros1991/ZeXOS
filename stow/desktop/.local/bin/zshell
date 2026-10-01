@@ -77,7 +77,9 @@ link_colors() {
                 'include optional=true "./dms/colors.kdl"' > "$file"
         else
             printf '%s\n' '// Written by zshell: Noctalia is the active shell,' \
-                '// its colours come from noctalia.kdl.' > "$file"
+                '// its colours come from noctalia.kdl, plus the gradient' \
+                '// border Noctalia writes from our template.' \
+                'include optional=true "./zexos-border.kdl"' > "$file"
         fi
     fi
     file="$MANGO_DIR/shell-colors.conf"

@@ -136,16 +136,25 @@ link_kitty() {
 }
 
 # Noctalia reads every .toml file in ~/.config/noctalia and merges them, so
-# settings that depend on the compositor go in their own small file. Mango
-# always has 9 tags; without this the bar shows all 9 pills. niri and
-# Hyprland add workspaces as you need them, so they keep the default.
+# settings that depend on the compositor go in their own small file.
+# On Mango:
+#  - Mango always has 9 tags; without this the bar shows all 9 pills. niri
+#    and Hyprland add workspaces as you need them, so they keep the default.
+#  - Pop-ups take their background from the bar, which is fully clear.
+#    Mango only blurs where something is drawn, so a clear pop-up gets no
+#    blur at all. A 2% background is invisible but gives Mango something
+#    to blur (see blur_layer in Mango's rules.conf).
 link_noctalia() {
     local dir="$CONF_DIR/noctalia"
     [ -d "$dir" ] || return 0
     if [ "$(compositor)" = mangowc ]; then
-        printf '%s\n' '# Written by zshell: Mango is running. Only show tags that have' \
-            '# windows, plus the one you are on.' \
-            '[widget.workspaces]' 'hide_when_empty = true' > "$dir/zexos-compositor.toml"
+        printf '%s\n' '# Written by zshell: Mango is running.' \
+            '' \
+            '# Only show tags that have windows, plus the one you are on.' \
+            '[widget.workspaces]' 'hide_when_empty = true' \
+            '' \
+            '# Just enough background for Mango to blur the pop-ups.' \
+            '[bar.default]' 'background_opacity = 0.02' > "$dir/zexos-compositor.toml"
     else
         echo '# Written by zshell: nothing extra for this compositor.' > "$dir/zexos-compositor.toml"
     fi

@@ -19,13 +19,14 @@ fi
 # Arch install has none at all, and then Mod+B has nothing to open. So
 # Firefox is added only when no installed app can open web links; if you
 # already have any browser (Firefox, Chromium, a Flatpak, ...), nothing
-# is installed.
+# is installed. Hidden entries (NoDisplay=true) don't count: DMS ships one
+# that only asks which app should open a link, and it is not a browser.
 has_browser=0
-for dir in /usr/share/applications /usr/local/share/applications \
-           "${XDG_DATA_HOME:-$HOME/.local/share}/applications" \
-           /var/lib/flatpak/exports/share/applications \
-           "${XDG_DATA_HOME:-$HOME/.local/share}/flatpak/exports/share/applications"; do
-    if grep -qs 'x-scheme-handler/https' "$dir"/*.desktop; then
+for file in /usr/share/applications/*.desktop /usr/local/share/applications/*.desktop \
+            "${XDG_DATA_HOME:-$HOME/.local/share}"/applications/*.desktop \
+            /var/lib/flatpak/exports/share/applications/*.desktop \
+            "${XDG_DATA_HOME:-$HOME/.local/share}"/flatpak/exports/share/applications/*.desktop; do
+    if grep -qs 'x-scheme-handler/https' "$file" && ! grep -qsx 'NoDisplay=true' "$file"; then
         has_browser=1
         break
     fi

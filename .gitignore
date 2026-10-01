@@ -38,13 +38,16 @@ stow/theme/.config/gtk-4.0/gtk-dark.css
 # written at run time by zshell and DankMaterialShell (per user, per machine)
 stow/kitty/.config/kitty/themes/shell.conf
 stow/kitty/.config/kitty/dank-theme.conf
+stow/kitty/.config/kitty/dank-tabs.conf
 stow/niri/.config/niri/shell-colors.kdl
 stow/niri/.config/niri/dms/
+stow/niri/.config/niri/zexos-border.kdl
 stow/mango/.config/mango/shell-colors.conf
 stow/mango/.config/mango/noctalia.conf
 stow/mango/.config/mango/dms/
 stow/hyprland/.config/hypr/shell-colors.lua
 stow/hyprland/.config/hypr/noctalia.lua
+stow/hyprland/.config/hypr/zexos-border.lua
 stow/hyprland/.config/hypr/dms/
 stow/hyprland/.config/hypr/.dms-backups/
 stow/theme/.config/gtk-3.0/shell.css

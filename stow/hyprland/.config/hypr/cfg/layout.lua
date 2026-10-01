@@ -26,6 +26,11 @@ hl.config({
     decoration = {
         -- Rounded corners.
         rounding = 14,
+
+        -- Windows you're not using are dimmed a little, so the active one
+        -- stands out (0 = not at all, 1 = black).
+        dim_inactive = true,
+        dim_strength = 0.35,
     },
 
     dwindle = {

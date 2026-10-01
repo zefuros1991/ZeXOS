@@ -21,6 +21,10 @@ Planned as 1.1.0.
   (`packaging/roller/zexos-video-groups.patch`).
 - A ZeXOS copy of Noctalia's Video Wallpaper plugin with one more command,
   `set`, so the picker can start a video.
+- Hyprland and Mango dim the windows you're not using, like niri does.
+  Hyprland also gets niri's gradient border in the wallpaper colours under
+  Noctalia (`templates/hypr-border.lua`). Mango can only draw a border in
+  one colour, so it keeps Noctalia's.
 
 - DankMaterialShell (DMS) as a second desktop shell, installed next to
   Noctalia (`dms-shell`, `dms-shell-niri`, `matugen`). Noctalia stays the
@@ -106,6 +110,12 @@ Planned as 1.1.0.
   cheat sheet. Noctalia's cheat sheet shows them after the next login.
 
 ### Fixed
+
+- niri's gradient border never showed: its template path in
+  `noctalia.toml` was relative, and Noctalia only takes full paths.
+- After using Mango, the shortcut list (`Mod+F1`) on niri showed Mango's
+  shortcuts. An empty Mango variable left from that session made
+  Noctalia think it was still in Mango; `zshell start` now drops it.
 
 - Picking a picture in roller while a video wallpaper played changed the
   colours but left the video on screen. Pictures now stop the video, and

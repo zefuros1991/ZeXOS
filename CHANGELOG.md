@@ -66,6 +66,14 @@ Planned as 1.1.0.
 
 ### Changed
 
+- niri: windows you're not using are now dimmed darker instead of just
+  faded, and every app dims by the same amount (kitty, which is already
+  see-through, gets a lighter setting so it matches). The border is drawn
+  as a frame round the edge only, so it no longer shows through see-through
+  windows as a grey haze.
+- niri with Noctalia: the focused window's border is a gradient in the
+  wallpaper's colours (Noctalia template `templates/niri-border.kdl`,
+  included through `shell-colors.kdl` so DMS keeps its own colours).
 - niri starts the desktop shell through `zshell start` instead of starting
   Noctalia directly. Mango and Hyprland do the same.
 - niri window colours and kitty colours follow whichever shell is running.

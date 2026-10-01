@@ -1,0 +1,11 @@
+// DankMaterialShell fills in this template on every colour change and
+// writes the result to ~/.config/niri/zexos-border-dms.kdl (see zexos.toml.in).
+layout {
+    // The frame round every window: a gradient in the wallpaper's main
+    // colours on the focused window, a faint line on the others.
+    border {
+        active-gradient from="{{colors.primary.default.hex}}" to="{{colors.tertiary.default.hex}}" angle=135 in="oklab"
+        inactive-color "{{colors.outline_variant.default.hex}}"
+        urgent-color   "{{colors.error.default.hex}}"
+    }
+}

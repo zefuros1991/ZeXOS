@@ -43,14 +43,21 @@ if command -v fastfetch >/dev/null 2>&1 \
     "$login_shell" -c 'fastfetch; :'
 fi
 
-# fish only: draw fastfetch again when tiling resizes the window, until the
-# first command. Loaded with -C, so your fish config is not touched.
+# fish and bash: draw fastfetch again when tiling resizes the window, until
+# the first command. Loaded with fish -C or bash --rcfile, so your own shell
+# config is not touched.
 shell_cmd=("$login_shell")
-redraw=${XDG_CONFIG_HOME:-$HOME/.config}/kitty/fastfetch-redraw.fish
-if [ "${login_shell##*/}" = fish ] && [ -r "$redraw" ] \
-    && command -v fastfetch >/dev/null 2>&1 \
+kitty_cfg=${XDG_CONFIG_HOME:-$HOME/.config}/kitty
+if command -v fastfetch >/dev/null 2>&1 \
     && [ ! -e "${XDG_CONFIG_HOME:-$HOME/.config}/zexos/no-fastfetch" ]; then
-    shell_cmd=("$login_shell" -C "source ${redraw@Q}")
+    case "${login_shell##*/}" in
+        fish)
+            redraw=$kitty_cfg/fastfetch-redraw.fish
+            [ -r "$redraw" ] && shell_cmd=("$login_shell" -C "source ${redraw@Q}") ;;
+        bash)
+            redraw=$kitty_cfg/fastfetch-redraw.bash
+            [ -r "$redraw" ] && shell_cmd=("$login_shell" --rcfile "$redraw") ;;
+    esac
 fi
 
 # kitten run-shell keeps kitty's shell integration working, which a plain

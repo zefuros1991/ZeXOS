@@ -111,6 +111,11 @@ Planned as 1.1.0.
   colours but left the video on screen. Pictures now stop the video, and
   picking a video plays it. Random wallpaper (`Mod+Ctrl+W`) stops it too.
 
+- Switching to or from a video wallpaper showed a grey screen for about a
+  second instead of the usual wallpaper transition. Noctalia now runs its
+  normal transition in every case, and the video only takes over once its
+  first frame is on screen.
+
 - Under DMS, the shell switcher and other fuzzel menus now take the
   wallpaper colours. Noctalia's fuzzel hook had pointed `fuzzel.ini` at
   Noctalia's colours for good, so they stayed on the last Noctalia

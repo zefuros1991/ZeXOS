@@ -135,6 +135,22 @@ link_kitty() {
     pkill -USR1 -x kitty 2>/dev/null || true
 }
 
+# Noctalia reads every .toml file in ~/.config/noctalia and merges them, so
+# settings that depend on the compositor go in their own small file. Mango
+# always has 9 tags; without this the bar shows all 9 pills. niri and
+# Hyprland add workspaces as you need them, so they keep the default.
+link_noctalia() {
+    local dir="$CONF_DIR/noctalia"
+    [ -d "$dir" ] || return 0
+    if [ "$(compositor)" = mangowc ]; then
+        printf '%s\n' '# Written by zshell: Mango is running. Only show tags that have' \
+            '# windows, plus the one you are on.' \
+            '[widget.workspaces]' 'hide_when_empty = true' > "$dir/zexos-compositor.toml"
+    else
+        echo '# Written by zshell: nothing extra for this compositor.' > "$dir/zexos-compositor.toml"
+    fi
+}
+
 # First DMS start: give it the ZeXOS look (a copy, so DMS can save your own
 # changes over it). Never touches settings you already have.
 seed_dms() {
@@ -252,7 +268,7 @@ start() {
     link_kitty "$shell"
     link_theme "$shell"
     case "$shell" in
-        noctalia) exec noctalia ;;
+        noctalia) link_noctalia; exec noctalia ;;
         dms)      seed_dms; setup_dms; exec dms run ;;
     esac
     echo "zshell: no desktop shell installed" >&2

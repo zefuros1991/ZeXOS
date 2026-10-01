@@ -48,6 +48,7 @@
       "widgetTransparency": 1.0,
       "island": true,
       "islandSatelliteBackground": true,
+      "islandInteractionMode": "click",
       "islandOuterGap": 0,
       "spacing": 6,
       "noBackground": true,

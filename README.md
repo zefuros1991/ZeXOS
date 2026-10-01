@@ -112,6 +112,8 @@ Both use the same keys, because the keybinds call a small helper, `zshell`, inst
 
 The first time DMS starts it gets a ZeXOS look copied from `stow/dms/.local/share/zexos/dms/`: the same bar items as Noctalia, in the same order, grouped in three like Noctalia's islands: CPU use and updates on the left, DMS's Dank Island in the middle (workspaces, clock, music), and tray, quick settings, notifications, battery and the shell switcher on the right. Each side shares one background, set with DMS's own island settings (no patch). It also gets the same font sizes and the ZeXOS wallpaper. It's a copy, so changes you make in DMS's own settings are kept.
 
+The window you're using gets a frame that fades between two of the wallpaper's colours. The others get a thin, faint line and are dimmed a little, so your eye lands on the right one. That works the same in both shells on niri and Hyprland. Mango can only draw a frame in one colour, so there it's one colour plus the same dimming.
+
 Everything follows the wallpaper in both shells: window borders, kitty, Dolphin and other KDE apps, GTK apps, fuzzel menus, btop, the folder icons and the login screen. A very bright wallpaper switches to light mode. Noctalia does this by itself; for DMS a small watcher, `zexos-dms-sync`, does the parts DMS doesn't (`systemctl --user status zexos-dms-sync.path`). To pick dark or light mode yourself, create `~/.config/zexos/manual-theme-mode`.
 
 What DMS can't do yet, compared to Noctalia: there is no USB drive island (drives still mount from Dolphin) and no "Restart to UEFI" in the power menu.

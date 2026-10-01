@@ -174,6 +174,23 @@ seed_dms() {
         ver="$(dms version 2>/dev/null | sed -n 's/^dms v\([0-9]*\.[0-9]*\).*/\1/p')"
         [ -n "$ver" ] && touch "$DMS_DIR/.changelog-$ver"
     fi
+    # Settings from before the middle island opened on click only: switch
+    # it to click once. If you change it back in DMS, that is kept.
+    local memo="${XDG_STATE_HOME:-$HOME/.local/state}/zexos/dms-island-click"
+    if [ ! -e "$memo" ] && [ -e "$DMS_DIR/settings.json" ]; then
+        python3 - "$DMS_DIR/settings.json" <<'EOF' && mkdir -p "${memo%/*}" && touch "$memo"
+import json, sys
+path = sys.argv[1]
+with open(path) as f:
+    data = json.load(f)
+bars = data.get("barConfigs") or []
+if any("islandInteractionMode" not in bar for bar in bars):
+    for bar in bars:
+        bar.setdefault("islandInteractionMode", "click")
+    with open(path, "w") as f:
+        json.dump(data, f, indent=2)
+EOF
+    fi
     local session="${XDG_STATE_HOME:-$HOME/.local/state}/DankMaterialShell/session.json"
     if [ ! -e "$session" ]; then
         sed "s|@HOME@|$HOME|g" "$DMS_SEED/session.json" > "$session"

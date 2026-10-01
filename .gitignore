@@ -59,3 +59,5 @@ stow/fuzzel/.config/fuzzel/themes/dank
 stow/btop/.config/btop/themes/shell.theme
 stow/btop/.config/btop/themes/dank.theme
 __pycache__/
+stow/noctalia/.config/noctalia/zexos-compositor.toml
+stow/theme/.config/qt6ct/colors/matugen.conf

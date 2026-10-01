@@ -1,0 +1,341 @@
+diff --git a/qml/Carousel.qml b/qml/Carousel.qml
+index 191318f..fd7bb54 100644
+--- a/qml/Carousel.qml
++++ b/qml/Carousel.qml
+@@ -264,6 +264,12 @@ Item {
+                 root.model.rev
+                 return root.model.get_thumb_at(realIdx)
+             }
++            // ZeXOS: video wallpapers get a play badge
++            property bool isVideo: {
++                if (!root.model || !root.model.get_video_at) return false
++                root.model.rev
++                return root.model.get_video_at(realIdx)
++            }
+ 
+             property real dist: Math.abs(vIdx - root.visualSelection)
+             property real progress: Math.max(0, 1 - dist)
+@@ -314,6 +320,26 @@ Item {
+                                              0, 0, 1, 0,
+                                              0, 0, 0, 1)
+                     }
++
++                    // the image is drawn upright, so the badge is too; the
++                    // right margin keeps it inside the slanted top edge
++                    Rectangle {
++                        visible: isVideo
++                        anchors.top: parent.top
++                        anchors.right: parent.right
++                        anchors.topMargin: 10
++                        anchors.rightMargin: 10 + root.shear * (10 + height)
++                        height: Math.max(20, scaledH * 0.1)
++                        width: height * 1.5
++                        radius: height / 2
++                        color: "#b0000000"
++                        Text {
++                            anchors.centerIn: parent
++                            text: "\u25B6"
++                            color: "white"
++                            font.pixelSize: parent.height * 0.55
++                        }
++                    }
+                 }
+ 
+                 Rectangle {
+diff --git a/qml/Main.qml b/qml/Main.qml
+index cf53ce3..75c6e7d 100644
+--- a/qml/Main.qml
++++ b/qml/Main.qml
+@@ -40,6 +40,14 @@ ApplicationWindow {
+         return 0
+     }
+ 
++    // ZeXOS: show the still (1) or animated (2) wallpapers. The new group
++    // opens on the current wallpaper when it is in it, else on its first card.
++    function switchKind(k) {
++        if (!backend || !wallpaperModel || wallpaperModel.kind === k) return
++        win.prevCount = 0
++        backend.setKind(k)
++    }
++
+     function updateSearch(query) {
+         if (backend) backend.setSearch(query)
+     }
+@@ -55,7 +63,7 @@ ApplicationWindow {
+     Item {
+         id: content
+         width: win.width * 0.65
+-        height: (config ? config.panelHeight : 500) * 1.2 + 90
++        height: (config ? config.panelHeight : 500) * 1.2 + 116
+         anchors.centerIn: parent
+         opacity: 0
+         Behavior on opacity { NumberAnimation { duration: 100; easing.type: Easing.OutQuad } }
+@@ -110,6 +118,43 @@ ApplicationWindow {
+                 }
+             }
+ 
++            // ZeXOS: the two groups, the shown one underlined. Tab or a click
++            // switches; the number is how many each group holds.
++            Row {
++                id: groupTabs
++                Layout.alignment: Qt.AlignHCenter
++                Layout.bottomMargin: 8
++                spacing: 20
++                property int kind: wallpaperModel ? wallpaperModel.kind : 1
++                Repeater {
++                    model: [{ k: 1, name: "Stills" }, { k: 2, name: "\u25B6 Animated" }]
++                    delegate: Label {
++                        required property var modelData
++                        property bool active: groupTabs.kind === modelData.k
++                        text: {
++                            if (!wallpaperModel) return modelData.name
++                            wallpaperModel.rev
++                            return modelData.name + "  " + wallpaperModel.countOfKind(modelData.k)
++                        }
++                        color: active ? (config ? config.carouselSelectedBorder : "#b4befe") : "#7f849c"
++                        font.pixelSize: 14
++                        font.bold: active
++                        font.underline: active
++                        MouseArea {
++                            anchors.fill: parent
++                            cursorShape: Qt.PointingHandCursor
++                            onClicked: win.switchKind(modelData.k)
++                        }
++                    }
++                }
++                Label {
++                    anchors.verticalCenter: parent.verticalCenter
++                    text: "Tab to switch"
++                    color: "#6c7086"
++                    font.pixelSize: 11
++                }
++            }
++
+             // Selected wallpaper name — above counter as requested
+             Label {
+                 id: nameLabel
+@@ -136,6 +181,8 @@ ApplicationWindow {
+                         let idx = carousel.committedIndex
+                         return (idx + 1) + " / " + cnt
+                     }
++                    if (wallpaperModel && wallpaperModel.kind === 2)
++                        return "No animated wallpapers yet — press Tab for the stills"
+                     return "No wallpapers — check wallpaper_path in config.json"
+                 }
+                 color: "#aaaaaa"
+@@ -190,6 +237,11 @@ ApplicationWindow {
+             }
+             if (key === "l" || k === Qt.Key_Right) nav(carousel.next)
+             else if (key === "h" || k === Qt.Key_Left) nav(carousel.prev)
++            else if (k === Qt.Key_Tab || k === Qt.Key_Backtab) {
++                if (!event.isAutoRepeat && wallpaperModel)
++                    win.switchKind(wallpaperModel.kind === 2 ? 1 : 2)
++                event.accepted = true
++            }
+             else if (key === "d") nav(carousel.jumpForward)
+             else if (key === "u") nav(carousel.jumpBack)
+             else if (k === Qt.Key_Return || k === Qt.Key_Enter || key === " ") {
+diff --git a/src/backend/PickerController.cpp b/src/backend/PickerController.cpp
+index 8b37edc..ae628b5 100644
+--- a/src/backend/PickerController.cpp
++++ b/src/backend/PickerController.cpp
+@@ -20,6 +20,11 @@ void PickerController::setSearch(const QString &q){
+     if (proxy) proxy->setSearchQuery(q);
+     emit wallpapersChanged();
+ }
++void PickerController::setKind(int kind){
++    if (!proxy || proxy->kind() == kind) return;
++    proxy->setKind(kind);
++    emit wallpapersChanged();
++}
+ void PickerController::applyWallpaper(const QString &path){
+     ApplyResult r;
+     if (model && cfg) {
+diff --git a/src/backend/PickerController.h b/src/backend/PickerController.h
+index 59b8ebb..f91de78 100644
+--- a/src/backend/PickerController.h
++++ b/src/backend/PickerController.h
+@@ -11,6 +11,8 @@ public:
+     explicit PickerController(WallpaperRepository *repo, WallpaperModel *model, WallpaperFilterProxy *proxy, AppConfig *cfg, QObject *parent=nullptr);
+     Q_INVOKABLE void setSearch(const QString &query);
+     Q_INVOKABLE void applyWallpaper(const QString &path);
++    // ZeXOS: show the stills or the animated group (WallpaperFilterProxy::Kind)
++    Q_INVOKABLE void setKind(int kind);
+     void refresh();
+ signals:
+     void wallpapersChanged();
+diff --git a/src/backend/WallpaperBackend.cpp b/src/backend/WallpaperBackend.cpp
+index 3b7b451..c3427da 100644
+--- a/src/backend/WallpaperBackend.cpp
++++ b/src/backend/WallpaperBackend.cpp
+@@ -229,10 +229,16 @@ ApplyResult applyWallpaper(const WallpaperRequest &req) {
+     // change awww makes underneath, so applying a still image left the video
+     // on screen with no way back off it. The kill used to sit inside the
+     // video branch, so only video-over-video was covered.
+-    stopVideoWallpaper(req.wallpaperDir);
++    //
++    // ZeXOS: the waypaper backend is a stand-in script that hands both
++    // pictures and videos to the desktop shell, which runs its own mpvpaper.
++    // roller must not kill that one or start a second player next to it.
++    const bool shellOwnsVideo = req.backend == WallpaperBackend::Waypaper;
++    if (!shellOwnsVideo) stopVideoWallpaper(req.wallpaperDir);
+ 
+-    // Video always goes through mpvpaper, whatever the configured backend is
+-    if (isVideoFile(req.path, req.videoExtensions)) {
++    // Video goes through mpvpaper, whatever the configured backend is
++    // (except the waypaper stand-in, see above)
++    if (!shellOwnsVideo && isVideoFile(req.path, req.videoExtensions)) {
+         const QString mpvpaper = QStandardPaths::findExecutable("mpvpaper");
+         if (mpvpaper.isEmpty()) {
+             r.error = QStringLiteral("mpvpaper is required for video wallpapers");
+diff --git a/src/backend/WallpaperFilterProxy.cpp b/src/backend/WallpaperFilterProxy.cpp
+index 080f62f..668805a 100644
+--- a/src/backend/WallpaperFilterProxy.cpp
++++ b/src/backend/WallpaperFilterProxy.cpp
+@@ -1,4 +1,5 @@
+ #include "WallpaperFilterProxy.h"
++#include "WallpaperBackend.h"
+ 
+ WallpaperFilterProxy::WallpaperFilterProxy(QObject *p): QSortFilterProxyModel(p) {
+     connect(this, &QSortFilterProxyModel::rowsInserted, this, &WallpaperFilterProxy::countChanged);
+@@ -26,6 +27,15 @@ void WallpaperFilterProxy::setSearchQuery(const QString &q){
+     QString nq = q.trimmed().toLower();
+     if (nq == query) return;
+     query = nq;
++    refilter();
++}
++void WallpaperFilterProxy::setKind(int k){
++    if (k < AllKinds || k > Animated || k == mKind) return;
++    mKind = k;
++    refilter();
++    emit kindChanged();
++}
++void WallpaperFilterProxy::refilter(){
+     // The invalidate* family is deprecated from Qt 6.11, but endFilterChange
+     // only arrives in 6.11 too: 6.9 has beginFilterChange alone and 6.8, which
+     // is what CI builds, has neither and no deprecation either. Pick per
+@@ -38,10 +48,28 @@ void WallpaperFilterProxy::setSearchQuery(const QString &q){
+ #endif
+ }
+ int WallpaperFilterProxy::count() const { return rowCount(); }
++bool WallpaperFilterProxy::pathMatchesKind(const QString &path, int k) const {
++    if (k == AllKinds) return true;
++    return isVideoFile(path, videoExts) == (k == Animated);
++}
++int WallpaperFilterProxy::countOfKind(int k) const {
++    if (!srcModel) return 0;
++    int n = 0;
++    for (int i = 0; i < srcModel->rowCount(); ++i)
++        if (pathMatchesKind(srcModel->data(srcModel->index(i, 0), WallpaperModel::PathRole).toString(), k))
++            ++n;
++    return n;
++}
++bool WallpaperFilterProxy::get_video_at(int idx) const {
++    const QString p = get_path_at(idx);
++    return !p.isEmpty() && isVideoFile(p, videoExts);
++}
+ bool WallpaperFilterProxy::filterAcceptsRow(int source_row, const QModelIndex &parent) const {
+     if (!srcModel) return true;
+-    if (query.isEmpty()) return true;
+     QModelIndex idx = srcModel->index(source_row, 0, parent);
++    if (!pathMatchesKind(srcModel->data(idx, WallpaperModel::PathRole).toString(), mKind))
++        return false;
++    if (query.isEmpty()) return true;
+     QString name = srcModel->data(idx, WallpaperModel::NameRole).toString().toLower();
+     return name.contains(query);
+ }
+diff --git a/src/backend/WallpaperFilterProxy.h b/src/backend/WallpaperFilterProxy.h
+index 70eba6f..730b06b 100644
+--- a/src/backend/WallpaperFilterProxy.h
++++ b/src/backend/WallpaperFilterProxy.h
+@@ -9,11 +9,22 @@ class WallpaperFilterProxy : public QSortFilterProxyModel {
+     // calls that never re-evaluate on dataChanged. Reading rev in the same
+     // binding subscribes it, so new thumbs and refilters propagate.
+     Q_PROPERTY(int rev READ rev NOTIFY revChanged)
++    // ZeXOS: which group is shown, see Kind
++    Q_PROPERTY(int kind READ kind NOTIFY kindChanged)
+ public:
++    // pictures and videos are two groups; Tab switches between them
++    enum Kind { AllKinds = 0, Stills = 1, Animated = 2 };
++    Q_ENUM(Kind)
+     explicit WallpaperFilterProxy(QObject *parent=nullptr);
+     int rev() const { return mRev; }
+     void setSource(WallpaperModel *src);
+     void setSearchQuery(const QString &q);
++    int kind() const { return mKind; }
++    void setKind(int k);
++    void setVideoExtensions(const QStringList &e) { videoExts = e; }
++    // how many wallpapers a group holds, ignoring the search
++    Q_INVOKABLE int countOfKind(int k) const;
++    Q_INVOKABLE bool get_video_at(int idx) const;
+     Q_INVOKABLE int count() const;
+     int countProp() const { return count(); }
+     Q_INVOKABLE QString get_path_at(int idx) const;
+@@ -23,11 +34,16 @@ public:
+ signals:
+     void countChanged();
+     void revChanged();
++    void kindChanged();
+ protected:
+     bool filterAcceptsRow(int source_row, const QModelIndex &parent) const override;
+ private:
+     void bumpRev() { ++mRev; emit revChanged(); }
++    void refilter();
++    bool pathMatchesKind(const QString &path, int k) const;
+     QString query;
++    int mKind = AllKinds;
++    QStringList videoExts;
+     WallpaperModel *srcModel = nullptr;
+     int mRev = 0;
+ };
+diff --git a/src/main.cpp b/src/main.cpp
+index a9a627a..ec4c58f 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -38,15 +38,19 @@ static void printUsage() {
+         "  -h, --help           show this help and exit\n"
+         "  -v, --version        print the version and exit\n"
+         "      --allow-multiple do not enforce the single-instance lock\n"
++        "      --animated       open on the animated (video) wallpapers;\n"
++        "                       the default is the still pictures\n"
+         "\n"
+         "Config is read from $XDG_CONFIG_HOME/roller/config.json, then\n"
+         "../config.json next to the binary. The working directory is not\n"
+         "searched, so a stray config.json cannot silently change behaviour.\n"
+         "\n"
+         "Backends (\"backend\" in config.json): auto, awww, swww, hyprpaper,\n"
+-        "waypaper, swaybg. Video files always go through mpvpaper.\n"
++        "waypaper, swaybg. Video files go through mpvpaper, except with\n"
++        "waypaper, which is handed videos too.\n"
+         "\n"
+         "Keys: h/l or Left/Right step, d/u jump a page, / or Ctrl+F search,\n"
++        "Tab switch between still and animated wallpapers,\n"
+         "Enter apply, Esc close, wheel and drag to scroll, click to select or apply.\n"
+         "\n"
+         "LayerShell is required: roller is Wayland-only and will not start on X11.\n",
+@@ -100,6 +104,7 @@ static QJsonObject loadConfig(const QString &path) {
+ 
+ int main(int argc, char *argv[]) {
+     bool allowMultiple = false;
++    bool startAnimated = false;
+     for (int i = 1; i < argc; ++i) {
+         const QString a = QString::fromLocal8Bit(argv[i]);
+         if (a == u8"-h" || a == u8"--help") { printUsage(); return 0; }
+@@ -108,6 +113,7 @@ int main(int argc, char *argv[]) {
+             return 0;
+         }
+         if (a == u8"--allow-multiple") { allowMultiple = true; continue; }
++        if (a == u8"--animated") { startAnimated = true; continue; }
+         std::fprintf(stderr, "roller: unknown option %s - try --help\n",
+                      qPrintable(a));
+         return 1;
+@@ -213,6 +219,9 @@ int main(int argc, char *argv[]) {
+     sourceModel.setDirs(wallpaperDir, cacheDir);
+     WallpaperFilterProxy proxyModel;
+     proxyModel.setSource(&sourceModel);
++    proxyModel.setVideoExtensions(cfg.videoExtensions());
++    proxyModel.setKind(startAnimated ? WallpaperFilterProxy::Animated
++                                     : WallpaperFilterProxy::Stills);
+     ThumbnailCache thumbCache(cacheDir);
+     thumbCache.setTargetHeight(cfg.thumbnailHeight());
+     thumbCache.setMaxBytes(qint64(cfg.cacheMaxMb()) * 1024 * 1024);

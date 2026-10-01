@@ -393,9 +393,56 @@ random_wallpaper() {
         2>/dev/null | shuf -n1
 }
 
+# Animated wallpapers (videos in ~/Pictures/Wallpapers/Animated) are played
+# by Noctalia's video wallpaper plugin, our copy with the `set` command. The
+# shell itself still gets a picture, the video's first frame (its "poster"),
+# so the colours follow the video too. DMS can't play videos, so under DMS
+# only the poster is shown.
+is_video() {
+    case "$(printf %s "${1##*.}" | tr '[:upper:]' '[:lower:]')" in
+        mp4|webm|mkv|mov) return 0 ;;  # keep in step with roller's video_extensions
+    esac
+    return 1
+}
+
+poster() {
+    local p="${XDG_CACHE_HOME:-$HOME/.cache}/zexos/posters/$(printf %s "$1" | tr -c 'A-Za-z0-9.-' _).jpg"
+    if [ ! -s "$p" ] || [ "$1" -nt "$p" ]; then
+        mkdir -p "$(dirname "$p")"
+        ffmpeg -loglevel error -y -i "$1" -frames:v 1 -q:v 2 "$p" || return
+    fi
+    printf '%s\n' "$p"
+}
+
+video() { noctalia msg plugin noctalia/mpvpaper:service all "$@"; }
+
+noctalia_wallpaper() {
+    if is_video "$1"; then
+        local p; p="$(poster "$1")" || return
+        video set "$1" || return
+        noctalia msg wallpaper-set "$p"
+    else
+        video clear-all 2>/dev/null
+        noctalia msg wallpaper-set "$1"
+    fi
+}
+
+# Stop any video, then let Noctalia pick a picture. The plugin turns
+# Noctalia's wallpaper back on only once the video player has quit, so retry
+# for a moment until Noctalia accepts.
+noctalia_random_wallpaper() {
+    video clear-all >/dev/null 2>&1
+    local i
+    for i in $(seq 20); do
+        case "$(noctalia msg wallpaper-random)" in error:*) sleep 0.1 ;; *) return 0 ;; esac
+    done
+    return 1
+}
+
 # Noctalia copies each new wallpaper to the login screen by itself (its
 # wallpaper_changed hook). DMS has no such hook, so do it here for DMS.
 dms_wallpaper() {
+    if is_video "$1"; then set -- "$(poster "$1")" || return; fi
     dms ipc call wallpaper set "$1" || return
     "$HOME/.local/bin/sync-sddm-wallpaper.sh" "$1" >/dev/null 2>&1 || true
 }
@@ -439,8 +486,8 @@ act() {
             cheatsheet)
                 if [ "$(compositor)" = mangowc ]; then mango_cheatsheet
                 else noctalia msg panel-toggle kenn/keybind-cheatsheet:cheatsheet; fi ;;
-            wallpaper-random) noctalia msg wallpaper-random ;;
-            wallpaper-set)    noctalia msg wallpaper-set "$1" ;;
+            wallpaper-random) noctalia_random_wallpaper ;;
+            wallpaper-set)    noctalia_wallpaper "$1" ;;
             volume-up)        noctalia msg volume-up ;;
             volume-down)      noctalia msg volume-down ;;
             volume-mute)      noctalia msg volume-mute ;;

@@ -73,13 +73,14 @@ mkdir -p "$WALL_DIR"
 cp --update=none "$WALL_SRC"/*.jpg "$WALL_DIR"/
 echo -e "${GREEN}✔ ZeXOS wallpapers are in $WALL_DIR${RESET}"
 
-# The animated wallpaper goes where Noctalia's Video Wallpaper plugin looks
-# (noctalia.toml). It is not switched on: a looping 4K video is a steady
-# small load, so you pick it yourself from the plugin's panel.
-VIDEO_DIR="$HOME/Videos/Wallpapers"
+# The animated wallpapers go in their own folder, where roller shows them as
+# a separate group (Mod+Shift+W, or Tab inside the picker) and Noctalia's
+# Video Wallpaper plugin looks for them (noctalia.toml). None is switched
+# on: a looping 4K video is a steady small load, so you pick one yourself.
+VIDEO_DIR="$WALL_DIR/Animated"
 mkdir -p "$VIDEO_DIR"
 cp --update=none "$WALL_SRC"/*.mp4 "$VIDEO_DIR"/
-echo -e "${GREEN}✔ Animated wallpaper is in $VIDEO_DIR${RESET}"
+echo -e "${GREEN}✔ Animated wallpapers are in $VIDEO_DIR (Mod+Shift+W picks one)${RESET}"
 
 # GTK 4 apps get the adw-gtk3 dark look through two links to the installed
 # theme. They point at absolute system paths, which stow refuses to deploy,

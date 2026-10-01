@@ -20,9 +20,11 @@ binds {
     Mod+M     hotkey-overlay-title="Install and update apps" { spawn-sh "~/.local/bin/zexos-app-store"; }
 
     // ── Wallpaper ───────────────────────────────────────
-    // Mod+W opens the roller picker, or closes it if it is already open.
-    Mod+W      hotkey-overlay-title="Pick a wallpaper (roller)" { spawn-sh "pkill -x roller || PATH=$HOME/.local/share/roller/bin:$PATH roller"; }
-    Mod+Ctrl+W hotkey-overlay-title="Random wallpaper" { spawn "zshell" "wallpaper-random"; }
+    // Mod+W opens the roller picker on the still pictures, Mod+Shift+W on the
+    // animated ones (Tab switches inside); either closes it if it is open.
+    Mod+W       hotkey-overlay-title="Pick a wallpaper (roller)" { spawn-sh "pkill -x roller || PATH=$HOME/.local/share/roller/bin:$PATH roller"; }
+    Mod+Shift+W hotkey-overlay-title="Pick an animated wallpaper" { spawn-sh "pkill -x roller || PATH=$HOME/.local/share/roller/bin:$PATH roller --animated"; }
+    Mod+Ctrl+W  hotkey-overlay-title="Random wallpaper" { spawn "zshell" "wallpaper-random"; }
 
     // ── Session ─────────────────────────────────────────
     Mod+L      hotkey-overlay-title="Lock the screen" { spawn "zshell" "lock"; }

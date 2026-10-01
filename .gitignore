@@ -55,3 +55,4 @@ stow/fuzzel/.config/fuzzel/themes/shell
 stow/fuzzel/.config/fuzzel/themes/dank
 stow/btop/.config/btop/themes/shell.theme
 stow/btop/.config/btop/themes/dank.theme
+__pycache__/

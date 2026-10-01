@@ -11,6 +11,17 @@ Planned as 1.1.0.
 
 ### Added
 
+- Animated versions of 8 more wallpapers, 9 in all, covering every style
+  and colour family: aurora (violet, ocean, mono), topo (energy, ember),
+  mark (ember, light), bars and dots (forest). Each is a 12-second 4K loop
+  whose first frame is the still picture. They live in
+  `~/Pictures/Wallpapers/Animated` (it was `~/Videos/Wallpapers`).
+- roller shows pictures and videos as two groups. `Mod+Shift+W` opens it
+  on the videos, `Tab` switches groups, and video cards carry a ▶ badge
+  (`packaging/roller/zexos-video-groups.patch`).
+- A ZeXOS copy of Noctalia's Video Wallpaper plugin with one more command,
+  `set`, so the picker can start a video.
+
 - DankMaterialShell (DMS) as a second desktop shell, installed next to
   Noctalia (`dms-shell`, `dms-shell-niri`, `matugen`). Noctalia stays the
   default. See [Two desktop shells](README.md#two-desktop-shells).
@@ -95,6 +106,10 @@ Planned as 1.1.0.
   cheat sheet. Noctalia's cheat sheet shows them after the next login.
 
 ### Fixed
+
+- Picking a picture in roller while a video wallpaper played changed the
+  colours but left the video on screen. Pictures now stop the video, and
+  picking a video plays it. Random wallpaper (`Mod+Ctrl+W`) stops it too.
 
 - Under DMS, the shell switcher and other fuzzel menus now take the
   wallpaper colours. Noctalia's fuzzel hook had pointed `fuzzel.ini` at

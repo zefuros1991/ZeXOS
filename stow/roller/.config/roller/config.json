@@ -6,6 +6,7 @@
     "panel_height": 300,
     "thumbnail_height": 512,
     "show_search_hint": false,
+    "video_extensions": ["mp4", "webm", "mkv", "mov"],
     "restore_last": true,
     "post_apply_command": "sleep 0.2; pkill -x roller"
 }

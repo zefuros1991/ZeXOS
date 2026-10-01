@@ -11,3 +11,15 @@ output_path = '@CONFIG@/fuzzel/themes/dank'
 input_path = '@SEED@/matugen/btop.theme'
 output_path = '@CONFIG@/btop/themes/dank.theme'
 post_hook = 'pkill -USR2 -x btop || true'
+
+# The window border: a gradient in the wallpaper colours on the focused
+# window, a faint line on the others. zshell loads these after DMS's own
+# colours (dms/colors.*), so they win. Mango can only draw solid borders,
+# so it keeps DMS's.
+[templates.zexosniriborder]
+input_path = '@SEED@/matugen/niri-border.kdl'
+output_path = '@CONFIG@/niri/zexos-border-dms.kdl'
+
+[templates.zexoshyprborder]
+input_path = '@SEED@/matugen/hypr-border.lua'
+output_path = '@CONFIG@/hypr/zexos-border-dms.lua'

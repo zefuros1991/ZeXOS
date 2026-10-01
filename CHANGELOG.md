@@ -25,6 +25,9 @@ Planned as 1.1.0.
   Hyprland also gets niri's gradient border in the wallpaper colours under
   Noctalia (`templates/hypr-border.lua`). Mango can only draw a border in
   one colour, so it keeps Noctalia's.
+- The same gradient border under DankMaterialShell on niri and Hyprland:
+  DMS fills in ZeXOS's templates on every colour change
+  (`zexos.toml.in`). Mango keeps DMS's one-colour border.
 
 - DankMaterialShell (DMS) as a second desktop shell, installed next to
   Noctalia (`dms-shell`, `dms-shell-niri`, `matugen`). Noctalia stays the

@@ -61,3 +61,5 @@ stow/btop/.config/btop/themes/dank.theme
 __pycache__/
 stow/noctalia/.config/noctalia/zexos-compositor.toml
 stow/theme/.config/qt6ct/colors/matugen.conf
+stow/niri/.config/niri/zexos-border-dms.kdl
+stow/hyprland/.config/hypr/zexos-border-dms.lua

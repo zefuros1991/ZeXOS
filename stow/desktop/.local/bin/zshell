@@ -73,8 +73,10 @@ link_colors() {
     local file="$NIRI_DIR/shell-colors.kdl"
     if [ -d "$NIRI_DIR" ]; then
         if [ "$1" = dms ]; then
-            printf '%s\n' '// Written by zshell: DankMaterialShell is the active shell.' \
-                'include optional=true "./dms/colors.kdl"' > "$file"
+            printf '%s\n' '// Written by zshell: DankMaterialShell is the active shell,' \
+                '// plus the gradient border it writes from our template.' \
+                'include optional=true "./dms/colors.kdl"' \
+                'include optional=true "./zexos-border-dms.kdl"' > "$file"
         else
             printf '%s\n' '// Written by zshell: Noctalia is the active shell,' \
                 '// its colours come from noctalia.kdl, plus the gradient' \
@@ -96,8 +98,10 @@ link_colors() {
     file="$HYPR_DIR/shell-colors.lua"
     if [ -d "$HYPR_DIR" ]; then
         if [ "$1" = dms ]; then
-            printf '%s\n' '-- Written by zshell: DankMaterialShell is the active shell.' \
-                'pcall(require, "dms.colors")' > "$file"
+            printf '%s\n' '-- Written by zshell: DankMaterialShell is the active shell,' \
+                '-- plus the gradient border it writes from our template.' \
+                'pcall(require, "dms.colors")' \
+                'pcall(require, "zexos-border-dms")' > "$file"
         else
             printf '%s\n' '-- Written by zshell: Noctalia is the active shell,' \
                 '-- its colours come from noctalia.lua, plus the gradient' \

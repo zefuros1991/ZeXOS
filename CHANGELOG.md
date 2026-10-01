@@ -19,8 +19,8 @@ Planned as 1.1.0.
 - `Mod+Shift+D` opens a menu to switch shells: two big choices, each with
   the shell's logo and its name in Nunito ExtraBold (`ttf-nunito`). It is a
   small Quickshell window (`~/.config/quickshell/zexos-switcher`) with no
-  search box, so a stray key press can't hide the choices. Arrows, Tab or
-  j/k move, Enter picks, 1/2 pick straight away, Esc or a click outside
+  search box, so a stray key press can't hide the choices. Arrows, Tab,
+  j/k or W/S move, Enter picks, 1/2 pick straight away, Esc or a click outside
   closes, and the same key closes it again. The choice is saved per user in
   `~/.config/zexos/shell`.
 - A ZeXOS look for DMS on its first start (bar, fonts, wallpaper), in the
@@ -54,6 +54,15 @@ Planned as 1.1.0.
   window colours follow the wallpaper.
 - `zexos-screenshot` takes area, screen and window screenshots on Mango
   and Hyprland.
+- Mango: workspaces work like niri's. They are stacked top to bottom and
+  slide up and down, with no empty ones in between (`tag_gather`).
+  Noctalia's bar shows only the workspaces in use, the top-left corner
+  opens the overview, and Noctalia's pop-ups get the same frosted-glass
+  blur as on niri.
+- Mango: `Alt+Tab` opens the carousel to go through every window. Let go
+  of Alt to jump to the chosen window; `Shift` goes backwards.
+- On niri, the overview (`Mod+O`) shows your wallpaper behind it under
+  DMS too, not plain grey (DMS's own `place-within-backdrop` rule).
 
 ### Changed
 
@@ -65,6 +74,15 @@ Planned as 1.1.0.
   wallpaper change.
 - Qt apps read `ZeXOS.colors`, fuzzel reads `themes/shell` and GTK reads
   `shell.css`. zshell points each at the colours of the shell in use.
+- DMS bar: the middle island opens on click instead of on hover, and
+  touches the top edge like the side groups. Existing DMS setups are
+  moved over too.
+- DMS app launcher always opens on the Apps tab.
+- The wallpaper picker closes after you pick, so you see the change.
+- Shell switcher menu: bigger, no search box, Nunito font, shell names in
+  the theme colour and "IN USE" always in orange.
+- The installer updates the system before installing git, so an older
+  Arch install doesn't fail.
 - Sound, music and brightness keys have readable names on the shortcut
   cheat sheet. Noctalia's cheat sheet shows them after the next login.
 
@@ -84,14 +102,23 @@ Planned as 1.1.0.
   then. DMS saves the colours a moment after the wallpaper, and systemd
   drops changes that arrive while the sync is still running, so
   `zexos-dms-sync` keeps checking for a few more seconds.
+- Switching shells could leave a frozen Noctalia behind (upstream
+  [noctalia#4652](https://github.com/noctalia-dev/noctalia/issues/4652)).
+  Its wallpaper covered DMS's, so a DMS wallpaper change did nothing, and
+  switching back never started Noctalia. `zshell` now force-quits a shell
+  that hasn't closed after 3 seconds.
+- New kitty windows no longer open maximized on top of the others.
+- fastfetch in kitty no longer breaks up when tiling resizes the window,
+  in fish and in bash.
+- A black desktop on plain Arch: `~/.local/bin` is now on everyone's
+  PATH at login.
+- On plain Arch with no real browser, Firefox is installed so `Mod+B`
+  works.
 - `Mod+B` opens a real browser when DMS is installed. DMS's link chooser
   (`dms-open`) says it opens web links, so it was picked by mistake.
 
 ### Known gaps in DMS
 
-- DMS can't group several bar items into one island like Noctalia, so
-  each item has its own pill. (DMS's own "island" mode is a different
-  thing, a single pop-up pill that hides the workspaces.)
 - No USB drive island: DMS has no widget for it (Noctalia uses the
   udiskie plugin). Drives still mount from Dolphin.
 - No "Restart to UEFI" in the DMS power menu.

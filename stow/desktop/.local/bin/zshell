@@ -301,6 +301,8 @@ start() {
     link_colors "$shell"
     link_kitty "$shell"
     link_theme "$shell"
+    # Your animation picks, if you changed any (zexos-motion).
+    [ -e "$CONF_DIR/zexos/motion" ] && zexos-motion apply >/dev/null 2>&1
     # A compositor's variable can be left behind empty from an earlier
     # session (log out of Mango, log in to niri). The shell only checks that
     # it exists, so it would think it runs in Mango and show Mango's
@@ -347,12 +349,14 @@ switch() {
     local new="${1:-}"
     case " $SHELLS " in *" $new "*) ;; *) echo "zshell: pick one of: $SHELLS" >&2; exit 2 ;; esac
     installed "$new" || { echo "zshell: $(pretty "$new") is not installed" >&2; exit 1; }
+    running "$new" || curtain_down "$new"
     mkdir -p "$(dirname "$CHOICE_FILE")"
     echo "$new" > "$CHOICE_FILE"
     for s in $SHELLS; do
         [ "$s" = "$new" ] || stop "$s"
     done
     running "$new" && return 0
+    curtain_up "$new"
     # Let the compositor start it, the same way it does at login.
     if [ -n "${NIRI_SOCKET:-}" ]; then
         niri msg action spawn -- zshell start
@@ -363,6 +367,51 @@ switch() {
     else
         setsid -f zshell start >/dev/null 2>&1
     fi
+}
+
+# The picture the running shell shows now. Asked before it quits, so the
+# curtain can keep it on screen while the shells swap. A video wallpaper
+# gives its first frame. Falls back to the login screen's copy.
+current_wallpaper() {
+    local w=""
+    if running noctalia; then
+        w="$(noctalia msg wallpaper-get 2>/dev/null | sed -n 's/^[^/]*\(\/.*\)$/\1/p' | head -n1)"
+    elif running dms; then
+        w="$(dms ipc call wallpaper get 2>/dev/null | head -n1)"
+    fi
+    if [ -n "$w" ] && is_video "$w"; then w="$(poster "$w")"; fi
+    [ -f "$w" ] || w=/var/lib/sddm-wallpaper/current.jpg
+    [ -r "$w" ] && printf '%s\n' "$w"
+}
+
+# The curtain over a shell switch (~/.config/quickshell/zexos-curtain), in
+# the style picked with `zexos-motion set switch ...`: wipe (default), dip,
+# logo or none. Even with none it keeps the wallpaper on screen, so there is
+# no grey gap between the two shells.
+curtain_down() {
+    command -v qs >/dev/null 2>&1 || return 0
+    local style
+    style="$(zexos-motion get switch 2>/dev/null)"
+    [ -n "$style" ] || style=wipe
+    qs kill -c zexos-curtain >/dev/null 2>&1
+    ZX_STYLE="$style" \
+    ZX_WALL="$(current_wallpaper)" \
+    ZX_BG="$(fuzzel_colour background)" \
+    ZX_ACCENT="$(fuzzel_colour border)" \
+    ZX_ICON="$(logo "$1")" \
+    ZX_NAME="$(pretty "$1")" \
+        setsid -f qs -c zexos-curtain >/dev/null 2>&1
+    # Let it cover the screen before the old shell goes.
+    [ "$style" = none ] && sleep 0.15 || sleep 0.45
+}
+
+# Lift it once the new shell has had a moment to draw its bar and wallpaper.
+curtain_up() {
+    (
+        for _ in $(seq 100); do running "$1" && break; sleep 0.1; done
+        sleep 1.2
+        qs ipc -c zexos-curtain call curtain lift
+    ) >/dev/null 2>&1 &
 }
 
 # Each shell's official logo, as an icon name (hicolor theme).

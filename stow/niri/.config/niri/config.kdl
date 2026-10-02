@@ -12,6 +12,10 @@ include "./cfg/layout.kdl"      // gaps, column sizes, borders
 include "./cfg/rules.kdl"       // per-app tweaks (blur, rounding, floating)
 include "./cfg/misc.kdl"        // screenshots, env vars, small extras
 
+// The animation style you picked with `zexos-motion`, if you changed it.
+// Comes after cfg/animation.kdl so it wins. Don't edit it by hand.
+include optional=true "./motion.kdl"
+
 // Colours made from your wallpaper. Noctalia rewrites this file on its own,
 // so don't edit it. It comes after layout.kdl so its colours win.
 include "./noctalia.kdl"

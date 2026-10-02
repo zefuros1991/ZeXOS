@@ -63,3 +63,8 @@ stow/noctalia/.config/noctalia/zexos-compositor.toml
 stow/theme/.config/qt6ct/colors/matugen.conf
 stow/niri/.config/niri/zexos-border-dms.kdl
 stow/hyprland/.config/hypr/zexos-border-dms.lua
+# written by zexos-motion (your animation picks)
+stow/niri/.config/niri/motion.kdl
+stow/hyprland/.config/hypr/motion.lua
+stow/mango/.config/mango/motion.conf
+stow/noctalia/.config/noctalia/zexos-motion.toml

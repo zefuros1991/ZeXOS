@@ -21,6 +21,10 @@ require("cfg.layout")
 require("cfg.rules")
 require("cfg.misc")
 
+-- The animation style you picked with `zexos-motion`, if you changed it.
+-- Comes after cfg/animation.lua so it wins. Don't edit it by hand.
+pcall(require, "motion")
+
 -- Colours made from your wallpaper. Noctalia writes noctalia.lua on its
 -- own, so don't edit that file. It comes after layout.lua so its colours
 -- win. (Noctalia looks for the text require("noctalia") in this file and

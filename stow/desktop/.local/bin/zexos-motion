@@ -1,0 +1,292 @@
+#!/usr/bin/env python3
+"""zexos-motion -- pick how the desktop moves, the same on niri, Hyprland
+and Mango, under Noctalia and DMS.
+
+  zexos-motion                     show what is picked and what else there is
+  zexos-motion set <part> <name>   pick one, e.g. `zexos-motion set windows fade`
+  zexos-motion apply               write the files again from what is picked
+  zexos-motion get <part>          print one pick (zshell reads `switch`)
+  zexos-motion print <compositor>  print a compositor's file (niri, hyprland, mango)
+
+Parts and their choices:
+  windows     rise (default), pop, balloon, fade, rise-shrink
+  workspaces  spring (default), snappy, glide
+  panels      matched (default), off
+  switch      wipe (default), dip, logo, none
+
+Picks are saved in ~/.config/zexos/motion. Each compositor loads its
+generated file after the ZeXOS defaults, so it wins:
+  ~/.config/niri/motion.kdl, ~/.config/hypr/motion.lua,
+  ~/.config/mango/motion.conf, ~/.config/noctalia/zexos-motion.toml
+DMS has no extra file, so `panels` changes `animationSpeed` in its settings.
+
+Why only these: every choice must look the same on all three compositors
+and both shells. niri only slides workspaces up and down, Mango picks the
+slide direction from the layout, and DMS keeps its panels at one speed
+(its speed setting only changes the invisible end of the movement).
+"""
+import json
+import os
+import subprocess
+import sys
+
+CONF = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
+STATE = os.path.join(CONF, "zexos", "motion")
+
+# Curves (cubic-bezier points).
+QUINT = (0.22, 1.0, 0.36, 1.0)   # fast start, soft stop
+INOUT = (0.65, 0.0, 0.35, 1.0)   # even ease in and out
+SPRING = (0.34, 1.3, 0.64, 1.0)  # goes a little past, then settles
+BOUNCE = (0.34, 1.56, 0.64, 1.0) # goes further past
+
+# Window open and close. Kinds: zoom (grow from a scale), rise (come up
+# from below, sink on close), fade (opacity only).
+# name: (open kind, open scale, close kind, close scale, open ms, close ms,
+#        open curve, close curve)
+WINDOWS = {
+    "rise":        ("rise", 0, "rise", 0, 420, 240, SPRING, INOUT),
+    "pop":         ("zoom", 0.90, "zoom", 0.90, 250, 180, QUINT, QUINT),
+    "balloon":     ("zoom", 0.10, "zoom", 0.10, 500, 220, BOUNCE, QUINT),
+    "fade":        ("fade", 0, "fade", 0, 380, 300, INOUT, INOUT),
+    "rise-shrink": ("rise", 0, "zoom", 0.80, 420, 200, SPRING, QUINT),
+}
+# Workspace switch, plus windows moving and resizing: ms, curve.
+WORKSPACES = {
+    "spring": (450, SPRING),
+    "snappy": (250, QUINT),
+    "glide":  (400, INOUT),
+}
+PANELS = ("matched", "off")
+SWITCH = ("wipe", "dip", "logo", "none")
+PARTS = {
+    "windows": list(WINDOWS),
+    "workspaces": list(WORKSPACES),
+    "panels": list(PANELS),
+    "switch": list(SWITCH),
+}
+
+# niri can only draw a little outside a window, so its rise is a third of
+# the window's height, plus a fade. Hyprland and Mango come from the edge.
+RISE = 0.35
+
+
+def load():
+    picks = {part: names[0] for part, names in PARTS.items()}
+    try:
+        with open(STATE) as f:
+            for line in f:
+                key, _, val = line.strip().partition("=")
+                if key in PARTS and val in PARTS[key]:
+                    picks[key] = val
+    except OSError:
+        pass
+    return picks
+
+
+def save(picks):
+    os.makedirs(os.path.dirname(STATE), exist_ok=True)
+    with open(STATE + ".tmp", "w") as f:
+        f.write("# Written by zexos-motion. Change with: zexos-motion set <part> <name>\n")
+        for part in PARTS:
+            f.write(f"{part}={picks[part]}\n")
+    os.replace(STATE + ".tmp", STATE)
+
+
+def sp(c):
+    return " ".join(f"{v:g}" for v in c)
+
+
+def niri_shader(fn, kind, scale, opening):
+    # niri_progress can go past 1 with a springy curve; the colour uses the
+    # clamped one so it never gets brighter than the window.
+    p = "niri_progress" if opening else "niri_clamped_progress"
+    alpha = "niri_clamped_progress" if opening else "(1.0 - niri_clamped_progress)"
+    if kind == "zoom":
+        s = f"mix({scale:.2f}, 1.0, {p})" if opening else f"mix(1.0, {scale:.2f}, {p})"
+        body = (f"float s = {s};\n"
+                "            vec3 c = vec3((coords_geo.xy - 0.5) / s + 0.5, 1.0);\n"
+                "            if (c.x < 0.0 || c.x > 1.0 || c.y < 0.0 || c.y > 1.0) return vec4(0.0);")
+    elif kind == "rise":
+        off = f"(1.0 - {p}) * {RISE}" if opening else f"{p} * {RISE}"
+        body = ("vec3 c = coords_geo;\n"
+                f"            c.y -= {off};\n"
+                "            if (c.y < 0.0 || c.y > 1.0) return vec4(0.0);")
+    else:
+        body = "vec3 c = coords_geo;"
+    return (f'        custom-shader r"\n'
+            f"        vec4 {fn}(vec3 coords_geo, vec3 size_geo) {{\n"
+            f"            {body}\n"
+            "            vec3 t = niri_geo_to_tex * c;\n"
+            f"            return texture2D(niri_tex, t.st) * {alpha};\n"
+            "        }\n"
+            '        "\n')
+
+
+def niri(picks):
+    ok, op, ck, cp, om, cm, oc, cc = WINDOWS[picks["windows"]]
+    ms, curve = WORKSPACES[picks["workspaces"]]
+    pace = f'        duration-ms {ms}\n        curve "cubic-bezier" {sp(curve)}\n'
+    out = [f"// Written by zexos-motion: windows {picks['windows']}, workspaces {picks['workspaces']}.\n",
+           "animations {\n",
+           "    window-open {\n", f"        duration-ms {om}\n", f'        curve "cubic-bezier" {sp(oc)}\n',
+           niri_shader("open_color", ok, op, True), "    }\n",
+           "    window-close {\n", f"        duration-ms {cm}\n", f'        curve "cubic-bezier" {sp(cc)}\n',
+           niri_shader("close_color", ck, cp, False), "    }\n"]
+    for leaf in ("workspace-switch", "horizontal-view-movement", "window-movement", "window-resize"):
+        out += [f"    {leaf} {{\n", pace, "    }\n"]
+    out.append("}\n")
+    return "".join(out)
+
+
+def hyprland(picks):
+    ok, op, ck, cp, om, cm, oc, cc = WINDOWS[picks["windows"]]
+    ms, curve = WORKSPACES[picks["workspaces"]]
+
+    def style(kind, scale):
+        return {"zoom": f"popin {round(scale * 100)}%", "rise": "slide bottom", "fade": None}[kind]
+
+    def pts(c):
+        return "{ {%g, %g}, {%g, %g} }" % c
+
+    def ds(n):  # Hyprland speed is in tenths of a second
+        return f"{n / 100:g}"
+
+    def win(leaf, st, n, bez):
+        if st is None:  # fade only: fadeIn/fadeOut do the work
+            return f'hl.animation({{ leaf = "{leaf}", enabled = false }})\n'
+        return (f'hl.animation({{ leaf = "{leaf}", enabled = true, speed = {ds(n)}, '
+                f'bezier = "{bez}", style = "{st}" }})\n')
+
+    return "".join([
+        f"-- Written by zexos-motion: windows {picks['windows']}, workspaces {picks['workspaces']}.\n",
+        f'hl.curve("zx_open",  {{ type = "bezier", points = {pts(oc)} }})\n',
+        f'hl.curve("zx_close", {{ type = "bezier", points = {pts(cc)} }})\n',
+        f'hl.curve("zx_pace",  {{ type = "bezier", points = {pts(curve)} }})\n',
+        f'hl.curve("zx_fade",  {{ type = "bezier", points = {pts(QUINT)} }})\n',
+        win("windowsIn", style(ok, op), om, "zx_open"),
+        win("windowsOut", style(ck, cp), cm, "zx_close"),
+        f'hl.animation({{ leaf = "fadeIn",  enabled = true, speed = {ds(om)}, bezier = "zx_fade" }})\n',
+        f'hl.animation({{ leaf = "fadeOut", enabled = true, speed = {ds(cm)}, bezier = "zx_fade" }})\n',
+        f'hl.animation({{ leaf = "windowsMove", enabled = true, speed = {ds(ms)}, bezier = "zx_pace" }})\n',
+        f'hl.animation({{ leaf = "workspaces",  enabled = true, speed = {ds(ms)}, bezier = "zx_pace", style = "slidevert" }})\n',
+        # The shell animates its own bar and panels (Noctalia's docs ask for this).
+        'hl.animation({ leaf = "layers", enabled = false })\n',
+    ])
+
+
+def mango(picks):
+    ok, op, ck, cp, om, cm, oc, cc = WINDOWS[picks["windows"]]
+    ms, curve = WORKSPACES[picks["workspaces"]]
+    kind = {"zoom": "zoom", "rise": "slide", "fade": "fade"}
+
+    def mc(c):
+        return ",".join(f"{v:g}" for v in c)
+
+    return "".join([
+        f"# Written by zexos-motion: windows {picks['windows']}, workspaces {picks['workspaces']}.\n",
+        "animations=1\n",
+        "tag_animation_direction=0\n",
+        f"animation_type_open={kind[ok]}\n",
+        f"animation_type_close={kind[ck]}\n",
+        f"zoom_initial_ratio={op if ok == 'zoom' else 0.9:g}\n",
+        f"zoom_end_ratio={cp if ck == 'zoom' else 0.9:g}\n",
+        "animation_fade_in=1\nanimation_fade_out=1\n",
+        "fadein_begin_opacity=0\nfadeout_begin_opacity=1\n",
+        f"animation_duration_open={om}\nanimation_duration_close={cm}\n",
+        f"animation_duration_move={ms}\nanimation_duration_tag={ms}\n",
+        f"animation_curve_open={mc(oc)}\nanimation_curve_close={mc(cc)}\n",
+        f"animation_curve_move={mc(curve)}\nanimation_curve_tag={mc(curve)}\n",
+        f"animation_curve_opafadein={mc(QUINT)}\nanimation_curve_opafadeout={mc(QUINT)}\n",
+    ])
+
+
+def noctalia(picks):
+    on = "true" if picks["panels"] == "matched" else "false"
+    return ("# Written by zexos-motion. Loaded after noctalia.toml, so it wins.\n"
+            "[shell.animation]\n"
+            f"enabled = {on}\n"
+            "speed = 1.0\n")
+
+
+def write(path, text):
+    if not os.path.isdir(os.path.dirname(path)):
+        return False
+    try:
+        with open(path) as f:
+            if f.read() == text:
+                return False
+    except OSError:
+        pass
+    with open(path + ".tmp", "w") as f:
+        f.write(text)
+    os.replace(path + ".tmp", path)
+    return True
+
+
+def dms_panels(picks):
+    # 0 = no animation, 1 = DMS's normal speed.
+    path = os.path.join(CONF, "DankMaterialShell", "settings.json")
+    try:
+        with open(path) as f:
+            data = json.load(f)
+    except (OSError, ValueError):
+        return
+    want = 1 if picks["panels"] == "matched" else 0
+    if data.get("animationSpeed", 1) == want:
+        return
+    data["animationSpeed"] = want
+    with open(path + ".tmp", "w") as f:
+        json.dump(data, f, indent=2)
+    os.replace(path + ".tmp", path)
+
+
+def quiet(*cmd):
+    try:
+        subprocess.run(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, timeout=5)
+    except (OSError, subprocess.SubprocessError):
+        pass
+
+
+def apply(picks):
+    write(os.path.join(CONF, "niri", "motion.kdl"), niri(picks))  # niri reloads by itself
+    if write(os.path.join(CONF, "hypr", "motion.lua"), hyprland(picks)) and os.environ.get("HYPRLAND_INSTANCE_SIGNATURE"):
+        quiet("hyprctl", "reload")
+    if write(os.path.join(CONF, "mango", "motion.conf"), mango(picks)) and os.environ.get("MANGO_INSTANCE_SIGNATURE"):
+        quiet("mmsg", "dispatch", "reload_config")
+    if write(os.path.join(CONF, "noctalia", "zexos-motion.toml"), noctalia(picks)):
+        quiet("noctalia", "msg", "config-reload")
+    dms_panels(picks)
+
+
+def show(picks):
+    for part, names in PARTS.items():
+        rest = ", ".join(n for n in names if n != picks[part])
+        print(f"{part:<11} {picks[part]:<12} (also: {rest})")
+
+
+def main(argv):
+    picks = load()
+    cmd = argv[0] if argv else "show"
+    if cmd == "show":
+        show(picks)
+    elif cmd == "get" and len(argv) == 2 and argv[1] in PARTS:
+        print(picks[argv[1]])
+    elif cmd == "set" and len(argv) == 3:
+        part, name = argv[1], argv[2]
+        if part not in PARTS or name not in PARTS[part]:
+            sys.exit(f"zexos-motion: {part} can be: {', '.join(PARTS.get(part, []))}"
+                     if part in PARTS else f"zexos-motion: parts are {', '.join(PARTS)}")
+        picks[part] = name
+        save(picks)
+        apply(picks)
+        show(picks)
+    elif cmd == "apply":
+        apply(picks)
+    elif cmd == "print" and len(argv) == 2 and argv[1] in ("niri", "hyprland", "mango", "noctalia"):
+        sys.stdout.write(globals()[argv[1]](picks))
+    else:
+        sys.exit(__doc__)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

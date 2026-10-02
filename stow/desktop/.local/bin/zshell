@@ -415,7 +415,14 @@ curtain_down() {
     style="$(zexos-motion get switch 2>/dev/null)"
     [ -n "$style" ] || style=logo
     qs kill -c zexos-curtain >/dev/null 2>&1
+    # The control sockets of Noctalia's video wallpaper players, so the
+    # curtain can pause them once they're hidden.
+    local videos="" sock
+    for sock in "${XDG_STATE_HOME:-$HOME/.local/state}"/noctalia/mpvpaper/ipc-*.sock; do
+        [ -S "$sock" ] && videos="$videos$sock:"
+    done
     ZX_STYLE="$style" \
+    ZX_VIDEOS="$videos" \
     ZX_OLD_WALL="$(current_wallpaper)" \
     ZX_WALL="$(saved_wallpaper "$1" || current_wallpaper)" \
     ZX_BG="$(fuzzel_colour background)" \
@@ -424,16 +431,19 @@ curtain_down() {
         setsid -f qs -c zexos-curtain >/dev/null 2>&1
     # (Always Wayland: with WAYLAND_DISPLAY unset, Qt would try X11 and the
     # curtain would quit at once.)
-    # Don't stop the old shell until the curtain covers it (up to 3 s). If it
+    # Don't stop the old shell until the curtain covers it and its colour
+    # slide is over (about 3 s; give up after 5 s). If it
     # never answers at all (it failed to start), don't hold the switch up.
+    # Asked only 5 times a second: each question starts a `qs`, and asking
+    # more often took enough of the machine to make the slide jerky.
     local state silent=0
-    for _ in $(seq 60); do
+    for _ in $(seq 25); do
         state="$(qs ipc -c zexos-curtain call curtain state 2>/dev/null)"
         [ "$state" = covered ] && break
         if [ -z "$state" ]; then
-            silent=$((silent + 1)); [ "$silent" -ge 20 ] && break
+            silent=$((silent + 1)); [ "$silent" -ge 5 ] && break
         fi
-        sleep 0.05
+        sleep 0.2
     done
 }
 

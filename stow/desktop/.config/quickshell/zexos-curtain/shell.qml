@@ -3,13 +3,16 @@
 // What you see (style "logo", the default):
 //   1. the screen fades (0.7 s) to a dark shade of the main colour of the old
 //      shell's wallpaper, with the new shell's logo large in the middle;
-//   2. while the shells swap behind it, that colour slowly turns (2.2 s) into
-//      a dark shade of the new shell's wallpaper colour;
-//   3. once the new shell is up, everything fades out (0.8 s) to it.
+//   2. that colour slowly turns (2.2 s) into a dark shade of the new shell's
+//      wallpaper colour;
+//   3. only then do the shells swap behind it, while nothing on screen moves
+//      (starting a shell can freeze the screen for a moment; on a still
+//      picture nobody sees that, during the colour slide it looked jerky);
+//   4. once the new shell is up and has settled, everything fades out (0.8 s).
 // Style "dip" is the same without the logo. Style "none" shows no curtain.
 //
 // `zshell` asks `qs ipc -c zexos-curtain call curtain state` until it says
-// "covered" before it stops the old shell, and calls `... curtain lift` once
+// "covered" (after the colour slide) before it stops the old shell, and calls `... curtain lift` once
 // the new one is up. If nobody lifts it, it lifts itself after 10 seconds.
 //
 // Under the curtain, a copy of the new wallpaper sits at the very back (the
@@ -23,6 +26,8 @@
 //   ZX_WALL       the new shell's wallpaper picture (for the end colour)
 //   ZX_BG         #AARRGGBB, used when a wallpaper can't be read
 //   ZX_ICON       the new shell's logo icon name
+//   ZX_VIDEOS     the old shell's video wallpaper players (mpv control
+//                 sockets, separated by ":"), paused once they're hidden
 // Quickshell docs: https://quickshell.org/docs/types/Quickshell.Wayland/WlrLayershell/
 // Qt Canvas docs: https://doc.qt.io/qt-6/qml-qtquick-canvas.html
 
@@ -51,7 +56,7 @@ ShellRoot {
     property bool fromReady: oldWall === ""
     property bool toReady: newWall === ""
 
-    // 0 waiting, 1 fading in, 2 covered (colour shifting), 3 fading out
+    // 0 waiting, 1 fading in, 2 covered (colour slide, then the swap), 3 fading out
     property int phase: 0
     property bool shiftDone: false
     property bool liftWanted: false
@@ -92,14 +97,17 @@ ShellRoot {
 
     function begin() { if (phase === 0) phase = 1 }
     function lift() { liftWanted = true; tryLift() }
+    // (zshell lifts it 1.2 s after the new shell is up: a shell keeps
+    // loading for a moment, and a fade during that would stutter.)
     function tryLift() { if (phase === 2 && shiftDone && liftWanted) phase = 3 }
 
     IpcHandler {
         target: "curtain"
         function lift(): void { root.lift() }
-        // "covered" once the old desktop can't be seen any more.
+        // "covered" once the old desktop can't be seen any more and the
+        // colour slide is over, so the swap happens behind a still screen.
         function state(): string {
-            return (root.style === "none" || root.phase >= 2) ? "covered" : "waiting"
+            return (root.style === "none" || (root.phase >= 2 && root.shiftDone)) ? "covered" : "waiting"
         }
     }
 
@@ -111,10 +119,23 @@ ShellRoot {
     Component.onCompleted: { log("loaded"); if (fromReady) startLater.start() }
     function log(m) { if (Quickshell.env("ZX_DEBUG")) console.log(Date.now() % 100000, m) }
 
+    // Debug only: how smoothly each part draws (frames, longest gap in ms).
+    property int frames: 0
+    property real worst: 0
+    FrameAnimation {
+        running: Quickshell.env("ZX_DEBUG") !== null && Quickshell.env("ZX_DEBUG") !== ""
+        onTriggered: {
+            root.frames++; root.worst = Math.max(root.worst, frameTime * 1000)
+            if (frameTime > 0.05) root.log("gap " + Math.round(frameTime * 1000) + " ms")
+        }
+    }
+    function report(part) { log(part + ": " + frames + " frames, worst gap " + Math.round(worst) + " ms"); frames = 0; worst = 0 }
+
     Timer { id: coveredLater; interval: root.fadeIn; onTriggered: root.phase = 2 }
-    Timer { id: shiftLater; interval: root.shift; onTriggered: { root.shiftDone = true; root.tryLift() } }
+    Timer { id: shiftLater; interval: root.shift; onTriggered: { root.report("shift"); root.shiftDone = true; root.tryLift() } }
     Timer { interval: 10000; running: true; onTriggered: { root.shiftDone = true; root.lift() } }
     onPhaseChanged: {
+        report("before phase " + phase)
         log("phase " + phase)
         if (phase === 1) coveredLater.start()
         if (phase === 2) shiftLater.start()
@@ -129,17 +150,36 @@ ShellRoot {
     // (Mixed by hand, so a late answer from a colour picker is used at
     // once instead of being animated to.)
     property real mix: phase >= 2 ? 1 : 0
-    Behavior on mix { NumberAnimation { duration: root.shift; easing.type: Easing.InOutQuad } }
+    Behavior on mix { NumberAnimation { duration: root.shift; easing.type: Easing.InOutSine } }
     readonly property color shown: Qt.rgba(fromColour.r + (toColour.r - fromColour.r) * mix,
                                            fromColour.g + (toColour.g - fromColour.g) * mix,
                                            fromColour.b + (toColour.b - fromColour.b) * mix, 1)
+
+    // Pause the old shell's video wallpaper once the curtain hides it: a
+    // playing video takes so much of the machine that the colour slide
+    // drew at a third of its speed. (mpv's JSON control protocol:
+    // https://mpv.io/manual/stable/#json-ipc)
+    Variants {
+        model: (Quickshell.env("ZX_VIDEOS") || "").split(":").filter(p => p !== "")
+        Socket {
+            required property var modelData
+            path: modelData
+            readonly property bool hidden: root.style !== "none" && root.phase === 2
+            onHiddenChanged: if (hidden) connected = true
+            onConnectedChanged: if (connected) {
+                write('{"command":["set_property","pause",true]}\n'); flush()
+            }
+        }
+    }
 
     // The wallpaper copy.
     Variants {
         // Only made once the curtain covers the screen: a new background
         // surface goes on top of the old shell's (a video too), so made
-        // earlier it would show through before the fade-in.
-        model: root.newWall && root.phase >= 2 ? Quickshell.screens : []
+        // earlier it would show through before the fade-in. And only after
+        // the colour slide: making it costs a moment, which would show as a
+        // jerk in the slide.
+        model: root.newWall && root.phase >= 2 && root.shiftDone ? Quickshell.screens : []
 
         PanelWindow {
             required property var modelData
@@ -213,7 +253,23 @@ ShellRoot {
                     NumberAnimation { duration: root.phase === 3 ? root.fadeOut : root.fadeIn; easing.type: Easing.InOutCubic }
                 }
 
-                Rectangle { anchors.fill: parent; color: root.shown }
+                // The colour, drawn by a small shader that dithers it, so
+                // the slide between two dark shades is smooth instead of
+                // stepping one level at a time (shaders/shift.frag).
+                ShaderEffect {
+                    id: fill
+                    anchors.fill: parent
+                    property color from: root.fromColour
+                    property color to: root.toColour
+                    property real amount: root.mix
+                    fragmentShader: Qt.resolvedUrl("shaders/shift.frag.qsb")
+                }
+                // Plain colour if the shader can't load.
+                Rectangle {
+                    anchors.fill: parent
+                    visible: fill.status === ShaderEffect.Error
+                    color: root.shown
+                }
 
                 Image {
                     visible: root.style === "logo" && root.icon !== ""

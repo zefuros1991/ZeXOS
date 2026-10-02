@@ -1,0 +1,17 @@
+# Pixie's avatar.jpg is a link to /var/lib/sddm-wallpaper/avatar.jpg (see the
+# PKGBUILD). Put the violet avatar there if nothing is there yet, so the login
+# screen never shows an empty circle. After that, sync-sddm-wallpaper.sh keeps
+# it in the colours of your wallpaper.
+post_install() {
+    local dir=/var/lib/sddm-wallpaper
+    [ -e "$dir/avatar.jpg" ] && return 0
+    mkdir -p "$dir"
+    cp /usr/share/sddm/themes/pixie/assets/avatars/violet.jpg "$dir/avatar.jpg"
+    chmod 644 "$dir/avatar.jpg"
+    # The folder belongs to you (finaltouches.sh), so the copy does too.
+    chown --reference="$dir" "$dir/avatar.jpg"
+}
+
+post_upgrade() {
+    post_install
+}

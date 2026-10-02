@@ -26,42 +26,51 @@ changed() {   # changed <name> <value>
     printf '%s' "$2" > "$MEMO/$1"
 }
 
-# 1. Colours.
+# 1. Colours. Says (exit 0) whether there was anything new.
 sync_colors() {
-    [ -f "$SCHEME" ] && changed colors "$(md5sum < "$SCHEME")" || return 0
+    [ -f "$SCHEME" ] && changed colors "$(md5sum < "$SCHEME")" || return 1
     zshell relink
     theme="$(gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null | tr -d "'")"
     if [ -n "$theme" ]; then
         gsettings set org.gnome.desktop.interface gtk-theme ''
         gsettings set org.gnome.desktop.interface gtk-theme "$theme"
     fi
+    return 0
 }
-sync_colors
 
-# 2. Wallpaper.
-wall="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("wallpaperPath",""))' "$SESSION" 2>/dev/null)"
-if [ -f "$wall" ] && changed wallpaper "$wall"; then
+# 2. Wallpaper. Says (exit 0) whether there was anything new.
+sync_wallpaper() {
+    local wall b want folders size
+    wall="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1])).get("wallpaperPath",""))' "$SESSION" 2>/dev/null)"
+    [ -f "$wall" ] && changed wallpaper "$wall" || return 1
     "$HOME/.local/bin/sync-sddm-wallpaper.sh" "$wall" >/dev/null 2>&1 || true
-    if [ ! -e "${XDG_CONFIG_HOME:-$HOME/.config}/zexos/manual-theme-mode" ]; then
-        # Same test and threshold as auto-theme-mode.sh.
-        b="$(magick "$wall" -resize 64x64! -colorspace Gray -format '%[fx:mean]' info: 2>/dev/null)"
-        if [ -n "$b" ]; then
-            if awk -v b="$b" 'BEGIN { exit !(b >= 0.6) }'; then want=light; folders=light
-            else want=dark; folders=accent; fi
-            "$HOME/.local/bin/make-papirus-zexos.py" >/dev/null 2>&1 || true
-            for size in "${XDG_DATA_HOME:-$HOME/.local/share}"/icons/Papirus-ZeXOS/*/; do
-                [ -L "${size}places" ] && ln -sfn "places-$folders" "${size}places"
-            done
-            [ "$(dms ipc call theme getMode 2>/dev/null)" = "$want" ] || dms ipc call theme "$want" >/dev/null
-        fi
-    fi
-fi
+    [ -e "${XDG_CONFIG_HOME:-$HOME/.config}/zexos/manual-theme-mode" ] && return 0
+    # Same test and threshold as auto-theme-mode.sh.
+    b="$(magick "$wall" -resize 64x64! -colorspace Gray -format '%[fx:mean]' info: 2>/dev/null)"
+    [ -n "$b" ] || return 0
+    if awk -v b="$b" 'BEGIN { exit !(b >= 0.6) }'; then want=light; folders=light
+    else want=dark; folders=accent; fi
+    "$HOME/.local/bin/make-papirus-zexos.py" >/dev/null 2>&1 || true
+    for size in "${XDG_DATA_HOME:-$HOME/.local/share}"/icons/Papirus-ZeXOS/*/; do
+        [ -L "${size}places" ] && ln -sfn "places-$folders" "${size}places"
+    done
+    [ "$(dms ipc call theme getMode 2>/dev/null)" = "$want" ] || dms ipc call theme "$want" >/dev/null
+    return 0
+}
 
-# 3. DMS saves the wallpaper first and writes the new colours a moment
-# later. systemd ignores changes that land while this script is still
-# running, so the colours would be missed: keep an eye on them for a few
-# seconds more, like staying on the phone until the second half of the news.
-for _ in 1 2 3 4 5 6; do
+sync_colors
+sync_wallpaper
+
+# 3. systemd ignores changes that land while this script is still running,
+# and DMS writes the new colours a moment after the wallpaper. So keep an
+# eye on both until nothing has changed for 6 seconds, like staying on the
+# phone until the other side has really finished talking. Without this, a
+# second wallpaper picked a few seconds after the first was missed (a white
+# one, then a dark one, left the desktop stuck in light mode).
+quiet=0
+while [ "$quiet" -lt 6 ]; do
     sleep 1
-    sync_colors
+    quiet=$((quiet + 1))
+    sync_wallpaper && quiet=0
+    sync_colors && quiet=0
 done

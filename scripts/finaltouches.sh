@@ -181,7 +181,15 @@ EOF
         fi
     fi
 
-    echo -e "${CYAN}Login background updates on every desktop wallpaper change${RESET}"
+    # The round avatar above the login box, in the wallpaper's colours.
+    # Pixie's avatar.jpg links here; the package puts the violet one here
+    # first, this only covers a folder that was set up before that.
+    if [ ! -f "$SDDM_WALLPAPER_DIR/avatar.jpg" ] && [ -f "$PIXIE_THEME_DIR/assets/avatars/violet.jpg" ]; then
+        cp "$PIXIE_THEME_DIR/assets/avatars/violet.jpg" "$SDDM_WALLPAPER_DIR/avatar.jpg" \
+            && echo -e "${GREEN}✔ Login avatar set${RESET}"
+    fi
+
+    echo -e "${CYAN}Login background and avatar update on every wallpaper change and shell switch${RESET}"
 fi
 
 # -----------------------------

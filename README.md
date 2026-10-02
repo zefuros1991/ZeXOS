@@ -17,7 +17,7 @@ What you get:
 - **Mango** and **Hyprland** as compositors you can pick at the login screen instead of niri, with the same keys (see [Three compositors](#three-compositors))
 - **DankMaterialShell** as a second shell you can switch to with `Mod+Shift+D` (see [Two desktop shells](#two-desktop-shells))
 - **roller**, a wallpaper picker (`Mod+W`)
-- **SDDM** with the Pixie theme; the login screen follows your current wallpaper and shows the ZeXOS logo as its round picture (`packaging/pixie-sddm-zexos/make-avatar.py` draws it)
+- **SDDM** with the Pixie theme; the login screen follows your current wallpaper and shows the ZeXOS logo as its round picture, in your wallpaper's colours; both change with every wallpaper change and shell switch (`packaging/pixie-sddm-zexos/make-avatar.py` draws the six avatars)
 - Everyday apps: **kitty** (terminal), **Dolphin** (files), **Gwenview** (images), **Neovim** (text), **VLC** (media)
 - No browser is chosen for you: keep the one you have. `Mod+B` opens whichever browser is set as your default. Only if the system has no browser at all (a bare Arch install) is Firefox added
 - Your shell stays yours: ZeXOS doesn't change it or add shell config, so bash, zsh or fish all work as before

@@ -352,6 +352,14 @@ switch() {
     running "$new" || curtain_down "$new"
     mkdir -p "$(dirname "$CHOICE_FILE")"
     echo "$new" > "$CHOICE_FILE"
+    # The login screen's wallpaper and avatar follow the new shell's
+    # wallpaper (the shells only update them when their wallpaper changes).
+    # In the background: it takes a second and the switch shouldn't wait.
+    local wall
+    wall="$(saved_wallpaper "$new")"
+    if [ -n "$wall" ]; then
+        setsid -f "$HOME/.local/bin/sync-sddm-wallpaper.sh" "$wall" >/dev/null 2>&1
+    fi
     for s in $SHELLS; do
         [ "$s" = "$new" ] || stop "$s"
     done

@@ -11,6 +11,12 @@ Planned as 1.1.0.
 
 ### Added
 
+- The login screen's round ZeXOS logo comes in the six wallpaper colours
+  (violet, ocean, ember, forest, mono, light) and follows your wallpaper:
+  a ZeXOS wallpaper picks by its name, any other picture by its colours.
+- Switching shells also updates the login screen's wallpaper and logo to
+  the new shell's wallpaper. Before, they only changed when you picked a
+  new wallpaper, so the login screen could show the other shell's.
 - Animated versions of 8 more wallpapers, 9 in all, covering every style
   and colour family: aurora (violet, ocean, mono), topo (energy, ember),
   mark (ember, light), bars and dots (forest). Each is a 12-second 4K loop

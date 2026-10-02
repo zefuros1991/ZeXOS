@@ -29,6 +29,15 @@ Planned as 1.1.0.
   DMS fills in ZeXOS's templates on every colour change
   (`zexos.toml.in`). Mango keeps DMS's one-colour border.
 
+- `zexos-motion`, to pick how the desktop moves, the same on niri,
+  Hyprland and Mango, under both shells: windows (rise, pop, balloon, fade,
+  rise-shrink), workspaces (spring, snappy, glide), panels (matched, off)
+  and the shell switch (logo, dip, none).
+- An animated shell switch (`~/.config/quickshell/zexos-curtain`): a fade
+  to a dark shade of the old wallpaper's colour with the new shell's logo,
+  a slow turn to the new wallpaper's shade, then a fade out to the new
+  shell. No grey or black gap, animated wallpapers included.
+
 - DankMaterialShell (DMS) as a second desktop shell, installed next to
   Noctalia (`dms-shell`, `dms-shell-niri`, `matugen`). Noctalia stays the
   default. See [Two desktop shells](README.md#two-desktop-shells).

@@ -12,7 +12,7 @@ Parts and their choices:
   windows     rise (default), pop, balloon, fade, rise-shrink
   workspaces  spring (default), snappy, glide
   panels      matched (default), off
-  switch      wipe (default), dip, logo, none
+  switch      logo (default), dip, none
 
 Picks are saved in ~/.config/zexos/motion. Each compositor loads its
 generated file after the ZeXOS defaults, so it wins:
@@ -57,7 +57,7 @@ WORKSPACES = {
     "glide":  (400, INOUT),
 }
 PANELS = ("matched", "off")
-SWITCH = ("wipe", "dip", "logo", "none")
+SWITCH = ("logo", "dip", "none")
 PARTS = {
     "windows": list(WINDOWS),
     "workspaces": list(WORKSPACES),

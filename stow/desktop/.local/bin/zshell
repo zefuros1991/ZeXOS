@@ -384,28 +384,61 @@ current_wallpaper() {
     [ -r "$w" ] && printf '%s\n' "$w"
 }
 
+# The wallpaper a shell will show when it starts, read from what it saved
+# last time (Noctalia: its video plugin or settings.toml, DMS: session.json).
+# A video gives its first frame. Empty if unknown.
+saved_wallpaper() {
+    local w=""
+    case "$1" in
+        noctalia)
+            # A video from the mpvpaper plugin wins over the picture.
+            w="$(sed -n 's/.*"assignments":{"[^"]*":"\([^"]*\)".*/\1/p' \
+                "${XDG_STATE_HOME:-$HOME/.local/state}/noctalia/mpvpaper/assignments.json" 2>/dev/null)"
+            [ -n "$w" ] || w="$(sed -n '/^\[wallpaper\.\(monitors\..*\|last\)\]/,/^path/ s/^path = "\(.*\)"$/\1/p' \
+                "${XDG_STATE_HOME:-$HOME/.local/state}/noctalia/settings.toml" 2>/dev/null | head -n1)" ;;
+        dms)
+            w="$(sed -n 's/.*"wallpaperPath": *"\([^"]*\)".*/\1/p' \
+                "${XDG_STATE_HOME:-$HOME/.local/state}/DankMaterialShell/session.json" 2>/dev/null | head -n1)" ;;
+    esac
+    if [ -n "$w" ] && is_video "$w"; then w="$(poster "$w")"; fi
+    [ -f "$w" ] && printf '%s\n' "$w"
+}
+
 # The curtain over a shell switch (~/.config/quickshell/zexos-curtain), in
-# the style picked with `zexos-motion set switch ...`: wipe (default), dip,
-# logo or none. Even with none it keeps the wallpaper on screen, so there is
-# no grey gap between the two shells.
+# the style picked with `zexos-motion set switch ...`: logo (default), dip or
+# none. It fades the screen to a dark shade of the old wallpaper's colour
+# with the new shell's logo, turns that into the new wallpaper's shade while
+# the shells swap, then fades out to the new shell.
 curtain_down() {
     command -v qs >/dev/null 2>&1 || return 0
     local style
     style="$(zexos-motion get switch 2>/dev/null)"
-    [ -n "$style" ] || style=wipe
+    [ -n "$style" ] || style=logo
     qs kill -c zexos-curtain >/dev/null 2>&1
     ZX_STYLE="$style" \
-    ZX_WALL="$(current_wallpaper)" \
+    ZX_OLD_WALL="$(current_wallpaper)" \
+    ZX_WALL="$(saved_wallpaper "$1" || current_wallpaper)" \
     ZX_BG="$(fuzzel_colour background)" \
-    ZX_ACCENT="$(fuzzel_colour border)" \
     ZX_ICON="$(logo "$1")" \
-    ZX_NAME="$(pretty "$1")" \
+    QT_QPA_PLATFORM=wayland \
         setsid -f qs -c zexos-curtain >/dev/null 2>&1
-    # Let it cover the screen before the old shell goes.
-    [ "$style" = none ] && sleep 0.15 || sleep 0.45
+    # (Always Wayland: with WAYLAND_DISPLAY unset, Qt would try X11 and the
+    # curtain would quit at once.)
+    # Don't stop the old shell until the curtain covers it (up to 3 s). If it
+    # never answers at all (it failed to start), don't hold the switch up.
+    local state silent=0
+    for _ in $(seq 60); do
+        state="$(qs ipc -c zexos-curtain call curtain state 2>/dev/null)"
+        [ "$state" = covered ] && break
+        if [ -z "$state" ]; then
+            silent=$((silent + 1)); [ "$silent" -ge 20 ] && break
+        fi
+        sleep 0.05
+    done
 }
 
 # Lift it once the new shell has had a moment to draw its bar and wallpaper.
+# The curtain itself waits until its colour change is done.
 curtain_up() {
     (
         for _ in $(seq 100); do running "$1" && break; sleep 0.1; done

@@ -108,6 +108,10 @@ ZeXOS installs two desktop shells (the top bar, launcher, notifications and lock
 
 Press `Mod+Shift+D`, or click the ⇄ button at the right end of the bar (it is in both shells), and pick one from the menu. The other shell closes and the new one starts right away. Your choice is saved in `~/.config/zexos/shell`, so it is still there after you log out or restart, and every user on the machine has their own.
 
+The switch itself is animated: the screen fades to a dark shade of the old wallpaper's main colour with the new shell's logo large in the middle, that colour slowly turns into the new wallpaper's shade while the shells swap behind it, and then it fades out to the new desktop. You never see a grey or black gap, even with an animated wallpaper. `zexos-motion set switch dip` keeps the colours but drops the logo, and `none` switches with no animation.
+
+How windows open and close, how workspaces move and how fast the shells' panels slide can be picked the same way, and look the same on all three compositors and in both shells: `zexos-motion` lists the choices.
+
 Both use the same keys, because the keybinds call a small helper, `zshell`, instead of a shell directly. `zshell` sends each action (launcher, lock, volume, wallpaper, ...) to whichever shell is running. `zshell --help` lists them, and `zshell switch dms` or `zshell switch noctalia` does the same as the menu from a terminal.
 
 The first time DMS starts it gets a ZeXOS look copied from `stow/dms/.local/share/zexos/dms/`: the same bar items as Noctalia, in the same order, grouped in three like Noctalia's islands: CPU use and updates on the left, DMS's Dank Island in the middle (workspaces, clock, music), and tray, quick settings, notifications, battery and the shell switcher on the right. Each side shares one background, set with DMS's own island settings (no patch). It also gets the same font sizes and the ZeXOS wallpaper. It's a copy, so changes you make in DMS's own settings are kept.

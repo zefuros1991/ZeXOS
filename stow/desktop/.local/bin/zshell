@@ -225,10 +225,34 @@ link_theme() {
     # GTK: gtk.css imports shell.css last, which loads DMS's colours or
     # nothing (Noctalia's come from noctalia.css). Older gtk.css files get
     # the import line added once.
+    # noctalia.css is still loaded under DMS and sets a few colours that
+    # dank-colors.css leaves alone, plus (GTK 4) the --color variables most
+    # widgets read. Without the lines below, GTK 4 apps like Shelly kept
+    # Noctalia's colours under DMS. They point those back at DMS's colours.
     for css in "$CONF_DIR/gtk-3.0" "$CONF_DIR/gtk-4.0"; do
         [ -d "$css" ] || continue
         if [ "$shell" = dms ]; then
-            echo '@import url("dank-colors.css");' > "$css/shell.css"
+            {
+                echo '@import url("dank-colors.css");'
+                echo '@define-color accent_color @accent_bg_color;'
+                echo '@define-color theme_selected_bg_color @accent_bg_color;'
+                echo '@define-color theme_selected_fg_color @accent_fg_color;'
+                echo '@define-color sidebar_border_color @window_bg_color;'
+                if [ "${css##*/}" = gtk-4.0 ]; then
+                    echo ':root {'
+                    local v
+                    for v in accent accent_bg accent_fg destructive_bg destructive_fg \
+                        error error_bg error_fg window_bg window_fg view_bg view_fg \
+                        headerbar_bg headerbar_fg popover_bg popover_fg card_bg card_fg \
+                        dialog_bg dialog_fg sidebar_bg sidebar_fg warning warning_bg \
+                        warning_fg success success_bg success_fg; do
+                        echo "    --${v//_/-}-color: @${v}_color;"
+                    done
+                    echo '    --overview-bg-color: @popover_bg_color;'
+                    echo '    --overview-fg-color: @popover_fg_color;'
+                    echo '}'
+                fi
+            } > "$css/shell.css"
         else
             echo '/* Written by zshell: Noctalia is the active shell (noctalia.css). */' > "$css/shell.css"
         fi
@@ -264,6 +288,13 @@ link_theme() {
         sed -i "s|^color_theme = .*|color_theme = \"$name\"|" "$(realpath "$bt")"
         pkill -USR2 -x btop 2>/dev/null || true
     fi
+
+    # Your own extras: every script in ~/.config/zexos/shell-switch.d is run
+    # with the shell's name (noctalia or dms), so more apps can follow it.
+    local hook
+    for hook in "$CONF_DIR/zexos/shell-switch.d"/*; do
+        [ -x "$hook" ] && "$hook" "$shell" || true
+    done
 }
 
 # DMS extras: the ZeXOS colour templates (fuzzel, btop) and the shell

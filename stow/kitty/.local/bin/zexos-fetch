@@ -1,0 +1,9 @@
+#!/bin/sh
+# fastfetch in the ZeXOS look: the logo and the details box in the
+# wallpaper's colours, sized to the window. Plain fastfetch if that fails.
+# exec keeps fastfetch's "Shell:" line naming your shell, not this script.
+cols=$(stty size </dev/tty 2>/dev/null | cut -d' ' -f2)
+if conf=$(zexos-term fetch ${cols:+"$cols"} 2>/dev/null) && [ -r "$conf" ]; then
+    exec fastfetch -c "$conf" "$@"
+fi
+exec fastfetch "$@"

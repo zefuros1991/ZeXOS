@@ -25,6 +25,8 @@ import hashlib
 import json
 import math
 import os
+import shutil
+import subprocess
 import sys
 
 CONFIG = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
@@ -315,6 +317,23 @@ def main():
     faint = in_gamut(0.30, min(chroma, 0.07), hue)
     write(os.path.join(CONFIG, "niri", f"zexos-border{suffix}.kdl"), niri(a, b, faint))
     write(os.path.join(CONFIG, "hypr", f"zexos-border{suffix}.lua"), hypr(a, b, faint))
+    refresh_terminal(wall, shell)
+
+
+def refresh_terminal(wall, shell):
+    """Recolour the kitty logo and prompt too (zexos-term, from the kitty
+    package). Told the wallpaper directly, because Noctalia calls us before
+    its own state file has the new one. In the background, never waited on."""
+    term = shutil.which("zexos-term") or os.path.expanduser("~/.local/bin/zexos-term")
+    if not os.access(term, os.X_OK):
+        return
+    env = dict(os.environ, ZEXOS_TERM_SHELL=shell, ZEXOS_TERM_WALLPAPER=wall or "")
+    try:
+        subprocess.Popen([term, "refresh"], env=env, stdin=subprocess.DEVNULL,
+                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+                         start_new_session=True)
+    except OSError:
+        pass
 
 
 if __name__ == "__main__":

@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# kitty starts this instead of your shell (see kitty.conf). It shows
-# fastfetch once, unless your shell already does that on its own (CachyOS's
-# fish does), then starts your normal shell. ZeXOS never edits your shell's
-# own files.
+# kitty starts this instead of your shell (see kitty.conf). It shows the
+# logo and details once, in the wallpaper's colours, unless your own shell
+# config already runs fastfetch, then starts your normal shell with the
+# ZeXOS prompt. ZeXOS never edits your shell's own files.
 #
-# Don't want fastfetch in kitty? Create ~/.config/zexos/no-fastfetch.
+# Don't want the logo in kitty? Create ~/.config/zexos/no-fastfetch.
+# Don't want the prompt? Create ~/.config/zexos/no-prompt.
 
 login_shell=$(getent passwd "$USER" | cut -d: -f7)
 [ -x "$login_shell" ] || login_shell=${SHELL:-/bin/bash}
@@ -26,38 +27,58 @@ shell_runs_fastfetch() {
             files=("$cfg/fish/config.fish" "$cfg/fish/conf.d/"*.fish
                    "$cfg/fish/functions/fish_greeting.fish"
                    /etc/fish/config.fish /etc/fish/conf.d/*.fish
-                   /usr/share/fish/vendor_conf.d/*.fish
-                   /usr/share/cachyos-fish-config/*.fish) ;;
+                   /usr/share/fish/vendor_conf.d/*.fish) ;;
+            # CachyOS's greeting (cachyos-fish-config) is left out on
+            # purpose: zexos-shell.fish swaps its fastfetch for ours.
         *)
             return 0 ;;
     esac
     grep -qsE '^[^#]*\bfastfetch\b' "${files[@]}"
 }
 
+fetch=no
 if command -v fastfetch >/dev/null 2>&1 \
     && [ ! -e "${XDG_CONFIG_HOME:-$HOME/.config}/zexos/no-fastfetch" ] \
     && ! shell_runs_fastfetch; then
+    fetch=yes
+fi
+command -v zexos-fetch >/dev/null 2>&1 && ff=zexos-fetch || ff=fastfetch
+
+# Your shell, plus the ZeXOS prompt and a logo redraw: when tiling resizes
+# the window, the logo is drawn again until your first command, so it does
+# not break up. Wallpaper changes use the same redraw to recolour it. All of
+# it is loaded with fish -C, bash --rcfile or a zsh ZDOTDIR, so your own
+# shell config is not touched.
+shell_cmd=("$login_shell")
+kitty_cfg=${XDG_CONFIG_HOME:-$HOME/.config}/kitty
+case "${login_shell##*/}" in
+    fish)
+        # fish draws it itself, from zexos-shell.fish, so a greeting that
+        # runs fastfetch (CachyOS's) can run ours instead.
+        if [ -r "$kitty_cfg/zexos-shell.fish" ]; then
+            [ $fetch = yes ] && export ZEXOS_TERM_FETCH=1 ZEXOS_TERM_REDRAW=1
+            fetch=no
+            shell_cmd=("$login_shell" -C "source ${kitty_cfg@Q}/zexos-shell.fish")
+        fi ;;
+    bash)
+        if [ -r "$kitty_cfg/zexos-shell.bash" ]; then
+            [ $fetch = yes ] && export ZEXOS_TERM_REDRAW=1
+            shell_cmd=("$login_shell" --rcfile "$kitty_cfg/zexos-shell.bash")
+        fi ;;
+    zsh)
+        if [ -r "$kitty_cfg/zexos-zsh/.zshenv" ]; then
+            [ $fetch = yes ] && export ZEXOS_TERM_REDRAW=1
+            # zexos-zsh/.zshenv puts your ZDOTDIR back straight away.
+            [ -n "${ZDOTDIR+X}" ] && export ZEXOS_ORIG_ZDOTDIR=$ZDOTDIR
+            export ZDOTDIR=$kitty_cfg/zexos-zsh
+        fi ;;
+esac
+
+if [ $fetch = yes ]; then
     # Started from your shell, so its "Shell:" line names your shell and not
     # this script. The "; :" stops the shell from handing itself over to
     # fastfetch, which would make this script its parent again.
-    "$login_shell" -c 'fastfetch; :'
-fi
-
-# fish and bash: draw fastfetch again when tiling resizes the window, until
-# the first command. Loaded with fish -C or bash --rcfile, so your own shell
-# config is not touched.
-shell_cmd=("$login_shell")
-kitty_cfg=${XDG_CONFIG_HOME:-$HOME/.config}/kitty
-if command -v fastfetch >/dev/null 2>&1 \
-    && [ ! -e "${XDG_CONFIG_HOME:-$HOME/.config}/zexos/no-fastfetch" ]; then
-    case "${login_shell##*/}" in
-        fish)
-            redraw=$kitty_cfg/fastfetch-redraw.fish
-            [ -r "$redraw" ] && shell_cmd=("$login_shell" -C "source ${redraw@Q}") ;;
-        bash)
-            redraw=$kitty_cfg/fastfetch-redraw.bash
-            [ -r "$redraw" ] && shell_cmd=("$login_shell" --rcfile "$redraw") ;;
-    esac
+    "$login_shell" -c "$ff; :"
 fi
 
 # kitten run-shell keeps kitty's shell integration working, which a plain

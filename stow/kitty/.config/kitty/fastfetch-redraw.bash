@@ -1,14 +1,11 @@
-# Loaded into bash by ~/.local/bin/zexos-kitty-shell (bash --rcfile), never
-# from your bash config. It does the same job as fastfetch-redraw.fish: until
+# Loaded into bash by ~/.config/kitty/zexos-shell.bash, never from your bash
+# config. It does the same job as fastfetch-redraw.fish: until
 # you run your first command, it draws fastfetch again whenever tiling
 # changes the window's size, so the logo doesn't break up.
 
-# --rcfile replaces ~/.bashrc, so load yours first.
-[ -r ~/.bashrc ] && . ~/.bashrc
-
 __zexos_ff_redraw() {
     printf '\e[H\e[2J\e[3J'   # clear the screen and scrollback
-    fastfetch
+    zexos-fetch
     printf '%s' "${PS1@P}"    # put the prompt back
 }
 

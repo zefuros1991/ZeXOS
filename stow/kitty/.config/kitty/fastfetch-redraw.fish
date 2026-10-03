@@ -1,4 +1,4 @@
-# Loaded into fish by ~/.local/bin/zexos-kitty-shell (fish -C), never from
+# Loaded into fish by ~/.config/kitty/zexos-shell.fish, never from
 # your fish config. fastfetch draws its logo and info side by side once, at
 # the window's width. When tiling later makes the window smaller, kitty
 # re-wraps those lines and the logo breaks up. So until you run your first
@@ -8,7 +8,7 @@ function __zexos_ff_redraw --on-signal WINCH
     # Only while the command line is still empty.
     test -z "$(commandline)"; or return
     printf '\e[H\e[2J\e[3J'   # clear the screen and scrollback
-    fastfetch
+    zexos-fetch
     commandline -f repaint
 end
 

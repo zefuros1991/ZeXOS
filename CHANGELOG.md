@@ -31,6 +31,15 @@ New work is tested on the `beta` branch first and is listed under
   menu) and a graphical one (Calamares on niri, with compositor and shell
   pickers that show animated previews, and a slideshow while installing).
   See [iso/README.md](iso/README.md).
+- Systems installed from a ZeXOS ISO are called ZeXOS (`ID=zexos`,
+  `ID_LIKE=arch`), kept after updates by a pacman hook. Script installs keep
+  their distro's name.
+- A terminal look in kitty, in the wallpaper's colours: the system info in a
+  box under your distro's logo (the ZeXOS Z on ISO installs) and a two-line
+  prompt with folder, git branch, status and time, for bash, zsh and fish.
+  Both change with the wallpaper and shell. Your own prompt (starship,
+  oh-my-posh, powerlevel10k, oh-my-zsh themes, a custom fish prompt) is left
+  alone; `~/.config/zexos/no-prompt` turns ours off.
 
 ## [1.2.0] - 2026-10-03
 

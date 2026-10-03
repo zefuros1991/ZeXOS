@@ -1,0 +1,40 @@
+#!/bin/sh
+# Names this system ZeXOS. Only systems installed from a ZeXOS ISO get this;
+# ZeXOS installed on top of CachyOS, Arch and the rest keeps their name.
+#
+# It is the same trick CachyOS and EndeavourOS use: /etc/os-release
+# (which belongs to no package) is read before Arch's /usr/lib/os-release,
+# and a pacman hook runs this again after updates, in case one brought back
+# Arch's name. ID_LIKE=arch tells every tool and script to treat this as
+# Arch, so packages and the ZeXOS installer keep working as on Arch.
+#
+# /etc/issue (the text console greeting) already shows PRETTY_NAME, so it
+# needs nothing.
+set -eu
+
+tmp=/etc/.os-release.zexos
+cat > "$tmp" <<'OSR'
+NAME="ZeXOS"
+PRETTY_NAME="ZeXOS"
+ID=zexos
+ID_LIKE=arch
+BUILD_ID=rolling
+ANSI_COLOR="38;2;23;147;209"
+HOME_URL="https://github.com/zefuros1991/ZeXOS"
+DOCUMENTATION_URL="https://github.com/zefuros1991/ZeXOS#readme"
+SUPPORT_URL="https://github.com/zefuros1991/ZeXOS/issues"
+BUG_REPORT_URL="https://github.com/zefuros1991/ZeXOS/issues"
+LOGO=archlinux-logo
+OSR
+chmod 644 "$tmp"
+# os-release may be a link to /usr/lib/os-release; replace the link, never
+# write through it into Arch's file.
+mv -f "$tmp" /etc/os-release
+
+# lsb-release, only when the lsb-release package put it there.
+if [ -f /etc/lsb-release ]; then
+    sed -i \
+        -e 's/^DISTRIB_ID=.*/DISTRIB_ID="ZeXOS"/' \
+        -e 's/^DISTRIB_DESCRIPTION=.*/DISTRIB_DESCRIPTION="ZeXOS"/' \
+        /etc/lsb-release
+fi

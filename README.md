@@ -20,7 +20,8 @@ What you get:
 - **SDDM** with the Pixie theme; the login screen follows your current wallpaper and shows the ZeXOS logo as its round picture, in your wallpaper's colours; both change with every wallpaper change and shell switch (`packaging/pixie-sddm-zexos/make-avatar.py` draws the six avatars)
 - Everyday apps: **kitty** (terminal), **Dolphin** (files), **Gwenview** (images), **Neovim** (text), **VLC** (media)
 - No browser is chosen for you: keep the one you have. `Mod+B` opens whichever browser is set as your default. Only if the system has no browser at all (a bare Arch install) is Firefox added
-- Your shell stays yours: ZeXOS doesn't change it or add shell config, so bash, zsh or fish all work as before
+- Your shell stays yours: ZeXOS doesn't change it or your shell config, so bash, zsh or fish all work as before
+- **A terminal in your wallpaper's colours**: kitty opens with the system info (your distro's own logo, or the ZeXOS Z on a system installed from a ZeXOS ISO) in a box, and a two-line prompt with the folder, git branch and time. Both fade between two of the wallpaper's colours and change with it. This only happens in kitty and only adds to your shell config, never edits it: a prompt you set up yourself (starship, oh-my-posh, powerlevel10k, an oh-my-zsh theme, your own fish prompt) is left alone. To turn the prompt off, create `~/.config/zexos/no-prompt`; for no system info, `~/.config/zexos/no-fastfetch`
 
 ## Screenshots
 
@@ -94,6 +95,12 @@ is left out.
 To install Arch and ZeXOS together on an empty PC, there is a text and a
 graphical installer ISO. They are still being tested; how to build them is
 in [iso/README.md](iso/README.md).
+
+A system installed from an ISO is called **ZeXOS** (`/etc/os-release`).
+Under the hood it is plain Arch and says so (`ID_LIKE=arch`), so Arch
+packages, guides and the ZeXOS installer treat it as Arch. Installing ZeXOS
+with the script on a system you already have keeps that system's name and
+logo.
 
 ## What the installer does
 

@@ -11,6 +11,11 @@ Planned as 1.1.0.
 
 ### Added
 
+- A fast install. The installer asks whether to download ZeXOS's own apps
+  ready-made (AUR first if you have yay or paru, then ZeXOS's GitHub
+  release, checksum-checked) or to build them on your computer as before.
+  `ZEXOS_PACKAGES=prebuilt|source` skips the question. Maintainers make the
+  packages with `scripts/make-prebuilt.sh`.
 - The login screen's round ZeXOS logo comes in the six wallpaper colours
   (violet, ocean, ember, forest, mono, light) and follows your wallpaper:
   a ZeXOS wallpaper picks by its name, any other picture by its colours.

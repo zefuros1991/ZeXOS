@@ -1,0 +1,9 @@
+# Written by scripts/make-prebuilt.sh -- don't edit by hand.
+# Files: https://github.com/zefuros1991/ZeXOS/releases/tag/prebuilt
+# name version file sha256 [built against Qt]
+noctalia-zexos 5.1.0-2 noctalia-zexos-5.1.0-2-x86_64.pkg.tar.zst 2ed25e2fd6e84922dffb9b155722d0446469b62c0d12aa2e86e8771ad9d76931
+pixie-sddm-zexos 3.0-3 pixie-sddm-zexos-3.0-3-any.pkg.tar.zst 4fd743f716fc4de279dd5e9d58e13755125467d00c4bfadfc7852d015c3237ce
+bibata-cursor-zexos 2.0.7-1 bibata-cursor-zexos-2.0.7-1-any.pkg.tar.zst 2873ac7216c440c732d91d070189a61722b24337a362e17d6d11177e1e0c0dbf
+qt6ct-kde 0.11-11 qt6ct-kde-0.11-11-x86_64.pkg.tar.zst 6459d427291c0f1824b3e555d1e91742cb5637d25f759b3ca85e01a5c49c2ede qt=6.11.2-3
+roller 0.1.0.r4.g184debe-3 roller-0.1.0.r4.g184debe-3-x86_64.pkg.tar.zst 83eda16d56903144769a01bdb2bec4ccb70d8d6615a96c2b1fab3b2ddc2bafdd
+mpvpaper 1.9-1 mpvpaper-1.9-1-x86_64.pkg.tar.zst 49856fbc9cb68d8871e21c104756e89a76e788737804c084076d19b39ce69dbd

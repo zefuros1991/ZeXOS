@@ -71,6 +71,19 @@ cd ~/.dotfiles
 
 Run it as your normal user, not root. You need an account that can use `sudo` and a network connection. The installer adds `git` if it's missing, and the bootstrap step installs everything else, including `stow`.
 
+### Fast install or build it yourself
+
+A few ZeXOS apps aren't in the Arch or CachyOS repos: the patched Noctalia, the Pixie login theme, the Bibata pointer, roller, qt6ct-kde and (outside CachyOS) mpvpaper. Right after the password, the installer asks how to get them:
+
+| Choice | What happens | Time |
+|---|---|---|
+| **1. Ready-made** (default) | Downloads finished packages. It tries the AUR first (`<name>-bin`, only if you have `yay` or `paru`), then the [`prebuilt` release](https://github.com/zefuros1991/ZeXOS/releases/tag/prebuilt) on GitHub. Each download must match the checksum in `packaging/prebuilt.list`. | about a minute |
+| **2. Build here** | Builds each one on your computer from the recipes in `packaging/`. | several minutes (Noctalia is the slow one) |
+
+Both give you the same packages. If a ready-made one can't be used (no download, wrong checksum, or `qt6ct-kde` was made for a different Qt than yours), that one is built here instead. To skip the question, put `ZEXOS_PACKAGES=prebuilt` or `ZEXOS_PACKAGES=source` in front of the install command. Your answer becomes the default next time.
+
+The ready-made packages are built in a clean Arch Linux container by `scripts/make-prebuilt.sh`, the same way Arch builds its own ([clean chroot builds](https://wiki.archlinux.org/title/DeveloperWiki:Building_in_a_clean_chroot)).
+
 ## What the installer does
 
 `install.sh` first checks which distro you're on (and stops if it's one ZeXOS can't support), then runs four scripts from `scripts/`, in order:

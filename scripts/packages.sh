@@ -116,6 +116,65 @@ zexos_build_dir() {
     mktemp -d -p "$ZEXOS_BUILD_ROOT"
 }
 
+# Ready-made packages (ZEXOS_PACKAGES=prebuilt, picked in install.sh).
+# install_prebuilt <name> [<package it replaces>] tries, in order:
+#   1. the AUR package <name>-bin, if you have yay or paru and it's there
+#   2. the file on ZeXOS's GitHub release "prebuilt", checked against the
+#      checksum in packaging/prebuilt.list
+# and returns 1 if neither worked, so the caller builds it here instead.
+# The list is made by scripts/make-prebuilt.sh.
+ZEXOS_PACKAGES="${ZEXOS_PACKAGES:-source}"
+# --noconfirm answers "no" when a package wants to replace another, so the
+# old one is removed by hand, only once the new one is in hand.
+drop_replaced() {
+    [ -n "$1" ] && [ "$(pacman -Qq "$1" 2>/dev/null)" = "$1" ] || return 0
+    sudo pacman -Rdd --noconfirm "$1"
+}
+PREBUILT_LIST="$REPO_ROOT/packaging/prebuilt.list"
+PREBUILT_URL="https://github.com/zefuros1991/ZeXOS/releases/download/prebuilt"
+
+install_prebuilt() {
+    local pkg=$1 old=${2:-} want name ver file sum extra helper dl
+    [ "$ZEXOS_PACKAGES" = prebuilt ] || return 1
+    want="$(. "$REPO_ROOT/packaging/$pkg/PKGBUILD"; echo "$pkgver-$pkgrel")"
+    read -r name ver file sum extra < <(grep "^$pkg " "$PREBUILT_LIST" 2>/dev/null) || true
+    if [ "$ver" != "$want" ]; then
+        echo -e "${CYAN}  No ready-made $pkg $want yet, building it here${RESET}"
+        return 1
+    fi
+    # qt6ct-kde only works with the Qt it was built against.
+    if [ "${extra#qt=}" != "$extra" ]; then
+        local qt; qt="$(pacman -Q qt6-base 2>/dev/null | awk '{print $2}')"
+        if [ "$qt" != "${extra#qt=}" ]; then
+            echo -e "${CYAN}  Ready-made $pkg is for Qt ${extra#qt=}, you have Qt $qt -- building it here${RESET}"
+            return 1
+        fi
+    fi
+
+    for helper in yay paru; do
+        command -v "$helper" >/dev/null || continue
+        if "$helper" -Si --aur "$pkg-bin" &>/dev/null && drop_replaced "$old" &&
+           "$helper" -S --needed --noconfirm "$pkg-bin"; then
+            echo -e "${GREEN}✔ $pkg $want installed (ready-made, from the AUR)${RESET}"
+            return 0
+        fi
+        break
+    done
+
+    dl="$(zexos_build_dir)"
+    if curl -fsSL --retry 3 -o "$dl/$file" "$PREBUILT_URL/$file" &&
+       echo "$sum  $dl/$file" | sha256sum -c --quiet - &&
+       drop_replaced "$old" &&
+       sudo pacman -U --noconfirm --needed "$dl/$file"; then
+        rm -rf "$dl"
+        echo -e "${GREEN}✔ $pkg $want installed (ready-made, from GitHub)${RESET}"
+        return 0
+    fi
+    rm -rf "$dl"
+    echo -e "${YELLOW}⚠ Couldn't get the ready-made $pkg, building it here instead${RESET}"
+    return 1
+}
+
 # -----------------------------
 # 0.5 SYSTEM UPGRADE
 # -----------------------------
@@ -296,6 +355,8 @@ echo -e "\n${YELLOW}[CUSTOM] Roller${RESET}"
 ROLLER_WANT="$(. "$REPO_ROOT/packaging/roller/PKGBUILD"; echo "$pkgver-$pkgrel")"
 if [ "$(pacman -Q roller 2>/dev/null | awk '{print $2}')" = "$ROLLER_WANT" ]; then
     echo -e "${GREEN}✔ roller $ROLLER_WANT already installed${RESET}"
+elif install_prebuilt roller; then
+    :
 else
     roller_build="$(zexos_build_dir)"
     cp "$REPO_ROOT"/packaging/roller/* "$roller_build/"
@@ -319,6 +380,8 @@ echo -e "\n${YELLOW}[CUSTOM] Noctalia (ZeXOS patch)${RESET}"
 NOCTALIA_WANT="$(. "$REPO_ROOT/packaging/noctalia-zexos/PKGBUILD"; echo "$pkgver-$pkgrel")"
 if [ "$(pacman -Q noctalia-zexos 2>/dev/null | awk '{print $2}')" = "$NOCTALIA_WANT" ]; then
     echo -e "${GREEN}✔ noctalia-zexos $NOCTALIA_WANT already installed${RESET}"
+elif install_prebuilt noctalia-zexos noctalia; then
+    :
 else
     noctalia_build="$(zexos_build_dir)"
     cp "$REPO_ROOT"/packaging/noctalia-zexos/* "$noctalia_build/"
@@ -383,12 +446,15 @@ HYPR_PACMAN=(
 install_pacman "Hyprland" "${HYPR_PACMAN[@]}"
 
 # =========================================================
-# 2. PACKAGES BUILT HERE (no AUR)
+# 2. ZEXOS'S OWN PACKAGES
 # =========================================================
-# A few things aren't in the CachyOS/Arch repos. Instead of using the AUR,
-# each has a small recipe in packaging/ that downloads it straight from its
-# author and checks it against a fixed checksum. makepkg turns it into a
-# normal package, so pacman can update or remove it like any other.
+# A few things aren't in the CachyOS/Arch repos. Each has a small recipe in
+# packaging/ that downloads it straight from its author and checks it
+# against a fixed checksum. makepkg turns it into a normal package, so
+# pacman can update or remove it like any other.
+# With the fast install (ZEXOS_PACKAGES=prebuilt) the same packages come
+# ready-made instead (install_prebuilt above); if that fails, they're built
+# here as before.
 
 install_local() {
     local label=$1 dir=$2
@@ -402,6 +468,7 @@ install_local() {
         echo -e "${GREEN}✔ $pkg $want already installed${RESET}"
         return 0
     fi
+    install_prebuilt "$dir" && return 0
 
     local build
     build="$(zexos_build_dir)"

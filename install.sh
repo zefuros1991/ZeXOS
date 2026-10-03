@@ -215,6 +215,45 @@ fi
 
 # -----------------------------
 
+# How to get ZeXOS's own apps
+
+# -----------------------------
+
+# A few apps aren't in the Arch/CachyOS repos (the patched Noctalia, the
+# login theme, the wallpaper picker, ...). They come one of two ways:
+#   prebuilt  ready-made packages: from the AUR if you have yay or paru and
+#             they're there, otherwise from ZeXOS's GitHub release. Fast.
+#   source    built on this computer from the recipes in packaging/.
+#             Slower (Noctalia alone takes a few minutes), nothing downloaded
+#             ready-made.
+# Skip the question with ZEXOS_PACKAGES=prebuilt or ZEXOS_PACKAGES=source.
+# The answer is remembered as the default for the next run.
+method_file="${XDG_STATE_HOME:-$HOME/.local/state}/zexos/packages-method"
+if [ -z "${ZEXOS_PACKAGES:-}" ]; then
+    last="$(cat "$method_file" 2>/dev/null || echo prebuilt)"
+    if [ -t 0 ]; then
+        def=1; [ "$last" = source ] && def=2
+        echo -e "\n${BOLD}How should ZeXOS get its own apps?${RESET}"
+        echo -e "  ${CYAN}1${RESET}) Ready-made packages (fast)"
+        echo -e "  ${CYAN}2${RESET}) Build them on this computer (slower)"
+        read -r -p "Choose 1 or 2 [$def]: " answer
+        case "${answer:-$def}" in
+            2) ZEXOS_PACKAGES=source ;;
+            *) ZEXOS_PACKAGES=prebuilt ;;
+        esac
+    else
+        ZEXOS_PACKAGES="$last"
+    fi
+fi
+case "$ZEXOS_PACKAGES" in
+    prebuilt|source) ;;
+    *) echo "ZEXOS_PACKAGES must be prebuilt or source, not '$ZEXOS_PACKAGES'." >&2; exit 1 ;;
+esac
+mkdir -p "${method_file%/*}" && echo "$ZEXOS_PACKAGES" > "$method_file"
+export ZEXOS_PACKAGES
+
+# -----------------------------
+
 # Logging
 
 # -----------------------------

@@ -71,16 +71,20 @@ current() {
 # to reload.
 link_colors() {
     local file="$NIRI_DIR/shell-colors.kdl"
+    # The gradient border in the wallpaper's colours. Each shell repaints it
+    # on every wallpaper change; paint it now too, so it is there from the
+    # first login and right after a switch.
+    "$HOME/.local/bin/zexos-border" "$1" >/dev/null 2>&1 || true
     if [ -d "$NIRI_DIR" ]; then
         if [ "$1" = dms ]; then
             printf '%s\n' '// Written by zshell: DankMaterialShell is the active shell,' \
-                '// plus the gradient border it writes from our template.' \
+                '// plus the gradient border from zexos-border.' \
                 'include optional=true "./dms/colors.kdl"' \
                 'include optional=true "./zexos-border-dms.kdl"' > "$file"
         else
             printf '%s\n' '// Written by zshell: Noctalia is the active shell,' \
                 '// its colours come from noctalia.kdl, plus the gradient' \
-                '// border Noctalia writes from our template.' \
+                '// border from zexos-border.' \
                 'include optional=true "./zexos-border.kdl"' > "$file"
         fi
     fi
@@ -99,13 +103,13 @@ link_colors() {
     if [ -d "$HYPR_DIR" ]; then
         if [ "$1" = dms ]; then
             printf '%s\n' '-- Written by zshell: DankMaterialShell is the active shell,' \
-                '-- plus the gradient border it writes from our template.' \
+                '-- plus the gradient border from zexos-border.' \
                 'pcall(require, "dms.colors")' \
                 'pcall(require, "zexos-border-dms")' > "$file"
         else
             printf '%s\n' '-- Written by zshell: Noctalia is the active shell,' \
                 '-- its colours come from noctalia.lua, plus the gradient' \
-                '-- border Noctalia writes from our template.' \
+                '-- border from zexos-border.' \
                 'pcall(require, "zexos-border")' > "$file"
         fi
         if [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
@@ -357,12 +361,42 @@ start() {
     for v in NIRI_SOCKET MANGO_INSTANCE_SIGNATURE HYPRLAND_INSTANCE_SIGNATURE; do
         [ -z "$(printenv "$v")" ] && unset "$v"
     done
+    drop_stale
     case "$shell" in
         noctalia) link_noctalia; exec noctalia ;;
         dms)      seed_dms; setup_dms; exec dms run ;;
     esac
     echo "zshell: no desktop shell installed" >&2
     exit 1
+}
+
+# A shell left over from an earlier session. Noctalia v5 can freeze while
+# quitting (see stop below), so after you log out of one compositor its
+# Noctalia may still be there. The next compositor gets the same display
+# name (wayland-1), the new Noctalia says "already running" and quits, and
+# you get a black screen. Shells started in this session carry this
+# compositor's variables; force-quit any that don't.
+drop_stale() {
+    local v ours="" pid env killed=""
+    for v in NIRI_SOCKET MANGO_INSTANCE_SIGNATURE HYPRLAND_INSTANCE_SIGNATURE; do
+        [ -n "$(printenv "$v")" ] && ours="$ours $v=$(printenv "$v")"
+    done
+    [ -n "$ours" ] || return 0
+    for pid in $(pgrep -u "$(id -u)" -x 'noctalia|dms|qs'); do
+        env="$(tr '\0' '\n' < "/proc/$pid/environ" 2>/dev/null)" || continue
+        for v in $ours; do
+            printf '%s\n' "$env" | grep -qxF "$v" && continue
+            kill -KILL "$pid" 2>/dev/null && killed="$killed $pid"
+            break
+        done
+    done
+    [ -n "$killed" ] || return 0
+    # Wait (up to 2 s) until they are gone, so their lock is free.
+    for _ in $(seq 20); do
+        for pid in $killed; do kill -0 "$pid" 2>/dev/null && break; pid=""; done
+        [ -z "${pid:-}" ] && return 0
+        sleep 0.1
+    done
 }
 
 running() {

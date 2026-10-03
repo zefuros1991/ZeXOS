@@ -209,6 +209,13 @@ stow -n -v -d stow -t "$HOME" <package> # dry run: show what would change
 
 Some files in `theme` (and `kdeglobals` in `desktop`) are rewritten live by Noctalia whenever the wallpaper changes. That's expected.
 
+## Changes and plans
+
+- [CHANGELOG.md](CHANGELOG.md): what changed in each version, and how the
+  version numbers work
+- [ROADMAP.md](ROADMAP.md): what's planned next, including NixOS support and
+  a ZeXOS installer ISO
+
 ## License
 
 [MIT](LICENSE) covers ZeXOS's own files. [CREDITS.md](CREDITS.md) lists the projects ZeXOS is built on, and the few files here that contain their code (those keep their own licenses).

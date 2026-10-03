@@ -12,7 +12,15 @@ for more):
 - **x.0.0** — a big change to what ZeXOS is; updating may need a reinstall or
   manual steps
 
-## Latest: 1.1.0 (released 2026-10-03)
+## Latest: 1.2.0 (released 2026-10-03)
+
+- One pacman run for the whole install, falling back to one package at a
+  time if it fails
+- ZeXOS's own package repo: its few packages install and update with the
+  rest of the system
+- Anything that has to be built now builds while the rest installs
+
+### 1.1.0 (released 2026-10-03)
 
 - Two desktop shells, Noctalia and DankMaterialShell, with a menu to switch
   (`Mod+Shift+D`)
@@ -30,10 +38,11 @@ New features that work on top of an existing install:
 - **More animation polish**, on all three compositors and both shells
 - **`zexos update`**: one command that updates ZeXOS and safely moves your
   config over when a new version changes how things are set up
-- **A ZeXOS package repository**: ZeXOS's own packages served as a normal
-  pacman repository, so they update with the rest of the system. Planned
-  with signed packages, public build logs, and automatic checks that
-  building the packages yourself gives the same result
+- **Signed ZeXOS package repo**: the repo from 1.2.0, with signed
+  packages, public build logs, and automatic checks that building the
+  packages yourself gives the same result
+- **An installer ISO**: a USB image that installs Arch and ZeXOS together,
+  first an online one (downloads during the install), later an offline one
 - **Closing known gaps** listed in the changelog where the shells or
   compositors allow it (for example a USB drive widget for DMS)
 - **More distros tested**: more Arch-based distros checked and added to the

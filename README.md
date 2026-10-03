@@ -67,10 +67,12 @@ A few ZeXOS apps aren't in the Arch or CachyOS repos: the patched Noctalia, the 
 
 | Choice | What happens | Time |
 |---|---|---|
-| **1. Ready-made** (default) | Downloads finished packages. It tries the AUR first (`<name>-bin`, only if you have `yay` or `paru`), then the [`prebuilt` release](https://github.com/zefuros1991/ZeXOS/releases/tag/prebuilt) on GitHub. Each download must match the checksum in `packaging/prebuilt.list`. | about a minute |
-| **2. Build here** | Builds each one on your computer from the recipes in `packaging/`. | several minutes (Noctalia is the slow one) |
+| **1. Ready-made** (default) | Adds ZeXOS's own package repo (the [`prebuilt` release](https://github.com/zefuros1991/ZeXOS/releases/tag/prebuilt) on GitHub, checked against the checksum in `packaging/prebuilt.list`) to `/etc/pacman.conf`, so they install with everything else in one pacman run, and `pacman -Syu` keeps them updated. If the repo can't be reached or fails its check, each package is fetched on its own: the AUR first (`<name>-bin`, only if you have `yay` or `paru`), then the GitHub release, each checksum-checked. | about 2½ minutes for the whole install on a fresh Arch |
+| **2. Build here** | Builds each one on your computer from the recipes in `packaging/`. | several minutes more (Noctalia is the slow one); the builds run while pacman installs the rest |
 
 Both give you the same packages. If a ready-made one can't be used (no download, wrong checksum, or `qt6ct-kde` was made for a different Qt than yours), that one is built here instead. To skip the question, put `ZEXOS_PACKAGES=prebuilt` or `ZEXOS_PACKAGES=source` in front of the install command. Your answer becomes the default next time.
+
+Either way, the installer first makes a list of every package it needs, then installs them all in one pacman run instead of one run per package. If that run fails, it installs them one at a time, so the log still names the package that caused it. At the end it shows a short result for each part (✔ or ✖).
 
 The ready-made packages are built in a clean Arch Linux container by `scripts/make-prebuilt.sh`, the same way Arch builds its own ([clean chroot builds](https://wiki.archlinux.org/title/DeveloperWiki:Building_in_a_clean_chroot)).
 

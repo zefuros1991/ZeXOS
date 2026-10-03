@@ -12,7 +12,10 @@
 # needs nothing.
 set -eu
 
-tmp=/etc/.os-release.zexos
+# An optional root folder, so the ISO build can name its live system too.
+root="${1:-}"
+
+tmp="$root/etc/.os-release.zexos"
 cat > "$tmp" <<'OSR'
 NAME="ZeXOS"
 PRETTY_NAME="ZeXOS"
@@ -29,12 +32,12 @@ OSR
 chmod 644 "$tmp"
 # os-release may be a link to /usr/lib/os-release; replace the link, never
 # write through it into Arch's file.
-mv -f "$tmp" /etc/os-release
+mv -f "$tmp" "$root/etc/os-release"
 
 # lsb-release, only when the lsb-release package put it there.
-if [ -f /etc/lsb-release ]; then
+if [ -f "$root/etc/lsb-release" ]; then
     sed -i \
         -e 's/^DISTRIB_ID=.*/DISTRIB_ID="ZeXOS"/' \
         -e 's/^DISTRIB_DESCRIPTION=.*/DISTRIB_DESCRIPTION="ZeXOS"/' \
-        /etc/lsb-release
+        "$root/etc/lsb-release"
 fi

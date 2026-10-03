@@ -50,6 +50,10 @@ done
 
 echo "ZEXOS_BRANCH=$BRANCH" > "$profile/airootfs/etc/zexos-iso.conf"
 
+# The live system is called ZeXOS too, not Arch. /etc/os-release belongs to
+# no package, so packages installed later in the build leave it alone.
+sh "$here/common/airootfs/usr/local/share/zexos/branding/zexos-branding" "$profile/airootfs"
+
 # Name it ZeXOS instead of Arch Linux: file name, volume label, boot menu.
 sed -i \
     -e "s|^iso_name=.*|iso_name=\"zexos-$variant\"|" \

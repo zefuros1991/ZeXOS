@@ -28,7 +28,16 @@ not exist without them. Thank you.
 
 The installer downloads all of these from their official sources: the
 CachyOS/Arch repos, or the project's own GitHub for the few that aren't in
-the repos (checked against a fixed checksum). ZeXOS does not use the AUR.
+the repos (checked against a fixed checksum).
+
+ZeXOS's own few packages (the patched Noctalia, the Pixie login theme, the
+Bibata pointer, roller, qt6ct-kde and, outside CachyOS, mpvpaper) can come
+two ways, and the installer asks which: built on your computer from the
+recipes in `packaging/`, or downloaded ready-made. Ready-made means the
+AUR's `-bin` package if you already have `yay` or `paru` (the AUR is
+user-made, so ZeXOS never installs an AUR helper for you), otherwise
+ZeXOS's own `prebuilt` GitHub release; every download must match the
+checksum in `packaging/prebuilt.list`.
 None of their code is copied into this repo, and each one keeps its own
 license.
 

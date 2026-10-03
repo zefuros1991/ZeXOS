@@ -178,13 +178,26 @@ fi
 # Ensure target exists
 mkdir -p "$TARGET"
 
+# Clones the repo without docs/screenshots/: those are the README's preview
+# clips (tens of MB) and the desktop never uses them. --filter=blob:none
+# only downloads files as they are checked out, and the sparse checkout
+# leaves that one folder out, so the clips are never downloaded. See
+# https://git-scm.com/docs/partial-clone and
+# https://git-scm.com/docs/git-sparse-checkout. A server without partial
+# clone support just sends everything, which still works.
+clone_zexos() {
+    git clone -q --filter=blob:none --no-checkout -b "$BRANCH" "$REPO" "$1" &&
+        git -C "$1" sparse-checkout set --no-cone '/*' '!/docs/screenshots/' &&
+        git -C "$1" checkout -q "$BRANCH"
+}
+
 # If dotfiles repo already exists, do nothing
 if [ -d "$TARGET/.git" ]; then
     echo -e "${GREEN}✔ Repo already exists in ~/.dotfiles${RESET}"
 else
     tmpclone=$(mktemp -d)
 
-    git clone -b "$BRANCH" "$REPO" "$tmpclone/ZeXOS" &
+    clone_zexos "$tmpclone/ZeXOS" &
     repo_clone_pid=$!
     spinner "$repo_clone_pid" "Cloning ZeXOS"
 

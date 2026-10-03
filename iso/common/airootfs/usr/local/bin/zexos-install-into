@@ -11,7 +11,7 @@
 # It runs the normal ZeXOS install.sh inside the new system as <user>, the
 # same way you would after logging in. install.sh needs sudo without a
 # prompt here, so a temporary sudoers file allows that, and is always
-# removed again afterwards.
+# removed again afterwards. Before that it names the system ZeXOS.
 set -euo pipefail
 
 ROOT="${1:?usage: zexos-install-into <root> <user>}"
@@ -41,6 +41,13 @@ trap cleanup EXIT
 # The new system needs git and curl to fetch ZeXOS, and sudo for the
 # installer itself (a minimal install can leave them out).
 arch-chroot "$ROOT" pacman -S --needed --noconfirm git curl sudo
+
+# Name the new system ZeXOS (it says ID_LIKE=arch, so everything still
+# treats it as Arch), and keep that name after updates.
+brand=/usr/local/share/zexos/branding
+install -Dm755 "$brand/zexos-branding" "$ROOT/usr/local/bin/zexos-branding"
+install -Dm644 "$brand/zexos-branding.hook" "$ROOT/etc/pacman.d/hooks/zexos-branding.hook"
+arch-chroot "$ROOT" /usr/local/bin/zexos-branding
 
 # NOPASSWD alone is not enough: "sudo -v" still asks unless every rule
 # that matches the user skips authentication, and %wheel ALL does not.

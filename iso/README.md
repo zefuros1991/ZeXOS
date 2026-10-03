@@ -72,9 +72,28 @@ system gets a plain Arch `pacman.conf` (everything above the
    writes fstab, locale, users, hostname and services, sets up systemd-boot,
    then runs `zexos-install-into` with the picked compositors and shells.
    That is the same `install.sh` you would run by hand.
-3. Log of the ZeXOS part: `/var/log/zexos-install.log` in the new system.
+3. Names the new system ZeXOS (see below).
+4. Log of the ZeXOS part: `/var/log/zexos-install.log` in the new system.
 
 Bootloader: systemd-boot only for now (UEFI). GRUB and Limine are planned.
+
+## The ZeXOS name
+
+Only systems installed from these ISOs are called ZeXOS. It works the way
+CachyOS and EndeavourOS do it:
+
+- `zexos-branding` writes `/etc/os-release` with `NAME="ZeXOS"`, `ID=zexos`
+  and `ID_LIKE=arch`. That file belongs to no package, and it is read before
+  Arch's `/usr/lib/os-release`, so Arch's file is never touched.
+- `ID_LIKE=arch` keeps everything treating the system as Arch, including
+  ZeXOS's own `install.sh` (`scripts/lib-distro.sh`).
+- A pacman hook, `/etc/pacman.d/hooks/zexos-branding.hook`, runs it again
+  after `filesystem` or `lsb-release` updates. It also renames
+  `/etc/lsb-release` when that package is installed.
+- The console greeting (`/etc/issue`) already shows the name from
+  os-release, so it needs nothing.
+
+The source is in `common/airootfs/usr/local/share/zexos/branding/`.
 
 ## Picker previews
 

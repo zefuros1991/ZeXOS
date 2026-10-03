@@ -1,0 +1,12 @@
+# Keeps the name ZeXOS after updates (see /usr/local/bin/zexos-branding).
+[Trigger]
+Type = Package
+Operation = Install
+Operation = Upgrade
+Target = filesystem
+Target = lsb-release
+
+[Action]
+Description = Keeping the ZeXOS name...
+When = PostTransaction
+Exec = /usr/local/bin/zexos-branding

@@ -62,7 +62,8 @@ zexos_detect_distro() {
             cachyos)
                 ZEXOS_DISTRO=cachyos
                 ;;
-            arch|endeavouros)
+            arch|endeavouros|zexos)
+                # zexos: installed from a ZeXOS ISO, which is plain Arch.
                 ZEXOS_DISTRO=arch
                 ;;
             *)

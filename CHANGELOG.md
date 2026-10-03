@@ -21,6 +21,10 @@ New work is tested on the `beta` branch first and is listed under
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-10-03
+
+A faster, simpler install: one pacman run and ZeXOS's own package repo.
+
 ### Changed
 
 - Faster install: all packages now go in with one pacman run instead of
@@ -257,6 +261,7 @@ First release: niri, patched Noctalia v5, roller, SDDM with Pixie, colours
 from the wallpaper, and one installer for CachyOS, Arch Linux, EndeavourOS
 and other Arch-based distros (any desktop already installed).
 
-[Unreleased]: https://github.com/zefuros1991/ZeXOS/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/zefuros1991/ZeXOS/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/zefuros1991/ZeXOS/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/zefuros1991/ZeXOS/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/zefuros1991/ZeXOS/releases/tag/v1.0.0

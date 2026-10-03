@@ -136,18 +136,6 @@ wallpaper_scheme = "faithful"
 builtin_ids = ["gtk3", "gtk4", "qt", "kcolorscheme", "niri", "mango", "hyprland", "kitty", "btop"]
 community_ids = ["fuzzel"]
 
-# Window borders on niri and Hyprland: a gradient in the wallpaper colours
-# round the focused window (our own templates, used only while Noctalia is
-# the shell). Mango can only draw one colour, so it keeps Noctalia's own.
-# The input path must be a full path: Noctalia doesn't look next to this file.
-[theme.templates.user.zexos_niri_border]
-input_path  = "$XDG_CONFIG_HOME/noctalia/templates/niri-border.kdl"
-output_path = "$XDG_CONFIG_HOME/niri/zexos-border.kdl"
-
-[theme.templates.user.zexos_hypr_border]
-input_path  = "$XDG_CONFIG_HOME/noctalia/templates/hypr-border.lua"
-output_path = "$XDG_CONFIG_HOME/hypr/zexos-border.lua"
-
 # ═══ Pop-up size ════════════════════════════════════════════════════════════
 # ui_scale makes every panel and its text bigger (1.2 = 20% bigger).
 # launcher_scale makes only the app launcher bigger again, on top of that:
@@ -223,10 +211,13 @@ transition = ["fade", "disc", "stripes", "wipe", "pixelate", "honeycomb"]   # on
 [wallpaper.default]
 path = "~/Pictures/Wallpapers/zexos-aurora.jpg"
 
-# Every time the wallpaper changes, copy it to the login screen too, and
-# switch to light mode if the new wallpaper is mostly white (dark otherwise).
+# Every time the wallpaper changes, copy it to the login screen too, switch
+# to light mode if the new wallpaper is mostly white (dark otherwise), and
+# repaint the window borders on niri and Hyprland in two colours picked from
+# the wallpaper (zexos-border). Mango can only draw one colour, so it keeps
+# Noctalia's own.
 [hooks]
-wallpaper_changed = ["~/.local/bin/sync-sddm-wallpaper.sh", "~/.local/bin/auto-theme-mode.sh"]
+wallpaper_changed = ["~/.local/bin/sync-sddm-wallpaper.sh", "~/.local/bin/auto-theme-mode.sh", "~/.local/bin/zexos-border"]
 # New colours are written: tell open Qt apps (Dolphin) to reload them.
 colors_changed = ["~/.local/bin/zexos-qt-refresh"]
 

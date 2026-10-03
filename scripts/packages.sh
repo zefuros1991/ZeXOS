@@ -237,6 +237,8 @@ CORE_PACMAN=(
     ttf-jetbrains-mono-nerd
     # The shell names in the Mod+Shift+D menu.
     ttf-nunito
+    # zexos-border reads the wallpaper's colours with it.
+    python-pillow
 )
 
 install_pacman "Desktop Core" "${CORE_PACMAN[@]}"

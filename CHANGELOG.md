@@ -22,6 +22,8 @@ Planned as 1.1.0.
   slideshow: arrow keys move between clips, Esc or a click outside goes
   back. The README now shows one animated preview that links to it,
   instead of a grid of still screenshots.
+  The installer leaves these clips out (a partial, sparse git clone), so
+  installing doesn't download them: about 40 MB less.
 - The login screen's round ZeXOS logo comes in the six wallpaper colours
   (violet, ocean, ember, forest, mono, light) and follows your wallpaper:
   a ZeXOS wallpaper picks by its name, any other picture by its colours.

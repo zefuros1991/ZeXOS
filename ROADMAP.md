@@ -12,9 +12,7 @@ for more):
 - **x.0.0** — a big change to what ZeXOS is; updating may need a reinstall or
   manual steps
 
-## Now: 1.1.0 (being tested)
-
-On the `beta` branch, waiting for a final test on a fresh install:
+## Latest: 1.1.0 (released 2026-10-03)
 
 - Two desktop shells, Noctalia and DankMaterialShell, with a menu to switch
   (`Mod+Shift+D`)
@@ -22,6 +20,8 @@ On the `beta` branch, waiting for a final test on a fresh install:
 - Animated shell switch, `zexos-motion` and animated wallpapers
 - A fast install with ready-made packages, or build everything yourself
 - The gallery page with clips of every combination
+
+Full details are in the [changelog](CHANGELOG.md).
 
 ## Next: 1.x
 

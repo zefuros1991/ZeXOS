@@ -21,7 +21,11 @@ New work is tested on the `beta` branch first and is listed under
 
 ## [Unreleased]
 
-Planned as 1.1.0.
+Nothing yet.
+
+## [1.1.0] - 2026-10-03
+
+Two desktop shells, three compositors, a fast install and the gallery page.
 
 ### Added
 
@@ -242,5 +246,6 @@ First release: niri, patched Noctalia v5, roller, SDDM with Pixie, colours
 from the wallpaper, and one installer for CachyOS, Arch Linux, EndeavourOS
 and other Arch-based distros (any desktop already installed).
 
-[Unreleased]: https://github.com/zefuros1991/ZeXOS/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/zefuros1991/ZeXOS/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/zefuros1991/ZeXOS/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/zefuros1991/ZeXOS/releases/tag/v1.0.0

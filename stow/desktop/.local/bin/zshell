@@ -203,6 +203,21 @@ EOF
     if [ ! -e "$session" ]; then
         sed "s|@HOME@|$HOME|g" "$DMS_SEED/session.json" > "$session"
     fi
+    # DMS pops up "mango: config reloaded" each time it reloads Mango, which
+    # it does by itself when it starts. Turn that pop-up off once (DMS
+    # setting "Show config reload toast"); if you turn it back on, it stays on.
+    memo="${XDG_STATE_HOME:-$HOME/.local/state}/zexos/dms-reload-toast"
+    if [ ! -e "$memo" ] && [ -e "$session" ]; then
+        python3 - "$session" <<'EOF' && mkdir -p "${memo%/*}" && touch "$memo"
+import json, sys
+path = sys.argv[1]
+with open(path) as f:
+    data = json.load(f)
+data["showConfigReloadToast"] = False
+with open(path, "w") as f:
+    json.dump(data, f, indent=2)
+EOF
+    fi
 }
 
 # Everything else that takes the wallpaper colours: Qt and KDE apps
@@ -486,14 +501,43 @@ curtain_down() {
     done
 }
 
-# Lift it once the new shell has had a moment to draw its bar and wallpaper.
-# The curtain itself waits until its colour change is done.
+# Lift it once the new shell has drawn its bar. The shell's process starts
+# seconds before its bar does (DMS most of all), and until the bar is there
+# windows use the full height, then jump when it arrives. So wait for the
+# bar itself, asking the compositor for its layer surfaces (give up after
+# 10 s), then give the windows a moment to settle. The curtain itself waits
+# until its colour change is done.
 curtain_up() {
     (
         for _ in $(seq 100); do running "$1" && break; sleep 0.1; done
-        sleep 1.2
+        if bar_shown "$1" probe; then
+            for _ in $(seq 50); do bar_shown "$1" && break; sleep 0.2; done
+            sleep 0.8
+        else
+            sleep 1.2
+        fi
         qs ipc -c zexos-curtain call curtain lift
     ) >/dev/null 2>&1 &
+}
+
+# Is the shell's bar on screen? Its layer surface names: DMS "dms:bar" or
+# "dms:dankisland" (the island bar), Noctalia "noctalia-bar-<name>".
+# With "probe", only says whether the compositor can be asked at all.
+bar_shown() {
+    local layers
+    if [ -n "${NIRI_SOCKET:-}" ]; then
+        layers="$(niri msg -j layers 2>/dev/null)"
+    elif [ -n "${MANGO_INSTANCE_SIGNATURE:-}" ]; then
+        layers="$(mmsg get all-layers 2>/dev/null)"
+    elif [ -n "${HYPRLAND_INSTANCE_SIGNATURE:-}" ]; then
+        layers="$(hyprctl layers -j 2>/dev/null)"
+    fi
+    [ -n "$layers" ] || return 1
+    [ "${2:-}" = probe ] && return 0
+    case "$1" in
+        dms)      printf %s "$layers" | grep -qE '"dms:(bar|dankisland)"' ;;
+        noctalia) printf %s "$layers" | grep -q '"noctalia-bar' ;;
+    esac
 }
 
 # Each shell's official logo, as an icon name (hicolor theme).

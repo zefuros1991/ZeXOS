@@ -2,8 +2,22 @@
 
 All notable changes to ZeXOS are listed here.
 
-The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
-and version numbers follow [Semantic Versioning](https://semver.org/).
+The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
+Plans for later versions are in the [roadmap](ROADMAP.md).
+
+## Version numbers
+
+ZeXOS versions have three numbers, like `1.2.3`, following
+[Semantic Versioning](https://semver.org/):
+
+| Part | Example | Changes when | Updating |
+|---|---|---|---|
+| Last (patch) | 1.0.**1** | bugs are fixed, nothing new | always safe |
+| Middle (minor) | 1.**1**.0 | new features are added | normal update, your setup is kept |
+| First (major) | **2**.0.0 | ZeXOS changes in a big way | may need manual steps or a reinstall; the notes will say how |
+
+New work is tested on the `beta` branch first and is listed under
+"Unreleased" until it reaches `main` with a version number.
 
 ## [Unreleased]
 

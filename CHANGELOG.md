@@ -27,8 +27,9 @@ New work is tested on the `beta` branch first and is listed under
   `ZEXOS_SHELLS` (noctalia, dms) choose any mix; the default is all of
   them. The pick is remembered for later updates. With one shell, the
   shell switcher is left out.
-- Installer ISOs (beta), in `iso/`: a text one (archinstall plus a ZeXOS
-  menu) and a graphical one (Calamares on niri, with compositor and shell
+- Installer ISOs (beta), in `iso/`: a text one (a few plain questions,
+  one screen to check them, then it installs everything by itself, with
+  optional disk encryption) and a graphical one (Calamares on niri, with compositor and shell
   pickers that show animated previews, and a slideshow while installing).
   See [iso/README.md](iso/README.md).
 - Systems installed from a ZeXOS ISO are called ZeXOS (`ID=zexos`,
@@ -40,6 +41,11 @@ New work is tested on the `beta` branch first and is listed under
   Both change with the wallpaper and shell. Your own prompt (starship,
   oh-my-posh, powerlevel10k, oh-my-zsh themes, a custom fish prompt) is left
   alone; `~/.config/zexos/no-prompt` turns ours off.
+
+### Fixed
+
+- With Noctalia as the only shell, the bar lost its left and middle
+  islands (only the right one showed).
 
 ## [1.2.0] - 2026-10-03
 

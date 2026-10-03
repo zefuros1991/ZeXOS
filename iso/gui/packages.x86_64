@@ -1,0 +1,17 @@
+# Added to the Arch live ISO package list (releng) for the GUI installer.
+# The live desktop: niri with a wallpaper, and Calamares on top.
+niri
+xwayland-satellite
+swaybg
+kitty
+zexos-calamares
+qt6-wayland
+qt6ct
+qt6-imageformats
+breeze-icons
+noto-fonts
+noto-fonts-emoji
+ttf-jetbrains-mono-nerd
+mesa
+vulkan-swrast
+git

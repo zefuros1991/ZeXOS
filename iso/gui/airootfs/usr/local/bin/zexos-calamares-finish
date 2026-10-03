@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Calamares step: installs the ZeXOS desktop into the new system.
+#   zexos-calamares-finish <root> <user> "<compositors>" "<shells>"
+# The last two are the ticked boxes from the picker pages, space separated.
+set -euo pipefail
+ROOT="${1:?}" USERNAME="${2:?}"
+
+# Keep only names we know; nothing valid left means install them all.
+only_known() {
+    local known="$1" out="" w
+    for w in $2; do
+        case " $known " in *" $w "*) out="${out:+$out }$w" ;; esac
+    done
+    echo "${out:-$known}"
+}
+ZEXOS_COMPOSITORS="$(only_known "niri hyprland mango" "${3:-}")"
+ZEXOS_SHELLS="$(only_known "noctalia dms" "${4:-}")"
+export ZEXOS_COMPOSITORS ZEXOS_SHELLS
+echo "Compositors: $ZEXOS_COMPOSITORS / shells: $ZEXOS_SHELLS"
+exec /usr/local/bin/zexos-install-into "$ROOT" "$USERNAME"

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Starts the ZeXOS installer (Calamares) on the live desktop.
+# Its log goes to /root/.cache/calamares/session.log.
+pgrep -x calamares >/dev/null && exit 0
+export QT_QPA_PLATFORM=wayland QT_QPA_PLATFORMTHEME=qt6ct
+exec calamares -d

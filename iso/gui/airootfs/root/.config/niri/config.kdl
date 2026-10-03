@@ -1,0 +1,64 @@
+// Live desktop of the ZeXOS installer ISO: niri, a wallpaper, and the
+// installer. Super+Enter opens a terminal (iwctl there for Wi-Fi),
+// Super+I reopens the installer.
+
+input {
+    keyboard {
+        xkb {
+            layout "us"
+        }
+    }
+    touchpad {
+        tap
+        natural-scroll
+    }
+}
+
+layout {
+    gaps 12
+    center-focused-column "on-overflow"
+    always-center-single-column
+    default-column-width { proportion 0.5; }
+    focus-ring {
+        off
+    }
+    border {
+        width 2
+        active-gradient from="#7C5CFF" to="#3DDC97" angle=135
+        inactive-color "#2a2a38"
+    }
+}
+
+prefer-no-csd
+hotkey-overlay {
+    skip-at-startup
+}
+screenshot-path "/root/Screenshot %Y-%m-%d %H-%M-%S.png"
+
+environment {
+    QT_QPA_PLATFORMTHEME "qt6ct"
+}
+
+spawn-at-startup "swaybg" "-m" "fill" "-i" "/usr/share/zexos/wallpaper.jpg"
+spawn-at-startup "zexos-gui-installer"
+
+window-rule {
+    match app-id="calamares"
+    open-maximized true
+}
+window-rule {
+    geometry-corner-radius 10
+    clip-to-geometry true
+}
+
+binds {
+    Mod+Return { spawn "kitty"; }
+    Mod+I { spawn "zexos-gui-installer"; }
+    Mod+Q { close-window; }
+    Mod+Left { focus-column-left; }
+    Mod+Right { focus-column-right; }
+    Mod+F { maximize-column; }
+    Mod+Shift+F { fullscreen-window; }
+    Print { screenshot; }
+    Mod+Shift+E { quit; }
+}

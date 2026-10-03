@@ -256,6 +256,42 @@ export ZEXOS_PACKAGES
 
 # -----------------------------
 
+# Which compositors and shells
+
+# -----------------------------
+
+# All of them unless you say otherwise, for example
+#   ZEXOS_COMPOSITORS="niri hyprland" ZEXOS_SHELLS=noctalia bash install.sh
+# Compositors: niri, hyprland, mango. Shells: noctalia, dms. The graphical
+# installer ISO sets these from its pick screens. Like the question above,
+# the answer is remembered, so running install.sh again to update keeps
+# your pick instead of adding the others back.
+zexos_pick() {   # <name> <allowed...>: checks and saves $<name>, or the saved one
+    local var=$1 file="${method_file%/*}/${1,,}" want word ok out=""
+    shift
+    want="${!var:-$(cat "$file" 2>/dev/null || echo "$*")}"
+    for word in ${want//,/ }; do
+        ok=0
+        for a in "$@"; do [ "$word" = "$a" ] && ok=1; done
+        if [ "$ok" = 0 ]; then
+            echo "$var: '$word' is not one of: $*" >&2
+            exit 1
+        fi
+        case " $out " in *" $word "*) ;; *) out+="${out:+ }$word" ;; esac
+    done
+    if [ -z "$out" ]; then
+        echo "$var needs at least one of: $*" >&2
+        exit 1
+    fi
+    echo "$out" > "$file"
+    export "$var=$out"
+}
+zexos_pick ZEXOS_COMPOSITORS niri hyprland mango
+zexos_pick ZEXOS_SHELLS noctalia dms
+echo -e "${VIOLET}Compositors: ${ZEXOS_COMPOSITORS}   Shells: ${ZEXOS_SHELLS}${RESET}"
+
+# -----------------------------
+
 # Logging
 
 # -----------------------------

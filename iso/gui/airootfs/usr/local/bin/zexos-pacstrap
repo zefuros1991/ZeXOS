@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Calamares step: puts plain Arch Linux on the new disk, mounted at $1.
+# Uses only the official Arch repos (the live ISO's extra repos are cut out
+# of /etc/zexos/pacman-arch.conf when the ISO is built).
+set -euo pipefail
+ROOT="${1:?usage: zexos-pacstrap <root>}"
+
+ucode=()
+grep -q GenuineIntel /proc/cpuinfo && ucode=(intel-ucode)
+grep -q AuthenticAMD /proc/cpuinfo && ucode=(amd-ucode)
+
+# Arch's live ISO fills the keyring at boot; wait until that is done.
+systemctl is-active -q pacman-init.service || systemctl start pacman-init.service || true
+
+pacstrap -C /etc/zexos/pacman-arch.conf -K "$ROOT" \
+    base base-devel linux linux-headers linux-firmware "${ucode[@]}" \
+    networkmanager sudo git curl nano man-db \
+    btrfs-progs dosfstools e2fsprogs xfsprogs efibootmgr

@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# Puts ZeXOS on a freshly installed Arch system that is still mounted
+# (at /mnt after archinstall, or wherever Calamares mounted it), before its
+# first boot. Both installer ISOs end with this.
+#
+#   zexos-install-into <root> <user>
+#
+# ZEXOS_COMPOSITORS and ZEXOS_SHELLS (space separated, e.g. "niri mango"
+# and "noctalia") pick what gets installed; unset means everything.
+#
+# It runs the normal ZeXOS install.sh inside the new system as <user>, the
+# same way you would after logging in. install.sh needs sudo without a
+# prompt here, so a temporary sudoers file allows that, and is always
+# removed again afterwards.
+set -euo pipefail
+
+ROOT="${1:?usage: zexos-install-into <root> <user>}"
+USERNAME="${2:?usage: zexos-install-into <root> <user>}"
+
+# The branch the ISO was built for (main unless it is a test ISO).
+ZEXOS_BRANCH=main
+[ -f /etc/zexos-iso.conf ] && . /etc/zexos-iso.conf
+
+if [ ! -f "$ROOT/etc/os-release" ]; then
+    echo "No installed system found at $ROOT. Is it mounted?" >&2
+    exit 1
+fi
+home="$(awk -F: -v u="$USERNAME" '$1 == u { print $6 }' "$ROOT/etc/passwd")"
+if [ -z "$home" ]; then
+    echo "There is no user called $USERNAME in the new system." >&2
+    exit 1
+fi
+
+log="$ROOT/var/log/zexos-install.log"
+exec > >(tee -a "$log") 2>&1
+
+dropin="$ROOT/etc/sudoers.d/99-zexos-installer"
+cleanup() { rm -f "$dropin"; }
+trap cleanup EXIT
+
+# The new system needs git and curl to fetch ZeXOS, and sudo for the
+# installer itself (a minimal install can leave them out).
+arch-chroot "$ROOT" pacman -S --needed --noconfirm git curl sudo
+
+# NOPASSWD alone is not enough: "sudo -v" still asks unless every rule
+# that matches the user skips authentication, and %wheel ALL does not.
+mkdir -p "$ROOT/etc/sudoers.d"
+printf '%s ALL=(ALL:ALL) NOPASSWD: ALL\nDefaults:%s !authenticate\n' "$USERNAME" "$USERNAME" > "$dropin"
+chmod 440 "$dropin"
+
+url="https://raw.githubusercontent.com/zefuros1991/ZeXOS/$ZEXOS_BRANCH/install.sh"
+arch-chroot "$ROOT" runuser -u "$USERNAME" -- env -i \
+    HOME="$home" USER="$USERNAME" LOGNAME="$USERNAME" SHELL=/bin/bash \
+    PATH=/usr/local/sbin:/usr/local/bin:/usr/bin \
+    TERM="${TERM:-linux}" LANG="${LANG:-C.UTF-8}" \
+    ZEXOS_PACKAGES=prebuilt ZEXOS_BRANCH="$ZEXOS_BRANCH" \
+    ZEXOS_COMPOSITORS="${ZEXOS_COMPOSITORS:-}" ZEXOS_SHELLS="${ZEXOS_SHELLS:-}" \
+    bash -c 'cd "$HOME" && curl -fsSL "$0" -o /tmp/zexos-install.sh && bash /tmp/zexos-install.sh; rc=$?; rm -f /tmp/zexos-install.sh; exit $rc' "$url"
+
+echo "ZeXOS is installed for $USERNAME. Log: /var/log/zexos-install.log"

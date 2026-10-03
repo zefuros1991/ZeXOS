@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+# The ZeXOS text installer: the menu on the first screen of the TUI ISO.
+# Installing is two steps: archinstall sets up plain Arch (disk, user,
+# bootloader) with ZeXOS defaults filled in, then zexos-install-into puts
+# ZeXOS on it before the first boot.
+
+TITLE="ZeXOS installer"
+PRESET=/etc/zexos/archinstall.json
+ROOT=/mnt
+
+msg() { whiptail --title "$TITLE" --msgbox "$1" 0 0; }
+
+online() { curl -fsI --max-time 8 https://github.com >/dev/null 2>&1; }
+
+wifi() {
+    clear
+    echo "Wi-Fi setup (iwctl). Type for example:"
+    echo "  device list"
+    echo "  station wlan0 scan"
+    echo "  station wlan0 get-networks"
+    echo "  station wlan0 connect <network name>"
+    echo "Then type: exit"
+    echo
+    iwctl
+}
+
+install_zexos() {
+    until online; do
+        whiptail --title "$TITLE" --yesno "No internet connection. This installer downloads everything, so it needs one.\n\nSet up Wi-Fi now?" 0 0 || return
+        wifi
+    done
+
+    msg "Step 1 of 2: archinstall\n\nArch's own installer opens next, with the ZeXOS settings already picked (minimal profile, NetworkManager, PipeWire, systemd-boot).\n\nYou still choose:\n  - Disk configuration\n  - User account (make it a superuser)\n  - Root password, timezone, locale\n\nThen pick Install. When it asks to chroot into the new system, answer No."
+
+    clear
+    archinstall --config "$PRESET" || true
+
+    if [ ! -f "$ROOT/etc/os-release" ]; then
+        msg "No installed system is mounted at $ROOT, so archinstall did not finish. Nothing was changed. You can start again from the menu."
+        return
+    fi
+
+    mapfile -t users < <(awk -F: '$3 >= 1000 && $3 < 60000 { print $1 }' "$ROOT/etc/passwd")
+    case ${#users[@]} in
+        0) msg "The new system has no normal user. Run the install again and add a user (as a superuser)."; return ;;
+        1) user=${users[0]} ;;
+        *)
+            items=()
+            for u in "${users[@]}"; do items+=("$u" ""); done
+            user=$(whiptail --title "$TITLE" --menu "Which user gets ZeXOS?" 0 0 0 "${items[@]}" 3>&1 1>&2 2>&3) || return
+            ;;
+    esac
+
+    # Tick any mix; everything is ticked to start with.
+    while :; do
+        comps=$(whiptail --title "$TITLE" --separate-output --checklist "Which compositors? (space ticks, Enter confirms)" 0 0 0 \
+            niri     "Scrolling tiling" ON \
+            hyprland "Dynamic tiling, lots of eye candy" ON \
+            mango    "dwl-style tags, light and fast" ON 3>&1 1>&2 2>&3) || return
+        [ -n "$comps" ] && break
+        msg "Pick at least one compositor."
+    done
+    while :; do
+        shells=$(whiptail --title "$TITLE" --separate-output --checklist "Which desktop shells? (with both, a button on the bar switches between them)" 0 0 0 \
+            noctalia "Noctalia" ON \
+            dms      "DankMaterialShell" ON 3>&1 1>&2 2>&3) || return
+        [ -n "$shells" ] && break
+        msg "Pick at least one shell."
+    done
+    export ZEXOS_COMPOSITORS="${comps//$'\n'/ }" ZEXOS_SHELLS="${shells//$'\n'/ }"
+
+    clear
+    echo "Step 2 of 2: installing ZeXOS for $user. This takes a few minutes."
+    echo
+    if zexos-install-into "$ROOT" "$user"; then
+        if whiptail --title "$TITLE" --yesno "ZeXOS is installed.\n\nReboot now? (Take the USB stick or ISO out when the screen goes dark.)" 0 0; then
+            umount -R "$ROOT" 2>/dev/null
+            systemctl reboot
+        fi
+    else
+        msg "The ZeXOS step failed. The log is at $ROOT/var/log/zexos-install.log.\n\nThe Arch system itself is installed; you can open a shell from the menu and look, or try again."
+    fi
+}
+
+while true; do
+    choice=$(whiptail --title "$TITLE" --nocancel --menu "Welcome to ZeXOS. What would you like to do?" 0 0 0 \
+        install "Install ZeXOS" \
+        wifi    "Connect to Wi-Fi" \
+        shell   "Open a shell (type exit to come back)" \
+        reboot  "Reboot" \
+        off     "Power off" 3>&1 1>&2 2>&3)
+    case $choice in
+        install) install_zexos ;;
+        wifi) wifi ;;
+        shell) clear; echo "Type exit to return to the ZeXOS menu."; zsh ;;
+        reboot) systemctl reboot ;;
+        off) systemctl poweroff ;;
+    esac
+done

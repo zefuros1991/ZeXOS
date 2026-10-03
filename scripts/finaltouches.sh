@@ -115,6 +115,14 @@ else
 fi
 if systemctl --user daemon-reload && systemctl --user enable --now zexos-dms-sync.path >/dev/null 2>&1; then
     echo -e "${GREEN}✔ DankMaterialShell colour watcher on (zexos-dms-sync.path)${RESET}"
+elif [ ! -S "${XDG_RUNTIME_DIR:-/nonexistent}/bus" ]; then
+    # No user session running (the installer ISO runs this inside the new
+    # system before its first boot), so systemctl can't reach it. Make the
+    # same link "enable" would; it starts at your first login.
+    wants="$HOME/.config/systemd/user/default.target.wants"
+    mkdir -p "$wants"
+    ln -sf ../zexos-dms-sync.path "$wants/zexos-dms-sync.path"
+    echo -e "${GREEN}✔ DankMaterialShell colour watcher starts at first login${RESET}"
 else
     echo -e "${RED}✖ Could not turn on zexos-dms-sync.path${RESET}"
 fi

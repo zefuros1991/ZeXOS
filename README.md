@@ -76,6 +76,25 @@ Either way, the installer first makes a list of every package it needs, then ins
 
 The ready-made packages are built in a clean Arch Linux container by `scripts/make-prebuilt.sh`, the same way Arch builds its own ([clean chroot builds](https://wiki.archlinux.org/title/DeveloperWiki:Building_in_a_clean_chroot)).
 
+### Pick what to install
+
+By default you get all three compositors and both shells. To install only
+some, name them before running the installer:
+
+```bash
+ZEXOS_COMPOSITORS="niri mango" ZEXOS_SHELLS=noctalia bash install.sh
+```
+
+Compositors: `niri`, `hyprland`, `mango`. Shells: `noctalia`, `dms`. Your
+pick is remembered, so updates keep it. With one shell, the shell switcher
+is left out.
+
+### Installer ISOs (beta)
+
+To install Arch and ZeXOS together on an empty PC, there is a text and a
+graphical installer ISO. They are still being tested; how to build them is
+in [iso/README.md](iso/README.md).
+
 ## What the installer does
 
 `install.sh` first checks which distro you're on (and stops if it's one ZeXOS can't support), then runs four scripts from `scripts/`, in order:

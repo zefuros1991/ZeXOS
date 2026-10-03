@@ -21,6 +21,17 @@ New work is tested on the `beta` branch first and is listed under
 
 ## [Unreleased]
 
+### Added
+
+- Pick what to install: `ZEXOS_COMPOSITORS` (niri, hyprland, mango) and
+  `ZEXOS_SHELLS` (noctalia, dms) choose any mix; the default is all of
+  them. The pick is remembered for later updates. With one shell, the
+  shell switcher is left out.
+- Installer ISOs (beta), in `iso/`: a text one (archinstall plus a ZeXOS
+  menu) and a graphical one (Calamares on niri, with compositor and shell
+  pickers that show animated previews, and a slideshow while installing).
+  See [iso/README.md](iso/README.md).
+
 ## [1.2.0] - 2026-10-03
 
 A faster, simpler install: one pacman run and ZeXOS's own package repo.

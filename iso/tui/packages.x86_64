@@ -1,0 +1,3 @@
+# Added to the Arch live ISO package list (releng) for the TUI installer.
+libnewt
+git

@@ -1,0 +1,32 @@
+/* ZeXOS: dark, rounded, violet accent. Colours match docs/index.html. */
+QWidget { font: 13px "Noto Sans"; }
+#mainApp, #mainApp QWidget#page_partition, QStackedWidget { background: #0f0f14; }
+QLabel { color: #e6e6ef; }
+QPushButton {
+    background: #1a1a24; color: #e6e6ef;
+    border: 1px solid #2a2a38; border-radius: 8px; padding: 7px 18px;
+}
+QPushButton:hover { border-color: #a78bfa; }
+QPushButton:default, QPushButton#view-button-next {
+    background: #7C5CFF; border-color: #7C5CFF; color: #ffffff;
+}
+QPushButton:disabled { color: #5a5a6e; background: #15151d; border-color: #20202a; }
+QLineEdit, QComboBox, QSpinBox, QListView, QTreeView, QTableView {
+    background: #1a1a24; color: #e6e6ef; selection-background-color: #7C5CFF;
+    border: 1px solid #2a2a38; border-radius: 6px; padding: 5px;
+}
+QLineEdit:focus, QComboBox:focus { border-color: #a78bfa; }
+QRadioButton, QCheckBox { color: #e6e6ef; spacing: 8px; }
+QProgressBar {
+    background: #1a1a24; border: none; border-radius: 4px; height: 8px; color: transparent;
+}
+QProgressBar::chunk {
+    border-radius: 4px;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0, stop:0 #7C5CFF, stop:0.5 #B45CE6, stop:1 #3DDC97);
+}
+QScrollBar:vertical { background: transparent; width: 10px; }
+QScrollBar::handle:vertical { background: #2a2a38; border-radius: 5px; min-height: 30px; }
+QScrollBar::add-line, QScrollBar::sub-line { height: 0; }
+QDialogButtonBox { dialogbuttonbox-buttons-have-icons: 0; }
+#debugButton { background: none; border: none; color: #5a5a6e; font: 9px; padding: 0; }
+#aboutButton { background: none; border: none; font: 14px; }

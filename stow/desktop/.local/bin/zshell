@@ -170,6 +170,17 @@ link_noctalia() {
     else
         echo '# Written by zshell: nothing extra for this compositor.' > "$dir/zexos-compositor.toml"
     fi
+    # Only one shell installed: nothing to switch to, so take the switch
+    # button off the bar. Noctalia merges every .toml here, and bar groups
+    # with the same id replace each other.
+    if installed dms; then
+        rm -f "$dir/zexos-single-shell.toml"
+    else
+        local members
+        members="$(sed -n '/^id = "right"/{n;p;q}' "$dir/noctalia.toml" | sed 's/, *"shell_switch"//')"
+        [ -n "$members" ] && printf '%s\n' '# Written by zshell: DMS is not installed.' '' \
+            '[[bar.default.capsule_group]]' 'id = "right"' "$members" > "$dir/zexos-single-shell.toml"
+    fi
 }
 
 # First DMS start: give it the ZeXOS look (a copy, so DMS can save your own
@@ -329,6 +340,11 @@ setup_dms() {
     fi
     if [ -d "$DMS_SEED/plugins" ]; then
         mkdir -p "$DMS_DIR/plugins"
+        # The switch button only makes sense with Noctalia installed too.
+        if ! installed noctalia; then
+            rm -rf "$DMS_DIR/plugins/ZexosShellSwitch"
+            return 0
+        fi
         cp -rT "$DMS_SEED/plugins/ZexosShellSwitch" "$DMS_DIR/plugins/ZexosShellSwitch"
         # Turn the plugin on once; if you turn it off later, it stays off.
         python3 - "$DMS_DIR/plugin_settings.json" <<'EOF'
@@ -597,8 +613,12 @@ fuzzel_colour() {
 menu() {
     # Pressing Mod+Shift+D again closes it.
     qs kill -c zexos-switcher >/dev/null 2>&1 && return 0
-    local cur items="" sep=""
+    local cur items="" sep="" n=0
     cur="$(current)"
+    # With only one shell installed there is nothing to switch to, so the
+    # menu doesn't open at all.
+    for s in $SHELLS; do installed "$s" && n=$((n + 1)); done
+    [ "$n" -ge 2 ] || return 0
     for s in $SHELLS; do
         installed "$s" || continue
         items+="$sep{\"id\":\"$s\",\"name\":\"$(pretty "$s")\",\"icon\":\"$(logo "$s")\",\"current\":$([ "$s" = "$cur" ] && echo true || echo false)}"

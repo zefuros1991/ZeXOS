@@ -554,6 +554,11 @@ fi
 sudo install -Dm644 "$REPO_ROOT/system/profile.d/zexos-local-bin.sh" /etc/profile.d/zexos-local-bin.sh
 echo -e "${GREEN}✔ ~/.local/bin is on PATH for every login${RESET}"
 
+# Two-GPU laptops: make Mango draw on the GPU the built-in screen is wired
+# to, or that screen stays a solid colour. See system/profile.d/.
+sudo install -Dm644 "$REPO_ROOT/system/profile.d/zexos-gpu-order.sh" /etc/profile.d/zexos-gpu-order.sh
+echo -e "${GREEN}✔ Mango uses the right GPU on two-GPU laptops${RESET}"
+
 # =========================================================
 # 3. FLATPAK / FLATHUB
 # =========================================================

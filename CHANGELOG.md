@@ -55,12 +55,14 @@ Planned as 1.1.0.
 - A ZeXOS copy of Noctalia's Video Wallpaper plugin with one more command,
   `set`, so the picker can start a video.
 - Hyprland and Mango dim the windows you're not using, like niri does.
-  Hyprland also gets niri's gradient border in the wallpaper colours under
-  Noctalia (`templates/hypr-border.lua`). Mango can only draw a border in
-  one colour, so it keeps Noctalia's.
-- The same gradient border under DankMaterialShell on niri and Hyprland:
-  DMS fills in ZeXOS's templates on every colour change
-  (`zexos.toml.in`). Mango keeps DMS's one-colour border.
+- A gradient window border in two colours picked from the wallpaper
+  itself, on niri and Hyprland, with either shell (`zexos-border`). It
+  takes the wallpaper's two most different colours; on a mostly one-colour
+  wallpaper it picks a small bright accent instead (green lines on a purple
+  map). Other windows get a faint line in a dark shade of the first colour.
+  Noctalia runs it on every wallpaper change, DMS on every colour change,
+  and `zshell` when a shell starts. Mango can only draw a border in one
+  colour, so it keeps the shell's. Needs `python-pillow`, now installed.
 
 - `zexos-motion`, to pick how the desktop moves, the same on niri,
   Hyprland and Mango, under both shells: windows (rise, pop, balloon, fade,
@@ -131,9 +133,6 @@ Planned as 1.1.0.
   see-through, gets a lighter setting so it matches). The border is drawn
   as a frame round the edge only, so it no longer shows through see-through
   windows as a grey haze.
-- niri with Noctalia: the focused window's border is a gradient in the
-  wallpaper's colours (Noctalia template `templates/niri-border.kdl`,
-  included through `shell-colors.kdl` so DMS keeps its own colours).
 - niri starts the desktop shell through `zshell start` instead of starting
   Noctalia directly. Mango and Hyprland do the same.
 - niri window colours and kitty colours follow whichever shell is running.
@@ -156,12 +155,15 @@ Planned as 1.1.0.
 
 ### Fixed
 
+- No more black screen after logging out of one compositor and into another.
+  Noctalia can freeze while quitting, so the old one stayed running and the
+  new one refused to start ("already running"). `zshell start` now force-quits
+  any shell left over from an earlier session first.
+
 - The installer no longer shows "Failed to install dms-shell-niri" and
   "dms-shell-hyprland" on Arch. Since 2026-10-03 Arch's `dms-shell` includes
   both, so they are only installed where the repo still has them.
-- niri's gradient border never showed: its template path in
-  `noctalia.toml` was relative, and Noctalia only takes full paths. And
-  niri drew no border at all: it keeps borders off unless the config says
+- niri drew no border at all: it keeps borders off unless the config says
   `on`, which `cfg/layout.kdl` didn't.
 - After using Mango, the shortcut list (`Mod+F1`) on niri showed Mango's
   shortcuts. An empty Mango variable left from that session made

@@ -7,7 +7,7 @@
 
 # ZeXOS
 
-ZeXOS is a ready-to-use desktop for CachyOS, Arch Linux and other Arch-based distros, built on the [niri](https://github.com/YaLTeR/niri) scrolling window manager and the [Noctalia](https://noctalia.dev) shell. One script installs the packages and puts the config files in place, so a fresh install becomes a complete, themed daily desktop.
+ZeXOS is a ready-to-use desktop for CachyOS, Arch Linux and other Arch-based distros, built on the [niri](https://github.com/YaLTeR/niri) scrolling window manager and the [Noctalia](https://noctalia.dev) shell, with Mango, Hyprland and DankMaterialShell as alternatives. One script installs the packages and puts the config files in place, so a fresh install becomes a complete, themed daily desktop.
 
 What you get:
 
@@ -24,23 +24,11 @@ What you get:
 
 ## Screenshots
 
-The installer waiting for the sudo password:
+<p align="center"><a href="https://zefuros1991.github.io/ZeXOS/?from=readme#1"><img src="docs/screenshots/showcase.webp" alt="ZeXOS on niri, Hyprland and Mango, each with Noctalia and with DankMaterialShell: the launcher opens, then a new wallpaper recolours the whole desktop" width="860"></a></p>
 
-<p align="center"><img src="docs/screenshots/install.gif" alt="The ZeXOS installer starting in a terminal: the gradient ZeXOS logo animates while it waits for the sudo password" width="640"></p>
+<p align="center"><b><a href="https://zefuros1991.github.io/ZeXOS/?from=readme#1">Open the gallery</a></b>: every compositor and shell, switching shells, the wallpaper picker, light mode and more, as short clips. Use the arrow keys to move between them; Esc or a click outside the picture brings you back here.</p>
 
-The whole desktop takes its colours from the wallpaper, so every screenshot below looks different.
-
-| CachyOS | Arch Linux | EndeavourOS |
-|---|---|---|
-| ![kitty with fastfetch on CachyOS, purple dots wallpaper](docs/screenshots/kitty-cachyos.webp) | ![kitty with fastfetch on Arch Linux, cyan bars wallpaper](docs/screenshots/kitty-arch.webp) | ![kitty with fastfetch on EndeavourOS, green dots wallpaper](docs/screenshots/kitty-eos.webp) |
-
-| Launcher | Control center | Overview |
-|---|---|---|
-| ![Noctalia launcher on a blue wallpaper](docs/screenshots/launcher.webp) | ![Noctalia control center on a mint wallpaper](docs/screenshots/control-center.webp) | ![niri overview with no windows on a violet wallpaper](docs/screenshots/overview.webp) |
-
-| Files | Wallpaper picker | Light mode |
-|---|---|---|
-| ![Dolphin on a red topo wallpaper](docs/screenshots/dolphin.webp) | ![The wallpaper picker on a silver wallpaper](docs/screenshots/roller.webp) | ![Light mode with only the bar](docs/screenshots/light-mode.webp) |
+The whole desktop takes its colours from the wallpaper, so every clip looks different.
 
 ## Install
 
@@ -69,6 +57,8 @@ cd ~/.dotfiles
 ./install.sh
 ```
 
+<p align="center"><img src="docs/screenshots/install.gif" alt="The ZeXOS installer starting in a terminal: the gradient ZeXOS logo animates while it waits for the sudo password" width="640"></p>
+
 Run it as your normal user, not root. You need an account that can use `sudo` and a network connection. The installer adds `git` if it's missing, and the bootstrap step installs everything else, including `stow`.
 
 ### Fast install or build it yourself
@@ -89,7 +79,7 @@ The ready-made packages are built in a clean Arch Linux container by `scripts/ma
 `install.sh` first checks which distro you're on (and stops if it's one ZeXOS can't support), then runs four scripts from `scripts/`, in order:
 
 1. **Bootstrap** (`bootstrap.sh`): enables the `multilib` repo if it's off, updates the system, installs the basics (`git`, `curl`, `stow`, `base-devel`, `flatpak`), adds Flathub, and clones this repo to `~/.dotfiles`.
-2. **Packages** (`packages.sh`): installs the desktop (niri, Noctalia and its patched build, DankMaterialShell, roller, fuzzel, kitty), the basics a non-niri install may lack (portals, keyring, fonts, sound, network, Bluetooth and power services), the everyday apps, fonts, themes, and SDDM with Pixie. The few distro-specific steps come from `scripts/distro/`. If another login screen is in use (GDM, Plasma Login, ...), it switches to SDDM only after checking SDDM and Pixie are installed and ready. It skips anything already installed. It also adds a pacman hook that rebuilds the patched `qt6ct-kde` (which lets open apps like Dolphin change colour with the wallpaper) after every Qt update, since a new Qt can break it (`journalctl -u zexos-qt6ct-rebuild` shows how it went).
+2. **Packages** (`packages.sh`): installs the desktop (niri, Mango, Hyprland, Noctalia and its patched build, DankMaterialShell, roller, fuzzel, kitty), getting ZeXOS's own few packages ready-made or building them, as you chose (see [Fast install or build it yourself](#fast-install-or-build-it-yourself)), the basics a non-niri install may lack (portals, keyring, fonts, sound, network, Bluetooth and power services), the everyday apps, fonts, themes, and SDDM with Pixie. The few distro-specific steps come from `scripts/distro/`. If another login screen is in use (GDM, Plasma Login, ...), it switches to SDDM only after checking SDDM and Pixie are installed and ready. It skips anything already installed. It also adds a pacman hook that rebuilds the patched `qt6ct-kde` (which lets open apps like Dolphin change colour with the wallpaper) after every Qt update, since a new Qt can break it (`journalctl -u zexos-qt6ct-rebuild` shows how it went).
 3. **Stow** (`stow.sh`): links every config package under `stow/` into your home folder with [GNU Stow](https://www.gnu.org/software/stow/). Any existing file in the way is first backed up to `backup/stow-<timestamp>/`.
 4. **Final touches** (`finaltouches.sh`): copies the wallpapers to `~/Pictures/Wallpapers` and sets up the login-screen wallpaper sync.
 
@@ -161,7 +151,7 @@ What is different in Hyprland:
 
 ZeXOS comes with 16 wallpapers of its own, in 5 styles and several colours each, plus 9 animated ones. The installer copies them to `~/Pictures/Wallpapers`, and you start on `zexos-aurora`. The login screen starts with it too.
 
-![The ZeXOS wallpapers](docs/screenshots/wallpapers.webp)
+<a href="https://zefuros1991.github.io/ZeXOS/?from=readme#16"><img src="docs/screenshots/wallpapers.webp" alt="The ZeXOS wallpapers"></a>
 
 Press `Mod+W` to pick another one. Put your own pictures in `~/Pictures/Wallpapers` too: Noctalia and roller read from there, and the colour theme follows whichever one is active.
 

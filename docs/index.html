@@ -1,0 +1,163 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ZeXOS Gallery</title>
+<meta name="description" content="Screenshots of the ZeXOS desktop on niri, Hyprland and Mango, with the Noctalia and DankMaterialShell shells.">
+<link rel="icon" href="logo/zexos-mark.svg">
+<style>
+  :root {
+    --bg: #0f0f14; --fg: #e6e6ef; --muted: #9a9ab0; --card: #1a1a24; --accent: #a78bfa;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+         font: 16px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { max-width: 1200px; margin: 0 auto; padding: 32px 16px 8px; }
+  header h1 { margin: 0 0 4px; font-size: 1.8rem; }
+  header p { margin: 0; color: var(--muted); }
+  header a { color: var(--accent); }
+  main { max-width: 1200px; margin: 0 auto; padding: 16px;
+         display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+  figure { margin: 0; background: var(--card); border-radius: 10px; overflow: hidden; cursor: zoom-in; }
+  figure img { display: block; width: 100%; aspect-ratio: 16 / 9; object-fit: cover; }
+  figcaption { padding: 8px 12px; font-size: .92rem; color: var(--muted); }
+  h2 { grid-column: 1 / -1; margin: 16px 0 0; font-size: 1.1rem; color: var(--muted); font-weight: 600; }
+
+  /* The slideshow */
+  #lb { position: fixed; inset: 0; background: rgba(0,0,0,.92); display: none;
+        align-items: center; justify-content: center; flex-direction: column; z-index: 10; }
+  #lb.open { display: flex; }
+  #lb img { max-width: 94vw; max-height: 84vh; border-radius: 6px; box-shadow: 0 8px 40px #000; cursor: default; }
+  #lb .cap { margin-top: 12px; color: var(--fg); text-align: center; padding: 0 16px; max-width: 900px; }
+  #lb .count { color: var(--muted); font-size: .85rem; }
+  #lb button { position: absolute; background: rgba(255,255,255,.08); color: #fff; border: 0;
+               width: 52px; height: 52px; border-radius: 50%; font-size: 28px; cursor: pointer; }
+  #lb button:hover { background: rgba(255,255,255,.2); }
+  #prev { left: 16px; top: 50%; transform: translateY(-50%); }
+  #next { right: 16px; top: 50%; transform: translateY(-50%); }
+  #close { right: 16px; top: 16px; font-size: 24px; }
+  @media (max-width: 600px) {
+    #lb button { width: 40px; height: 40px; font-size: 20px; }
+    #prev, #next { top: auto; bottom: 16px; transform: none; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>ZeXOS gallery</h1>
+  <p>Click any picture for a slideshow. Arrow keys move between pictures; Esc or a click outside the picture closes it.
+     <a href="https://github.com/zefuros1991/ZeXOS">Back to ZeXOS on GitHub</a></p>
+</header>
+<main id="grid"></main>
+
+<div id="lb" role="dialog" aria-modal="true" aria-label="Screenshot slideshow">
+  <button id="close" aria-label="Close">✕</button>
+  <button id="prev" aria-label="Previous picture">‹</button>
+  <img id="lbimg" alt="">
+  <div class="cap"><div id="lbcap"></div><div class="count" id="lbcount"></div></div>
+  <button id="next" aria-label="Next picture">›</button>
+</div>
+
+<script>
+// One entry per picture: [section, file in screenshots/, caption].
+const SHOTS = [
+  ["Every compositor with every shell", "showcase.webp", "All six combinations, one after the other"],
+  ["Every compositor with every shell", "niri-noctalia.webp", "niri + Noctalia: launcher, then a new wallpaper recolours everything"],
+  ["Every compositor with every shell", "niri-dms.webp", "niri + DankMaterialShell"],
+  ["Every compositor with every shell", "hypr-noctalia.webp", "Hyprland + Noctalia"],
+  ["Every compositor with every shell", "hypr-dms.webp", "Hyprland + DankMaterialShell"],
+  ["Every compositor with every shell", "mango-noctalia.webp", "Mango + Noctalia"],
+  ["Every compositor with every shell", "mango-dms.webp", "Mango + DankMaterialShell"],
+  ["Around the desktop", "switch-dms.webp", "Switching shells with Mod+Shift+D (Noctalia to DankMaterialShell)"],
+  ["Around the desktop", "roller.webp", "The wallpaper picker (Mod+W)"],
+  ["Around the desktop", "overview.webp", "niri's overview (Mod+O)"],
+  ["Around the desktop", "light-mode.webp", "Light mode on a bright wallpaper, then back to dark"],
+  ["Around the desktop", "panels.webp", "Control center and power menu (DankMaterialShell on Mango)"],
+  ["Same look on every distro", "kitty-cachyos.webp", "kitty on CachyOS"],
+  ["Same look on every distro", "kitty-arch.webp", "kitty on Arch Linux"],
+  ["Same look on every distro", "kitty-eos.webp", "kitty on EndeavourOS"],
+  ["Wallpapers", "wallpapers.webp", "The wallpapers that come with ZeXOS"],
+];
+
+const grid = document.getElementById("grid");
+const lb = document.getElementById("lb"), img = document.getElementById("lbimg");
+const cap = document.getElementById("lbcap"), count = document.getElementById("lbcount");
+const params = new URLSearchParams(location.search);
+const fromReadme = params.get("from") === "readme";
+let cur = -1, section = "";
+
+SHOTS.forEach(([sec, file, text], i) => {
+  if (sec !== section) {
+    section = sec;
+    const h = document.createElement("h2"); h.textContent = sec; grid.appendChild(h);
+  }
+  const f = document.createElement("figure");
+  f.innerHTML = `<img loading="lazy" src="screenshots/${file}" alt=""><figcaption></figcaption>`;
+  f.querySelector("img").alt = text;
+  f.querySelector("figcaption").textContent = text;
+  f.onclick = () => show(i, true);
+  grid.appendChild(f);
+});
+
+function show(i, push) {
+  cur = (i + SHOTS.length) % SHOTS.length;
+  const [, file, text] = SHOTS[cur];
+  img.src = "screenshots/" + file; img.alt = text;
+  cap.textContent = text; count.textContent = `${cur + 1} / ${SHOTS.length}`;
+  lb.classList.add("open"); document.body.style.overflow = "hidden";
+  const hash = "#" + (cur + 1);
+  if (push) history.pushState({ lb: true }, "", hash); else history.replaceState(history.state, "", hash);
+  // Load the neighbours now, so the next arrow press is instant.
+  [cur + 1, cur - 1].forEach(n => { new Image().src = "screenshots/" + SHOTS[(n + SHOTS.length) % SHOTS.length][1]; });
+}
+
+function hide() {
+  lb.classList.remove("open"); document.body.style.overflow = "";
+  img.removeAttribute("src"); cur = -1;
+}
+
+// Closing: if we came straight from the README, go back to it.
+// Otherwise just close the slideshow and stay on the gallery.
+function close() {
+  if (fromReadme) {
+    if (history.length > 1) history.back();
+    else location.href = "https://github.com/zefuros1991/ZeXOS#readme";
+    return;
+  }
+  if (history.state && history.state.lb) history.back(); else { hide(); history.replaceState(null, "", location.pathname + location.search); }
+}
+
+document.getElementById("prev").onclick = e => { e.stopPropagation(); show(cur - 1); };
+document.getElementById("next").onclick = e => { e.stopPropagation(); show(cur + 1); };
+document.getElementById("close").onclick = e => { e.stopPropagation(); close(); };
+img.onclick = e => e.stopPropagation();
+lb.onclick = close; // a click anywhere outside the picture
+
+document.addEventListener("keydown", e => {
+  if (cur < 0) return;
+  if (e.key === "ArrowRight") show(cur + 1);
+  else if (e.key === "ArrowLeft") show(cur - 1);
+  else if (e.key === "Escape") close();
+});
+
+// Swipe left/right on phones.
+let tx = null;
+lb.addEventListener("touchstart", e => { tx = e.touches[0].clientX; }, { passive: true });
+lb.addEventListener("touchend", e => {
+  if (tx === null) return;
+  const dx = e.changedTouches[0].clientX - tx; tx = null;
+  if (Math.abs(dx) > 50) show(cur + (dx < 0 ? 1 : -1));
+});
+
+window.addEventListener("popstate", () => {
+  const n = parseInt(location.hash.slice(1), 10);
+  if (n >= 1 && n <= SHOTS.length) show(n - 1); else hide();
+});
+
+// Opened with #N (the README links here): start the slideshow at picture N.
+const start = parseInt(location.hash.slice(1), 10);
+if (start >= 1 && start <= SHOTS.length) show(start - 1);
+</script>
+</body>
+</html>

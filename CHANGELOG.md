@@ -16,6 +16,12 @@ Planned as 1.1.0.
   release, checksum-checked) or to build them on your computer as before.
   `ZEXOS_PACKAGES=prebuilt|source` skips the question. Maintainers make the
   packages with `scripts/make-prebuilt.sh`.
+- A gallery page (`docs/index.html`, published with GitHub Pages) with
+  short animated clips of all six compositor and shell combinations, the
+  shell switch, the wallpaper picker, light mode and more. It opens as a
+  slideshow: arrow keys move between clips, Esc or a click outside goes
+  back. The README now shows one animated preview that links to it,
+  instead of a grid of still screenshots.
 - The login screen's round ZeXOS logo comes in the six wallpaper colours
   (violet, ocean, ember, forest, mono, light) and follows your wallpaper:
   a ZeXOS wallpaper picks by its name, any other picture by its colours.

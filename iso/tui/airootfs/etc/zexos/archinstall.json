@@ -1,0 +1,13 @@
+{
+    "app_config": {
+        "audio_config": { "audio": "pipewire" }
+    },
+    "bootloader_config": { "bootloader": "Systemd-boot", "uki": false, "removable": true },
+    "hostname": "zexos",
+    "kernels": ["linux"],
+    "network_config": { "type": "nm" },
+    "ntp": true,
+    "packages": ["git", "curl", "sudo"],
+    "profile_config": { "profile": { "main": "Minimal" } },
+    "swap": true
+}

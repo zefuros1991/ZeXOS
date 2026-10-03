@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# Calamares step: installs systemd-boot into the new system mounted at $1
+# (its EFI partition is mounted at $1/boot) and writes the boot entries.
+set -euo pipefail
+ROOT="${1:?usage: zexos-boot-setup <root>}"
+
+[ -d /sys/firmware/efi ] || { echo "This PC did not start in UEFI mode; ZeXOS needs UEFI for now." >&2; exit 1; }
+
+src="$(findmnt -no SOURCE "$ROOT" | sed 's/\[.*\]$//')"
+uuid="$(blkid -s UUID -o value "$src")"
+fstype="$(findmnt -no FSTYPE "$ROOT")"
+options="root=UUID=$uuid rw"
+if [ "$fstype" = btrfs ]; then
+    subvol="$(findmnt -no FSROOT "$ROOT")"
+    options="$options rootflags=subvol=${subvol#/}"
+fi
+
+arch-chroot "$ROOT" bootctl install --esp-path=/boot
+
+mkdir -p "$ROOT/boot/loader/entries"
+cat > "$ROOT/boot/loader/loader.conf" <<CONF
+default zexos.conf
+timeout 3
+console-mode max
+editor no
+CONF
+# The microcode is built into the initramfs by mkinitcpio's microcode hook.
+cat > "$ROOT/boot/loader/entries/zexos.conf" <<CONF
+title   ZeXOS
+linux   /vmlinuz-linux
+initrd  /initramfs-linux.img
+options $options quiet splash
+CONF
+cat > "$ROOT/boot/loader/entries/zexos-fallback.conf" <<CONF
+title   ZeXOS (fallback)
+linux   /vmlinuz-linux
+initrd  /initramfs-linux-fallback.img
+options $options
+CONF
+
+arch-chroot "$ROOT" mkinitcpio -P
+arch-chroot "$ROOT" systemctl enable systemd-boot-update.service

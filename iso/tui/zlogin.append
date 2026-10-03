@@ -1,0 +1,5 @@
+
+# ZeXOS: open the installer menu on the first screen.
+if [[ $(tty) == "/dev/tty1" ]]; then
+    zexos-tui
+fi

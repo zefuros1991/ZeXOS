@@ -1,0 +1,5 @@
+
+# ZeXOS: start the live desktop with the installer on the first screen.
+if [[ $(tty) == "/dev/tty1" ]] && [[ -z $WAYLAND_DISPLAY ]]; then
+    niri-session
+fi

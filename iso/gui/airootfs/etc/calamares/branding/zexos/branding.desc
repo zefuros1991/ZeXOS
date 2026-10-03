@@ -1,0 +1,37 @@
+# ZeXOS look for Calamares. Images (logo, slides, previews) are generated
+# by iso/gui/customize.sh when the ISO is built.
+---
+componentName:  zexos
+welcomeStyleCalamares: false
+welcomeExpandingLogo: true
+windowExpanding: normal
+windowSize: 1180px,720px
+windowPlacement: center
+sidebar: qml,left
+navigation: widget
+
+strings:
+    productName:         ZeXOS
+    shortProductName:    ZeXOS
+    version:             1.2
+    shortVersion:        1.2
+    versionedName:       ZeXOS 1.2
+    shortVersionedName:  ZeXOS 1.2
+    bootloaderEntryName: ZeXOS
+    productUrl:          https://github.com/zefuros1991/ZeXOS
+    supportUrl:          https://github.com/zefuros1991/ZeXOS/issues
+    knownIssuesUrl:      https://github.com/zefuros1991/ZeXOS/issues
+
+images:
+    productLogo:         "logo.png"
+    productIcon:         "icon.png"
+    productWelcome:      "welcome.png"
+
+style:
+   SidebarBackground:        "#14141c"
+   SidebarText:              "#9a9ab0"
+   SidebarTextCurrent:       "#ffffff"
+   SidebarBackgroundCurrent: "#7C5CFF"
+
+slideshow:    "show.qml"
+slideshowAPI: 2

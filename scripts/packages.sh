@@ -221,6 +221,14 @@ in_distro_repos() {
     LC_ALL=C pacman -Si "$1" 2>/dev/null | awk '/^Repository/ {print $3}' | grep -qvx zexos
 }
 
+# Which compositors and shells to install (picked in install.sh, or on the
+# installer ISO). All of them when packages.sh runs on its own.
+ZEXOS_COMPOSITORS="${ZEXOS_COMPOSITORS:-niri hyprland mango}"
+ZEXOS_SHELLS="${ZEXOS_SHELLS:-noctalia dms}"
+want_compositor() { case " $ZEXOS_COMPOSITORS " in *" $1 "*) return 0 ;; esac; return 1; }
+want_shell() { case " $ZEXOS_SHELLS " in *" $1 "*) return 0 ;; esac; return 1; }
+echo -e "${CYAN}Compositors: $ZEXOS_COMPOSITORS   Shells: $ZEXOS_SHELLS${RESET}"
+
 # -----------------------------
 # DESKTOP CORE
 # -----------------------------
@@ -228,8 +236,6 @@ in_distro_repos() {
 # niri profile already ships most of these; --needed makes this a no-op
 # there and fills the gaps on plain Arch.
 CORE_PACMAN=(
-    niri
-    xwayland-satellite
     fuzzel
     kitty
     neovim
@@ -242,6 +248,10 @@ CORE_PACMAN=(
     # zexos-border reads the wallpaper's colours with it.
     python-pillow
 )
+
+# niri runs X11 apps through xwayland-satellite (Mango and Hyprland have
+# their own Xwayland).
+want_compositor niri && CORE_PACMAN+=(niri xwayland-satellite)
 
 install_pacman "Desktop Core" "${CORE_PACMAN[@]}"
 
@@ -363,7 +373,7 @@ install_local "Wallpaper picker (Roller)" roller
 # packaging/noctalia-zexos: the official Arch PKGBUILD plus a small patch
 # that adds `attached = true` to bar capsule groups (square top corners,
 # round bottom ones) and `[accessibility] launcher_scale` (launcher-only size). Separate package name, so repo updates can't undo it.
-install_local "Noctalia (ZeXOS patch)" noctalia-zexos
+want_shell noctalia && install_local "Noctalia (ZeXOS patch)" noctalia-zexos
 
 # -----------------------------
 # DANKMATERIALSHELL (the second desktop shell)
@@ -376,14 +386,19 @@ install_local "Noctalia (ZeXOS patch)" noctalia-zexos
 # repos (CachyOS may lag a few days) still split them, and there dms-shell
 # needs "a compositor" package; --noconfirm would pick the first one offered,
 # so dms-shell-niri goes first when the repo still has it.
-DMS_PACMAN=()
-pacman -Si dms-shell-niri &>/dev/null && DMS_PACMAN+=(dms-shell-niri)
-DMS_PACMAN+=(
-    dms-shell
-    matugen
-)
+# With only Mango picked, dms-shell-niri is still the one to take there.
+if want_shell dms; then
+    DMS_PACMAN=()
+    if want_compositor niri || ! want_compositor hyprland; then
+        pacman -Si dms-shell-niri &>/dev/null && DMS_PACMAN+=(dms-shell-niri)
+    fi
+    DMS_PACMAN+=(
+        dms-shell
+        matugen
+    )
 
-install_pacman "DankMaterialShell" "${DMS_PACMAN[@]}"
+    install_pacman "DankMaterialShell" "${DMS_PACMAN[@]}"
+fi
 
 # -----------------------------
 # MANGO (a second compositor, picked at the login screen)
@@ -400,23 +415,26 @@ MANGO_PACMAN=(
     wl-clipboard
 )
 
-install_pacman "Mango" "${MANGO_PACMAN[@]}"
+want_compositor mango && install_pacman "Mango" "${MANGO_PACMAN[@]}"
 
 # -----------------------------
 # HYPRLAND (a third compositor, picked at the login screen)
 # -----------------------------
 # Hyprland tiles windows: each new one takes half of the one you're in.
 # It ships its own login-screen entry. xdg-desktop-portal-hyprland does
-# screen sharing; screenshots reuse Mango's grim, slurp and wl-clipboard.
+# screen sharing; grim, slurp and wl-clipboard do screenshots, like Mango.
 # dms-shell-hyprland is DMS's Hyprland support on repos that still split it
 # out (see DankMaterialShell above). All in the Arch/CachyOS repos.
 HYPR_PACMAN=(
     hyprland
     xdg-desktop-portal-hyprland
+    grim
+    slurp
+    wl-clipboard
 )
-pacman -Si dms-shell-hyprland &>/dev/null && HYPR_PACMAN+=(dms-shell-hyprland)
+want_shell dms && pacman -Si dms-shell-hyprland &>/dev/null && HYPR_PACMAN+=(dms-shell-hyprland)
 
-install_pacman "Hyprland" "${HYPR_PACMAN[@]}"
+want_compositor hyprland && install_pacman "Hyprland" "${HYPR_PACMAN[@]}"
 
 # -----------------------------
 # ZEXOS'S OWN PACKAGES

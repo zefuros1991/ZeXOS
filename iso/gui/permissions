@@ -1,0 +1,4 @@
+["/usr/local/bin/zexos-pacstrap"]="0:0:755"
+["/usr/local/bin/zexos-boot-setup"]="0:0:755"
+["/usr/local/bin/zexos-calamares-finish"]="0:0:755"
+["/usr/local/bin/zexos-gui-installer"]="0:0:755"

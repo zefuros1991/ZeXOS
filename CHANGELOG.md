@@ -156,6 +156,9 @@ Planned as 1.1.0.
 
 ### Fixed
 
+- The installer no longer shows "Failed to install dms-shell-niri" and
+  "dms-shell-hyprland" on Arch. Since 2026-10-03 Arch's `dms-shell` includes
+  both, so they are only installed where the repo still has them.
 - niri's gradient border never showed: its template path in
   `noctalia.toml` was relative, and Noctalia only takes full paths. And
   niri drew no border at all: it keeps borders off unless the config says

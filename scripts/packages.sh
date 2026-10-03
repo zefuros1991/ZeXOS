@@ -402,11 +402,14 @@ fi
 # Installed next to Noctalia; Noctalia stays the default. Mod+Shift+D
 # (`zshell menu`) switches between them, per user. dms-shell-niri pulls in
 # the niri support, matugen makes the colours from the wallpaper.
-# All three are in the Arch/CachyOS repos. dms-shell-niri goes first: on
-# Arch, dms-shell needs "a compositor" package, and --noconfirm would
-# otherwise pick the first one offered instead of the niri one.
-DMS_PACMAN=(
-    dms-shell-niri
+# Since dms-shell 1.6.2-2 (Arch, 2026-10-03) the niri and Hyprland support
+# is part of dms-shell itself and dms-shell-niri/-hyprland are gone. Older
+# repos (CachyOS may lag a few days) still split them, and there dms-shell
+# needs "a compositor" package; --noconfirm would pick the first one offered,
+# so dms-shell-niri goes first when the repo still has it.
+DMS_PACMAN=()
+pacman -Si dms-shell-niri &>/dev/null && DMS_PACMAN+=(dms-shell-niri)
+DMS_PACMAN+=(
     dms-shell
     matugen
 )
@@ -436,12 +439,13 @@ install_pacman "Mango" "${MANGO_PACMAN[@]}"
 # Hyprland tiles windows: each new one takes half of the one you're in.
 # It ships its own login-screen entry. xdg-desktop-portal-hyprland does
 # screen sharing; screenshots reuse Mango's grim, slurp and wl-clipboard.
-# dms-shell-hyprland is DMS's Hyprland support. All in the Arch/CachyOS repos.
+# dms-shell-hyprland is DMS's Hyprland support on repos that still split it
+# out (see DankMaterialShell above). All in the Arch/CachyOS repos.
 HYPR_PACMAN=(
     hyprland
     xdg-desktop-portal-hyprland
-    dms-shell-hyprland
 )
+pacman -Si dms-shell-hyprland &>/dev/null && HYPR_PACMAN+=(dms-shell-hyprland)
 
 install_pacman "Hyprland" "${HYPR_PACMAN[@]}"
 

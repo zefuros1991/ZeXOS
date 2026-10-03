@@ -1,0 +1,444 @@
+#!/usr/bin/env python3
+"""The ZeXOS terminal look: a logo, the details box next to it, and the
+prompt colours, all in the wallpaper's two colours (the same pair as the
+window borders, see zexos-border).
+
+The logo is the ZeXOS Z on a system installed from a ZeXOS ISO (ID=zexos in
+/etc/os-release). Anywhere else (ZeXOS installed on CachyOS, Arch, ...) it
+is that distro's own logo and name, just recoloured.
+
+    zexos-term fetch [<columns>]   fastfetch config for the current wallpaper;
+                                   prints its path
+    zexos-term prompt bash|zsh|fish
+                                   prompt colours for that shell; prints the
+                                   path of the file to source
+    zexos-term refresh             redraw the logo in every kitty that is
+                                   still at its first prompt (zexos-border
+                                   runs it on a wallpaper or shell change)
+
+Everything is made once per wallpaper and kept in ~/.cache/zexos/term.
+"""
+import hashlib
+import importlib.machinery
+import importlib.util
+import json
+import math
+import os
+import re
+import signal
+import sys
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+CONFIG = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
+CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"),
+                     "zexos", "term")
+REPO = os.environ.get("ZEXOS_REPO") or os.path.expanduser("~/.dotfiles")
+STEPS = 40                  # the prompt's gradients, in STEPS+1 colours
+
+
+def load_border():
+    """zexos-border already finds the wallpaper and its colour pair."""
+    for path in (os.environ.get("ZEXOS_BORDER", ""), os.path.join(HERE, "zexos-border"),
+                 os.path.expanduser("~/.local/bin/zexos-border")):
+        if os.path.isfile(path):
+            loader = importlib.machinery.SourceFileLoader("zexos_border", path)
+            spec = importlib.util.spec_from_loader("zexos_border", loader)
+            mod = importlib.util.module_from_spec(spec)
+            loader.exec_module(mod)
+            return mod
+    sys.exit("zexos-term: zexos-border not found")
+
+
+B = load_border()
+
+
+# ── Colours ─────────────────────────────────────────────────────────────────
+
+def lab(c):
+    """sRGB -> OKLab."""
+    L, C, h = B.oklch(c)
+    return L, C * math.cos(math.radians(h)), C * math.sin(math.radians(h))
+
+
+def from_lab(L, a, b):
+    return B.from_oklch(L, math.hypot(a, b), math.degrees(math.atan2(b, a)))
+
+
+def ease(t):
+    """Each end colour holds most of the way; the change is in the middle."""
+    t = min(max(t, 0.0), 1.0)
+    for _ in range(4):
+        t = t * t * (3 - 2 * t)
+    return t
+
+
+def gradient(a, b, t):
+    """a -> b mixed in a straight line in OKLab, like two paints."""
+    t = ease(t)
+    p, q = lab(a), lab(b)
+    return from_lab(*(p[k] + (q[k] - p[k]) * t for k in range(3)))
+
+
+def blend(a, b, t):
+    """a -> b at t in OKLCH, the short way round the hue circle."""
+    (L1, C1, h1), (L2, C2, h2) = B.oklch(a), B.oklch(b)
+    if C1 < 0.02:
+        h1 = h2
+    if C2 < 0.02:
+        h2 = h1
+    dh = (h2 - h1 + 180) % 360 - 180
+    return B.from_oklch(L1 + (L2 - L1) * t, C1 + (C2 - C1) * t, h1 + dh * t)
+
+
+def hls(c, l, s):
+    import colorsys
+    H, _, _ = colorsys.rgb_to_hls(*(v / 255 for v in c))
+    return tuple(round(v * 255) for v in colorsys.hls_to_rgb(H, l, s))
+
+
+def kitty_background(shell):
+    """kitty's background colour now, so the Z's soft edges match it."""
+    names = ["dank-theme.conf"] if shell == "dms" else ["themes/noctalia.conf"]
+    for name in names:
+        try:
+            for line in open(os.path.join(CONFIG, "kitty", name)):
+                m = re.match(r"\s*background\s+#([0-9a-fA-F]{6})\b", line)
+                if m:
+                    return B.rgb(m.group(1))
+        except OSError:
+            pass
+    return None
+
+
+def told_wallpaper(shell):
+    """The wallpaper zexos-border last handed over for this shell. Noctalia
+    runs its hook before it saves the new wallpaper in its own state file,
+    so that file can still name the old one."""
+    try:
+        wall = open(os.path.join(CACHE, "wallpaper." + shell)).read().strip()
+        return wall if os.path.isfile(wall) else None
+    except OSError:
+        return None
+
+
+def palette():
+    shell = os.environ.get("ZEXOS_TERM_SHELL") or B.current_shell()
+    wall = os.environ.get("ZEXOS_TERM_WALLPAPER") or told_wallpaper(shell) or (
+        B.dms_wallpaper() if shell == "dms" else B.noctalia_wallpaper())
+    a, b = (wall and os.path.isfile(wall) and B.wallpaper_pair(wall)) or B.FALLBACK
+    ink = hls(a, 0.94, 0.3)
+    bg = hls(a, 0.12, 0.38)
+    return {"a": tuple(a), "b": tuple(b), "ink": ink, "bg": bg,
+            "term": kitty_background(shell) or bg, "wall": wall or "", "shell": shell}
+
+
+def roles(p):
+    a, b, ink, bg = p["a"], p["b"], p["ink"], p["bg"]
+    L, C, _ = B.oklch(a)
+    mute = blend(bg, ink, 0.62)
+    return {
+        "grad": lambda t: gradient(a, b, t),
+        "mud": lambda t: blend(bg, gradient(a, b, t), 0.45),     # sunk into the background
+        "tint": lambda t: blend(mute, gradient(a, b, t), 0.5),   # labels
+        "ink": ink, "mute": mute,
+        "dim": blend(bg, ink, 0.30),
+        "soft": blend(bg, ink, 0.82),
+        "warn": B.from_oklch(max(L, 0.7), max(C, 0.14), 15),
+    }
+
+
+def folder(p, *extra):
+    key = hashlib.sha1(repr((p, extra, os.path.getmtime(__file__))).encode()).hexdigest()[:12]
+    return os.path.join(CACHE, key)
+
+
+def save(path, text):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp%d" % os.getpid()
+    with open(tmp, "w") as f:
+        f.write(text)
+    os.replace(tmp, path)
+
+
+# ── The Z ───────────────────────────────────────────────────────────────────
+
+# The mark from zexos-mark.svg: x, y, width, height, corner radius.
+BARS = [(18.0, 18.0, 84.0, 18.0, 5.0), (72.0, 41.0, 30.0, 11.0, 4.0),
+        (46.0, 54.5, 30.0, 11.0, 4.0), (20.0, 68.0, 30.0, 11.0, 4.0),
+        (18.0, 84.0, 84.0, 18.0, 5.0)]
+SS = 3                      # samples per pixel each way, for smooth edges
+
+
+def sd_z(x, y):
+    """Signed distance to the Z (negative inside)."""
+    d = 1e9
+    for bx, by, bw, bh, r in BARS:
+        qx = abs(x - (bx + bw / 2)) - (bw / 2 - r)
+        qy = abs(y - (by + bh / 2)) - (bh / 2 - r)
+        d = min(d, math.hypot(max(qx, 0), max(qy, 0)) + min(max(qx, qy), 0) - r)
+    return d
+
+
+def z_lines(p, cols, rows):
+    """The Z as coloured half-block text, cols x rows cells."""
+    pw, ph = cols, rows * 2
+    scale = 0.47 * min(cols / 44, rows / 21)
+    ramp = [p["term"]] + [gradient(p["a"], p["b"], k / 64) for k in range(65)]
+    out = []
+    px = [[None] * pw for _ in range(ph)]
+    for j in range(ph):
+        for i in range(pw):
+            cover, col = 0.0, [0.0, 0.0, 0.0]
+            for sj in range(SS):
+                for si in range(SS):
+                    x = 60 + ((i + (si + 0.5) / SS) - pw / 2) / scale
+                    y = 60 + ((j + (sj + 0.5) / SS) - ph / 2) / scale
+                    a = min(max(0.5 - sd_z(x, y) * scale * SS, 0), 1)
+                    if a:
+                        c = ramp[1 + round(min(max(((x - 18) + (y - 18)) / 168, 0), 1) * 64)]
+                        cover += a
+                        col = [col[k] + c[k] * a for k in range(3)]
+            n = SS * SS
+            if cover / n > 0.06:
+                bgc, a = p["term"], cover / n
+                px[j][i] = tuple(round(col[k] / n + bgc[k] * (1 - a)) for k in range(3))
+    for r in range(rows):
+        line = []
+        for c in range(cols):
+            t, b = px[2 * r][c], px[2 * r + 1][c]
+            if t and b:
+                line.append("\x1b[38;2;%d;%d;%d;48;2;%d;%d;%dm▀" % (*t, *b))
+            elif t:
+                line.append("\x1b[49;38;2;%d;%d;%dm▀" % t)
+            elif b:
+                line.append("\x1b[49;38;2;%d;%d;%dm▄" % b)
+            else:
+                line.append("\x1b[0m ")
+        out.append("".join(line) + "\x1b[0m")
+    return out
+
+
+# ── The details box ─────────────────────────────────────────────────────────
+
+def os_release():
+    """/etc/os-release as a dict (the copy in /usr/lib if /etc has none)."""
+    info = {}
+    for path in ("/etc/os-release", "/usr/lib/os-release"):
+        try:
+            for line in open(path):
+                k, _, v = line.strip().partition("=")
+                if k and not k.startswith("#"):
+                    info[k] = v.strip("\"'")
+            return info
+        except OSError:
+            continue
+    return info
+
+
+def is_zexos():
+    return os_release().get("ID") == "zexos"
+
+
+def version():
+    """ZeXOS's version, from the changelog of the installed copy."""
+    try:
+        for line in open(os.path.join(REPO, "CHANGELOG.md")):
+            m = re.match(r"## \[(\d+\.\d+\.\d+)\]", line)
+            if m:
+                return m.group(1)
+    except OSError:
+        pass
+    return ""
+
+
+# (fastfetch module, label, nerd icon, format or None for the default)
+FACTS = [
+    ("os", "os", "", None),
+    ("kernel", "kernel", "", "{release}"),
+    ("uptime", "uptime", "\U000f0150", None),
+    ("packages", "packages", "\U000f03d7", "{all} ({pacman} pacman, {flatpak-all} flatpak)"),
+    ("shell", "shell", "", "{pretty-name} {version}"),
+    ("wm", "wm", "", "{pretty-name}"),
+    ("terminal", "terminal", "", "{pretty-name} {version}"),
+    ("cpu", "cpu", "", "{name}"),
+    ("gpu", "gpu", "\U000f08ae", "{name}"),
+    ("memory", "memory", "\U000f035b", None),
+    ("disk", "disk", "\U000f02ca", None),
+    ("battery", "battery", "\U000f0079", None),
+]
+NSW = 7                     # FACTS[:NSW] are software, the rest hardware
+BOX = 56                    # inner width of the box
+
+
+def fg(c):
+    return "{#38;2;%d;%d;%d}" % tuple(c)
+
+
+def details(r):
+    mix = lambda t: r["grad"](min(max(t, 0), 1))
+    mud = lambda t: r["mud"](min(max(t, 0), 1))
+    tint = lambda t: r["tint"](min(max(t, 0), 1))
+    R, W = "{#0}", BOX
+    if is_zexos():
+        ver = version()
+        os_fmt = "{#1}" + fg(mix(0)) + "ZeXOS" + ((" " + ver) if ver else "") + R
+    else:
+        os_fmt = "{#1}" + fg(mix(0)) + "{pretty-name}" + R
+
+    rows = [("title",), ("rule",)]
+    groups = [("\U000f0219  software", range(0, NSW), 0.0), ("\U000f0ba0  hardware", range(NSW, len(FACTS)), 1.0)]
+    for g, (name, idx, t) in enumerate(groups):
+        if g:
+            rows.append(("blank",))
+        rows.append(("head", name, t))
+        idx = list(idx)
+        rows += [("fact", i, n == len(idx) - 1) for n, i in enumerate(idx)]
+    H = len(rows) + 2
+    at = lambda x, y: mix((x / (W + 1) + y / (H - 1)) / 2)
+
+    def side(y):
+        # the left edge, then the right edge drawn ahead and the cursor put back
+        return fg(at(0, y)) + "│" + "\u001b[%dC" % W + fg(at(W + 1, y)) + "│" + "\u001b[%dD" % (W + 1)
+
+    def edge(y, left, right):
+        return custom("".join(fg(at(x, y)) + (left if x == 0 else right if x == W + 1 else "─")
+                              for x in range(W + 2)) + R)
+
+    def custom(text):
+        return {"type": "custom", "format": text}
+
+    mods = [custom(""), edge(0, "╭", "╮")]
+    for y, row in enumerate(rows, 1):
+        if row[0] == "title":
+            mods.append({"type": "title", "key": side(y) + " ",
+                         "format": "{#1}" + fg(mix(0)) + "  {user-name}" + fg(r["mute"]) + "@" + fg(mix(1)) + "{host-name}"})
+        elif row[0] == "rule":
+            mods.append(custom(side(y) + " " + "".join(fg(mud(k / (W - 3))) + "─" for k in range(W - 2)) + R))
+        elif row[0] == "blank":
+            mods.append(custom(side(y) + R))
+        elif row[0] == "head":
+            mods.append(custom(side(y) + " {#1}" + fg(mix(row[2])) + row[1] + R))
+        else:
+            i, last = row[1], row[2]
+            mod, label, ic, f = FACTS[i]
+            t = i / (len(FACTS) - 1)
+            m = {"type": mod, "key": side(y) + " " + fg(mud(t)) + ("╰─" if last else "├─") + " "
+                 + fg(mix(t)) + ic + " " + fg(tint(t)) + label.ljust(9)}
+            if mod == "os":
+                f = os_fmt
+            if mod == "disk":
+                m["folders"] = "/"
+            if mod == "gpu":
+                m["hideType"] = "integrated"
+            if f:
+                m["format"] = f
+            mods.append(m)
+    mods.append(edge(H - 1, "╰", "╯"))
+    return mods
+
+
+DISTRO_LOGO = 46            # room a distro's own logo needs, padding included
+
+
+def fetch(cols):
+    """fastfetch config: the logo on the left, the box on the right. The Z
+    shrinks on narrow windows; any logo is left out when it does not fit."""
+    p = palette()
+    zexos = is_zexos()
+    if zexos:
+        zc = min(44, cols - (BOX + 2) - 4 - 1)
+        zc = zc if zc >= 24 else 0
+    else:
+        zc = -1 if cols >= BOX + 2 + DISTRO_LOGO else 0
+    zr = round(zc * 21 / 44)
+    path = os.path.join(folder(p, zc, zexos, os_release().get("ID"), version()), "fastfetch.jsonc")
+    if not os.path.exists(path):
+        r = roles(p)
+        display = {"separator": "", "color": {"output": "38;2;%d;%d;%d" % r["ink"]}}
+        conf = {"$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
+                "display": display, "modules": details(r)}
+        if zc < 0:
+            # the distro's own logo; its colours $1..$9 go along the gradient
+            conf["logo"] = {"type": "builtin", "padding": {"top": 1, "left": 1, "right": 4},
+                            "color": {str(k): "38;2;%d;%d;%d" % r["grad"]((k - 1) / 8)
+                                      for k in range(1, 10)}}
+        elif zc:
+            logo = os.path.join(os.path.dirname(path), "z.txt")
+            save(logo, "\n".join(z_lines(p, zc, zr)) + "\n")
+            conf["logo"] = {"type": "file-raw", "source": logo, "width": zc, "height": zr,
+                            "padding": {"top": 0, "left": 1, "right": 4}}
+        else:
+            conf["logo"] = {"type": "none"}
+        save(path, json.dumps(conf, indent=2, ensure_ascii=False) + "\n")
+    return path
+
+
+# ── The prompt ──────────────────────────────────────────────────────────────
+
+def hexc(c):
+    return "%02x%02x%02x" % tuple(c)
+
+
+def prompt(shell):
+    """Colours for zexos-prompt.<shell>: three gradients as STEPS+1 colours
+    each, plus single colours. The first line names the palette, so a shell
+    reloads only when it changed."""
+    p = palette()
+    path = os.path.join(folder(p), "prompt." + shell)
+    current = os.path.join(CACHE, "current." + shell)
+    if os.path.exists(path):
+        save(current, path + "\n")
+        return path
+    r = roles(p)
+    grads = {n: [hexc(r[role](k / STEPS)) for k in range(STEPS + 1)]
+             for n, role in (("G", "grad"), ("M", "mud"), ("T", "tint"))}
+    ones = {n.upper(): hexc(r[n]) for n in ("ink", "mute", "dim", "soft", "warn")}
+    key = os.path.basename(os.path.dirname(path))
+    if shell == "fish":
+        lines = ["# %s" % key, "set -g __zt_key %s" % key]
+        lines += ["set -g __zt_%s %s" % (n, " ".join(v)) for n, v in grads.items()]
+        lines += ["set -g __zt_%s %s" % (n, v) for n, v in ones.items()]
+    else:
+        lines = ["# %s" % key, "__zt_key=%s" % key]
+        lines += ["__zt_%s=(%s)" % (n, " ".join(v)) for n, v in grads.items()]
+        lines += ["__zt_%s=%s" % (n, v) for n, v in ones.items()]
+    save(path, "\n".join(lines) + "\n")
+    # where each shell looks first: one small file it can read without Python
+    save(current, path + "\n")
+    return path
+
+
+def refresh():
+    """Wallpaper or shell changed: make the new colours now, and nudge the
+    shells still at their first prompt to draw the logo again (they listen
+    for a window-size change until the first command)."""
+    wall, shell = os.environ.get("ZEXOS_TERM_WALLPAPER"), os.environ.get("ZEXOS_TERM_SHELL")
+    if wall and shell:
+        save(os.path.join(CACHE, "wallpaper." + shell), wall + "\n")
+    for sh in ("bash", "zsh", "fish"):
+        prompt(sh)
+    me = os.getuid()
+    for pid in filter(str.isdigit, os.listdir("/proc")):
+        try:
+            if os.stat("/proc/" + pid).st_uid != me:
+                continue
+            if open("/proc/%s/comm" % pid).read().strip() not in ("bash", "zsh", "fish"):
+                continue
+            if b"ZEXOS_TERM_REDRAW=1" not in open("/proc/%s/environ" % pid, "rb").read().split(b"\0"):
+                continue
+            os.kill(int(pid), signal.SIGWINCH)
+        except OSError:
+            pass
+
+
+if __name__ == "__main__":
+    cmd = sys.argv[1:2]
+    if cmd == ["fetch"]:
+        cols = int(sys.argv[2]) if sys.argv[2:3] else os.get_terminal_size(sys.stderr.fileno()).columns
+        print(fetch(cols))
+    elif cmd == ["prompt"] and sys.argv[2:3] and sys.argv[2] in ("bash", "zsh", "fish"):
+        print(prompt(sys.argv[2]))
+    elif cmd == ["refresh"]:
+        refresh()
+    else:
+        sys.exit(__doc__)

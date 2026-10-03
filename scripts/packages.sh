@@ -117,11 +117,13 @@ zexos_build_dir() {
 }
 
 # Ready-made packages (ZEXOS_PACKAGES=prebuilt, picked in install.sh).
-# install_prebuilt <name> [<package it replaces>] tries, in order:
+# Normally they come from ZeXOS's package repo (see "2. INSTALL EVERYTHING").
+# If that isn't reachable, install_prebuilt <name> [<package it replaces>]
+# tries, in order:
 #   1. the AUR package <name>-bin, if you have yay or paru and it's there
 #   2. the file on ZeXOS's GitHub release "prebuilt", checked against the
 #      checksum in packaging/prebuilt.list
-# and returns 1 if neither worked, so the caller builds it here instead.
+# and returns 1 if neither worked, so it's built here instead.
 # The list is made by scripts/make-prebuilt.sh.
 ZEXOS_PACKAGES="${ZEXOS_PACKAGES:-source}"
 # --noconfirm answers "no" when a package wants to replace another, so the
@@ -175,48 +177,48 @@ install_prebuilt() {
     return 1
 }
 
-# -----------------------------
-# 0.5 SYSTEM UPGRADE
-# -----------------------------
-echo -e "\n${YELLOW}[SYSTEM] Full System Upgrade${RESET}"
-
-sudo pacman -Syu --noconfirm &
-sysupgrade_pid=$!
-spinner "$sysupgrade_pid" "Updating system"
-
-if wait "$sysupgrade_pid"; then
-    echo -e "${GREEN}✔ System upgrade completed${RESET}"
-else
-    echo -e "${RED}✖ System upgrade failed — continuing anyway, but package installs below may also fail${RESET}"
-fi
-
 # =========================================================
-# 1. PACMAN PACKAGES
+# 1. THE LIST OF PACKAGES
 # =========================================================
+# Nothing is installed in this part. install_pacman and install_local only
+# add to a list; everything on it is installed together further down
+# ("2. INSTALL EVERYTHING"), in one pacman run. One run per package made
+# pacman re-read its package lists, work out the dependencies and run its
+# after-install steps ~60 times over, which was most of the install time.
 
+GROUP_LABELS=()   # "Desktop Core", ...
+GROUP_PKGS=()     # "niri kitty ...", one string per group
+LOCAL_LABELS=()   # ZeXOS's own packages (packaging/<name>)
+LOCAL_DIRS=()
+
+# install_pacman <label> <package>...   packages from the distro's repos
 install_pacman() {
     local label=$1
     shift
-    local pkgs=("$@")
+    GROUP_LABELS+=("$label")
+    GROUP_PKGS+=("$*")
+}
 
-    echo -e "\n${YELLOW}[PACMAN] ${label}${RESET}"
+# install_local <label> <name>   one of ZeXOS's own, from packaging/<name>
+# (the folder name is also the package name)
+install_local() {
+    LOCAL_LABELS+=("$1")
+    LOCAL_DIRS+=("$2")
+}
 
-    for pkg in "${pkgs[@]}"; do
-        if pacman -Qi "$pkg" &>/dev/null; then
-            echo -e "${GREEN}✔ $pkg already installed${RESET}"
-        else
-            echo -e "${CYAN}Installing $pkg${RESET}"
+# The package each of ours replaces. --noconfirm answers "no" when a
+# package wants to replace another, so the old one is removed by hand first.
+declare -A REPLACES=(
+    [noctalia-zexos]=noctalia
+    [pixie-sddm-zexos]=pixie-sddm-git
+    [bibata-cursor-zexos]=bibata-cursor-theme
+    [qt6ct-kde]=qt6ct
+)
 
-            sudo pacman -S --needed --noconfirm "$pkg" &
-            spinner $! "Installing $pkg"
-
-            if pacman -Qi "$pkg" &>/dev/null; then
-                echo -e "${GREEN}✔ $pkg installed successfully${RESET}"
-            else
-                echo -e "${RED}✖ Failed to install $pkg${RESET}"
-            fi
-        fi
-    done
+# Is <package> in the distro's own repos? ZeXOS's repo (below) doesn't count.
+# LC_ALL=C: pacman's labels are translated, "Repository" may be in Greek.
+in_distro_repos() {
+    LC_ALL=C pacman -Si "$1" 2>/dev/null | awk '/^Repository/ {print $3}' | grep -qvx zexos
 }
 
 # -----------------------------
@@ -351,24 +353,8 @@ install_pacman "Noctalia Extras" "${NOCTALIA_PACMAN[@]}"
 # -----------------------------
 # Not in the repos -- built from packaging/roller (upstream pinned to a known
 # commit + our wheel/size patch). Config and the waypaper->noctalia shim live
-# in stow/roller. Rebuilt only when the installed pkgrel differs from ours.
-echo -e "\n${YELLOW}[CUSTOM] Roller${RESET}"
-
-ROLLER_WANT="$(. "$REPO_ROOT/packaging/roller/PKGBUILD"; echo "$pkgver-$pkgrel")"
-if [ "$(pacman -Q roller 2>/dev/null | awk '{print $2}')" = "$ROLLER_WANT" ]; then
-    echo -e "${GREEN}✔ roller $ROLLER_WANT already installed${RESET}"
-elif install_prebuilt roller; then
-    :
-else
-    roller_build="$(zexos_build_dir)"
-    cp "$REPO_ROOT"/packaging/roller/* "$roller_build/"
-    if (cd "$roller_build" && zexos_makepkg -si --noconfirm --needed); then
-        echo -e "${GREEN}✔ roller $ROLLER_WANT installed${RESET}"
-    else
-        echo -e "${RED}✖ roller build failed -- Mod+W won't open a picker${RESET}"
-    fi
-    rm -rf "$roller_build"
-fi
+# in stow/roller. Reinstalled only when the installed version differs from ours.
+install_local "Wallpaper picker (Roller)" roller
 
 # -----------------------------
 # NOCTALIA (patched: bar islands attached to the top edge, bigger launcher)
@@ -377,26 +363,7 @@ fi
 # packaging/noctalia-zexos: the official Arch PKGBUILD plus a small patch
 # that adds `attached = true` to bar capsule groups (square top corners,
 # round bottom ones) and `[accessibility] launcher_scale` (launcher-only size). Separate package name, so repo updates can't undo it.
-echo -e "\n${YELLOW}[CUSTOM] Noctalia (ZeXOS patch)${RESET}"
-
-NOCTALIA_WANT="$(. "$REPO_ROOT/packaging/noctalia-zexos/PKGBUILD"; echo "$pkgver-$pkgrel")"
-if [ "$(pacman -Q noctalia-zexos 2>/dev/null | awk '{print $2}')" = "$NOCTALIA_WANT" ]; then
-    echo -e "${GREEN}✔ noctalia-zexos $NOCTALIA_WANT already installed${RESET}"
-elif install_prebuilt noctalia-zexos noctalia; then
-    :
-else
-    noctalia_build="$(zexos_build_dir)"
-    cp "$REPO_ROOT"/packaging/noctalia-zexos/* "$noctalia_build/"
-    if (cd "$noctalia_build" && zexos_makepkg -s --noconfirm --needed); then
-        # --noconfirm answers "no" to the conflict prompt, so drop stock first
-        [ "$(pacman -Qq noctalia 2>/dev/null)" = "noctalia" ] && sudo pacman -Rdd --noconfirm noctalia
-        sudo pacman -U --noconfirm "$noctalia_build"/noctalia-zexos-*.pkg.tar.zst
-        echo -e "${GREEN}✔ noctalia-zexos $NOCTALIA_WANT installed${RESET}"
-    else
-        echo -e "${RED}✖ noctalia-zexos build failed -- stock noctalia kept, bar islands will float${RESET}"
-    fi
-    rm -rf "$noctalia_build"
-fi
+install_local "Noctalia (ZeXOS patch)" noctalia-zexos
 
 # -----------------------------
 # DANKMATERIALSHELL (the second desktop shell)
@@ -451,41 +418,15 @@ pacman -Si dms-shell-hyprland &>/dev/null && HYPR_PACMAN+=(dms-shell-hyprland)
 
 install_pacman "Hyprland" "${HYPR_PACMAN[@]}"
 
-# =========================================================
-# 2. ZEXOS'S OWN PACKAGES
-# =========================================================
+# -----------------------------
+# ZEXOS'S OWN PACKAGES
+# -----------------------------
 # A few things aren't in the CachyOS/Arch repos. Each has a small recipe in
 # packaging/ that downloads it straight from its author and checks it
 # against a fixed checksum. makepkg turns it into a normal package, so
-# pacman can update or remove it like any other.
-# With the fast install (ZEXOS_PACKAGES=prebuilt) the same packages come
-# ready-made instead (install_prebuilt above); if that fails, they're built
-# here as before.
-
-install_local() {
-    local label=$1 dir=$2
-    local pkg want
-    pkg="$(. "$REPO_ROOT/packaging/$dir/PKGBUILD"; echo "$pkgname")"
-    want="$(. "$REPO_ROOT/packaging/$dir/PKGBUILD"; echo "$pkgver-$pkgrel")"
-
-    echo -e "\n${YELLOW}[LOCAL] ${label}${RESET}"
-
-    if [ "$(pacman -Q "$pkg" 2>/dev/null | awk '{print $2}')" = "$want" ]; then
-        echo -e "${GREEN}✔ $pkg $want already installed${RESET}"
-        return 0
-    fi
-    install_prebuilt "$dir" && return 0
-
-    local build
-    build="$(zexos_build_dir)"
-    cp "$REPO_ROOT/packaging/$dir"/* "$build/"
-    if (cd "$build" && zexos_makepkg -si --noconfirm --needed); then
-        echo -e "${GREEN}✔ $pkg $want installed${RESET}"
-    else
-        echo -e "${RED}✖ $pkg build failed${RESET}"
-    fi
-    rm -rf "$build"
-}
+# pacman can update or remove it like any other. With the fast install
+# (ZEXOS_PACKAGES=prebuilt) they come ready-made from ZeXOS's own package
+# repo instead; see "2. INSTALL EVERYTHING".
 
 # -----------------------------
 # DISTRO-SPECIFIC STEPS
@@ -503,9 +444,6 @@ else
 fi
 
 # Mouse pointer (Bibata Modern Ice). Replaces the old AUR package if present.
-if [ "$(pacman -Qq bibata-cursor-theme 2>/dev/null)" = "bibata-cursor-theme" ]; then
-    sudo pacman -Rdd --noconfirm bibata-cursor-theme
-fi
 install_local "Mouse pointer (Bibata)" bibata-cursor-zexos
 
 # -----------------------------
@@ -516,7 +454,7 @@ install_local "Mouse pointer (Bibata)" bibata-cursor-zexos
 # and EndeavourOS don't, so there it is built from packaging/mpvpaper.
 # socat is optional: the plugin uses it to keep a video slideshow in step.
 install_pacman "Video Wallpaper" mpv socat
-if pacman -Si mpvpaper &>/dev/null; then
+if in_distro_repos mpvpaper; then
     install_pacman "Video Wallpaper (mpvpaper)" mpvpaper
 else
     install_local "Video Wallpaper (mpvpaper)" mpvpaper
@@ -526,12 +464,307 @@ fi
 # LOGIN MANAGER: SDDM PIXIE
 # -----------------------------
 # The theme's own package pulls in sddm and the Qt parts it needs.
-# If the old AUR version is installed, swap it out first (--noconfirm
-# would otherwise say "no" to replacing it).
-if [ "$(pacman -Qq pixie-sddm-git 2>/dev/null)" = "pixie-sddm-git" ]; then
-    sudo pacman -Rdd --noconfirm pixie-sddm-git
-fi
+# It replaces the old AUR version (pixie-sddm-git) if that's installed.
 install_local "Login screen theme (Pixie)" pixie-sddm-zexos
+
+# -----------------------------
+# QT6CT-KDE (dark theme for Dolphin, Gwenview)
+# -----------------------------
+# Plain qt6ct can't pass the colour scheme to KDE apps outside Plasma, so
+# they stay bright white. This patched build can (see packaging/qt6ct-kde).
+# It replaces plain qt6ct if something installed that.
+install_local "Qt settings for KDE apps (qt6ct-kde)" qt6ct-kde
+
+# =========================================================
+# 2. INSTALL EVERYTHING
+# =========================================================
+
+# sudo pacman <args> with a spinner; returns pacman's exit code.
+run_pacman() {
+    local msg=$1 pid
+    shift
+    sudo pacman "$@" &
+    pid=$!
+    spinner "$pid" "$msg"
+    wait "$pid"
+}
+
+# Prints the packages from the arguments that aren't installed yet.
+# (pacman -T counts a package that stands in for another, like -Qi does.)
+not_installed() {
+    [ "$#" -gt 0 ] || return 0
+    pacman -T "$@" || true
+}
+
+# The version packaging/<name>/PKGBUILD makes, and the installed one.
+want_version() { (. "$REPO_ROOT/packaging/$1/PKGBUILD"; echo "$pkgver-$pkgrel"); }
+have_version() { pacman -Q "$1" 2>/dev/null | awk '{print $2}'; }
+
+# Removes the package <name> replaces, if it's installed (see REPLACES).
+DROPPED=()
+drop_old() {
+    local old=${REPLACES[$1]:-}
+    if [ -n "$old" ] && [ "$(pacman -Qq "$old" 2>/dev/null)" = "$old" ]; then
+        sudo pacman -Rdd --noconfirm "$old"
+        DROPPED+=("$old")
+    fi
+}
+
+# If a batch fails (say one package clashes with something you use, like
+# PulseAudio instead of PipeWire), install one at a time: the rest still
+# go in, and the log names the one that didn't.
+one_by_one() {
+    local pkg
+    for pkg in "$@"; do
+        pacman -T "${pkg#zexos/}" >/dev/null && continue
+        run_pacman "Installing $pkg" -S --needed --noconfirm "$pkg" ||
+            echo -e "${RED}✖ Failed to install $pkg${RESET}"
+    done
+}
+
+# -----------------------------
+# ZEXOS'S PACKAGE REPO (fast install only)
+# -----------------------------
+# The ready-made packages (made by scripts/make-prebuilt.sh) sit on the
+# GitHub release "prebuilt", next to a package list pacman understands
+# (zexos.db). With that added to /etc/pacman.conf, pacman fetches them in
+# the same run as everything else, and updates them with the rest of the
+# system later (pacman -Syu), like any repo.
+# Trust: zexos.db must match the checksum in packaging/prebuilt.list, and
+# zexos.db holds each package's checksum, which pacman checks in turn. If
+# anything's off, the repo is taken out again and install_prebuilt (above)
+# fetches the files one by one instead.
+remove_zexos_repo() {
+    grep -q '^\[zexos\]' /etc/pacman.conf || return 0
+    sudo sed -i '/^# ZeXOS ready-made packages/d; /^\[zexos\]/,/^$/d' /etc/pacman.conf
+    sudo rm -f /var/lib/pacman/sync/zexos.db /var/lib/pacman/sync/zexos.files
+}
+
+if [ "$ZEXOS_PACKAGES" = prebuilt ]; then
+    if ! grep -q '^\[zexos\]' /etc/pacman.conf; then
+        printf '\n# ZeXOS ready-made packages (added by ZeXOS install.sh)\n[zexos]\nSigLevel = Optional TrustAll\nServer = %s\n' \
+            "$PREBUILT_URL" | sudo tee -a /etc/pacman.conf >/dev/null
+    fi
+else
+    remove_zexos_repo
+fi
+
+echo -e "\n${YELLOW}[PACMAN] Package lists${RESET}"
+if ! run_pacman "Refreshing package lists" -Sy --noconfirm; then
+    if grep -q '^\[zexos\]' /etc/pacman.conf; then
+        echo -e "${YELLOW}⚠ Couldn't reach ZeXOS's package repo, using the slower way${RESET}"
+        remove_zexos_repo
+        run_pacman "Refreshing package lists" -Sy --noconfirm || true
+    fi
+fi
+
+ZEXOS_REPO_OK=0
+if grep -q '^\[zexos\]' /etc/pacman.conf; then
+    want_db="$(awk '$1 == "zexos.db" {print $4}' "$PREBUILT_LIST" 2>/dev/null)"
+    have_db="$(sha256sum /var/lib/pacman/sync/zexos.db 2>/dev/null | cut -d' ' -f1)"
+    if [ -n "$want_db" ] && [ "$have_db" = "$want_db" ]; then
+        ZEXOS_REPO_OK=1
+        echo -e "${GREEN}✔ ZeXOS's package repo is ready${RESET}"
+    else
+        # Usually just a newer ZeXOS on GitHub than this copy; install.sh
+        # from the newer one puts the repo back.
+        echo -e "${YELLOW}⚠ ZeXOS's package repo doesn't match this copy of ZeXOS, using the slower way${RESET}"
+        remove_zexos_repo
+    fi
+fi
+
+# Is the ready-made <name> in prebuilt.list the version we want, and (for
+# qt6ct-kde) made for the Qt this install ends up with?
+listed_ok() {
+    local pkg=$1 name ver file sum extra qt
+    read -r name ver file sum extra < <(grep "^$pkg " "$PREBUILT_LIST" 2>/dev/null) || return 1
+    [ "$ver" = "$(want_version "$pkg")" ] || return 1
+    if [ "${extra#qt=}" != "$extra" ]; then
+        qt="$(LC_ALL=C pacman -Si qt6-base 2>/dev/null | awk '/^Version/ {print $3; exit}')"
+        [ "$qt" = "${extra#qt=}" ] || return 1
+    fi
+}
+
+# -----------------------------
+# WHAT GOES WHERE
+# -----------------------------
+REPO_TARGETS=()   # zexos/<name>: ready-made, joins the big pacman run
+FALLBACK=()       # ready-made, but the repo isn't there: install_prebuilt
+BUILDS=()         # built on this computer
+for dir in "${LOCAL_DIRS[@]}"; do
+    [ "$(have_version "$dir")" = "$(want_version "$dir")" ] && continue
+    if [ "$ZEXOS_PACKAGES" != prebuilt ]; then
+        BUILDS+=("$dir")
+    elif [ "$ZEXOS_REPO_OK" = 1 ] && listed_ok "$dir"; then
+        REPO_TARGETS+=("zexos/$dir")
+    elif [ "$ZEXOS_REPO_OK" = 1 ]; then
+        echo -e "${CYAN}  No ready-made $dir $(want_version "$dir") for this system, building it here${RESET}"
+        BUILDS+=("$dir")
+    else
+        FALLBACK+=("$dir")
+    fi
+done
+
+ALL_REPO=()
+for group in "${GROUP_PKGS[@]}"; do
+    read -r -a pkgs <<< "$group"
+    ALL_REPO+=("${pkgs[@]}")
+done
+mapfile -t NEED < <(not_installed "${ALL_REPO[@]}" | sort -u)
+
+# Everything a build needs. makepkg would install these itself, but then
+# it can't run while pacman installs the rest.
+mapfile -t BUILD_DEPS < <(
+    for dir in "${BUILDS[@]}"; do
+        (. "$REPO_ROOT/packaging/$dir/PKGBUILD"; printf '%s\n' "${depends[@]}" "${makedepends[@]}")
+    done | sed 's/[<>=].*//' | sort -u | xargs -r pacman -T || true
+)
+
+# Make room for ours: remove what they replace (and put it back at the
+# end if ours didn't make it, see "Anything missing?").
+for target in "${REPO_TARGETS[@]}"; do
+    drop_old "${target#zexos/}"
+done
+
+# Builds run next to pacman: noctalia-zexos (the long one) on its own,
+# the rest one after another. Each writes a log to ~/.cache/zexos/build/.
+BUILT_DIR="$(zexos_build_dir)"
+build_one() {
+    local dir=$1 b rc=0
+    shift
+    b="$(zexos_build_dir)"
+    cp "$REPO_ROOT/packaging/$dir"/* "$b/"
+    if (cd "$b" && zexos_makepkg --noconfirm "$@") >"$ZEXOS_BUILD_ROOT/$dir.log" 2>&1; then
+        mv "$b"/*.pkg.tar.zst "$BUILT_DIR/"
+    else
+        rc=1
+    fi
+    rm -rf "$b"
+    return "$rc"
+}
+build_lane() {
+    local dir
+    for dir in "$@"; do
+        build_one "$dir" || echo "$dir" >> "$BUILT_DIR/failed"
+    done
+}
+
+# -----------------------------
+# THE BIG PACMAN RUN
+# -----------------------------
+# The system upgrade and every missing package in one go. pacman downloads
+# several files at once (ParallelDownloads in /etc/pacman.conf). When
+# something has to be built, it goes in two steps: first the upgrade plus
+# what the builds need, then the builds start while the rest installs.
+if [ "${#BUILDS[@]}" -gt 0 ]; then
+    FIRST=("${BUILD_DEPS[@]}")
+    SECOND=("${NEED[@]}" "${REPO_TARGETS[@]}")
+else
+    FIRST=("${NEED[@]}" "${REPO_TARGETS[@]}")
+    SECOND=()
+fi
+
+echo -e "\n${YELLOW}[PACMAN] Updating the system and installing ${#FIRST[@]} packages${RESET}"
+if run_pacman "Updating and installing" -Su --needed --noconfirm "${FIRST[@]}"; then
+    echo -e "${GREEN}✔ Done${RESET}"
+else
+    echo -e "${YELLOW}⚠ That didn't go through in one go, trying one package at a time${RESET}"
+    run_pacman "Updating system" -Su --noconfirm ||
+        echo -e "${RED}✖ System upgrade failed — continuing anyway, but package installs below may also fail${RESET}"
+    one_by_one "${FIRST[@]}"
+fi
+
+lanes=()
+if [ "${#BUILDS[@]}" -gt 0 ]; then
+    heavy=() light=()
+    for dir in "${BUILDS[@]}"; do
+        if [ "$dir" = noctalia-zexos ]; then heavy+=("$dir"); else light+=("$dir"); fi
+    done
+    echo -e "\n${YELLOW}[BUILD] Building ${BUILDS[*]} (logs in $ZEXOS_BUILD_ROOT)${RESET}"
+    [ "${#heavy[@]}" -gt 0 ] && { build_lane "${heavy[@]}" & lanes+=($!); }
+    [ "${#light[@]}" -gt 0 ] && { build_lane "${light[@]}" & lanes+=($!); }
+fi
+
+if [ "${#SECOND[@]}" -gt 0 ]; then
+    echo -e "\n${YELLOW}[PACMAN] Installing ${#SECOND[@]} packages${RESET}"
+    run_pacman "Installing" -S --needed --noconfirm "${SECOND[@]}" || {
+        echo -e "${YELLOW}⚠ That didn't go through in one go, trying one package at a time${RESET}"
+        one_by_one "${SECOND[@]}"
+    }
+fi
+
+# Ready-made the old way (the repo wasn't there): the AUR or a GitHub
+# download, one by one. Whatever fails is built below.
+for dir in "${FALLBACK[@]}"; do
+    install_prebuilt "$dir" "${REPLACES[$dir]:-}" || echo "$dir" >> "$BUILT_DIR/failed"
+done
+
+for pid in "${lanes[@]}"; do
+    spinner "$pid" "Building"
+    wait "$pid" || true
+done
+
+# Builds that failed get one more go, one at a time, now that pacman is
+# free: -s lets makepkg install anything still missing.
+if [ -s "$BUILT_DIR/failed" ]; then
+    while read -r dir; do
+        echo -e "${CYAN}Building $dir${RESET}"
+        build_one "$dir" -s ||
+            echo -e "${RED}✖ $dir build failed, see $ZEXOS_BUILD_ROOT/$dir.log${RESET}"
+    done < "$BUILT_DIR/failed"
+fi
+
+# Install everything that was built, in one go.
+shopt -s nullglob
+built=("$BUILT_DIR"/*.pkg.tar.zst)
+shopt -u nullglob
+if [ "${#built[@]}" -gt 0 ]; then
+    for file in "${built[@]}"; do
+        drop_old "$(pacman -Qpq "$file")"
+    done
+    echo -e "\n${YELLOW}[PACMAN] Installing ${#built[@]} packages built here${RESET}"
+    run_pacman "Installing" -U --needed --noconfirm "${built[@]}" || {
+        for file in "${built[@]}"; do
+            run_pacman "Installing ${file##*/}" -U --needed --noconfirm "$file" ||
+                echo -e "${RED}✖ Failed to install ${file##*/}${RESET}"
+        done
+    }
+fi
+rm -rf "$BUILT_DIR"
+
+# -----------------------------
+# ANYTHING MISSING?
+# -----------------------------
+# Put back what was removed to make room, if ours didn't make it (stock
+# noctalia beats no bar at all).
+for old in "${DROPPED[@]}"; do
+    for new in "${!REPLACES[@]}"; do
+        [ "${REPLACES[$new]}" = "$old" ] || continue
+        if ! pacman -Q "$new" &>/dev/null && in_distro_repos "$old"; then
+            echo -e "${YELLOW}⚠ $new didn't install, putting $old back${RESET}"
+            run_pacman "Installing $old" -S --needed --noconfirm "$old" || true
+        fi
+    done
+done
+
+echo -e "\n${YELLOW}[RESULT]${RESET}"
+for i in "${!GROUP_LABELS[@]}"; do
+    read -r -a pkgs <<< "${GROUP_PKGS[$i]}"
+    missing="$(not_installed "${pkgs[@]}" | tr '\n' ' ')"
+    if [ -z "$missing" ]; then
+        echo -e "${GREEN}✔ ${GROUP_LABELS[$i]}${RESET}"
+    else
+        echo -e "${RED}✖ ${GROUP_LABELS[$i]}: missing ${missing}${RESET}"
+    fi
+done
+for i in "${!LOCAL_DIRS[@]}"; do
+    dir=${LOCAL_DIRS[$i]}
+    if [ "$(have_version "$dir")" = "$(want_version "$dir")" ]; then
+        echo -e "${GREEN}✔ ${LOCAL_LABELS[$i]} ($dir $(want_version "$dir"))${RESET}"
+    else
+        echo -e "${RED}✖ ${LOCAL_LABELS[$i]}: $dir $(want_version "$dir") not installed${RESET}"
+    fi
+done
 
 echo -e "\n${YELLOW}[SDDM] Configuration${RESET}"
 
@@ -592,20 +825,6 @@ else
     echo -e "${GREEN}✔ SDDM already active${RESET}"
 fi
 
-
-# -----------------------------
-# QT6CT-KDE (dark theme for Dolphin, Gwenview)
-# -----------------------------
-# Plain qt6ct can't pass the colour scheme to KDE apps outside Plasma, so
-# they stay bright white. This patched build can (see packaging/qt6ct-kde).
-# It replaces plain qt6ct, so remove that first if something installed it.
-# `pacman -Q qt6ct` also answers "qt6ct-kde" (it stands in for qt6ct), so
-# check the exact name, or a second run tries to remove a missing package.
-if [ "$(pacman -Qq qt6ct 2>/dev/null)" = "qt6ct" ]; then
-    echo -e "${YELLOW}⚠ Removing plain qt6ct -- it clashes with qt6ct-kde${RESET}"
-    sudo pacman -Rdd --noconfirm qt6ct
-fi
-install_local "Qt settings for KDE apps (qt6ct-kde)" qt6ct-kde
 
 # Qt updates can break qt6ct-kde, and pacman won't rebuild it for us (it
 # isn't in any repo). This pacman hook rebuilds it in the background after

@@ -21,7 +21,18 @@ New work is tested on the `beta` branch first and is listed under
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+
+- Faster install: all packages now go in with one pacman run instead of
+  one run per package. If that run fails, they're installed one at a time,
+  so the log still names the package that caused it.
+- The fast install now adds ZeXOS's own package repo to `/etc/pacman.conf`
+  (the GitHub release "prebuilt", checked against `packaging/prebuilt.list`).
+  ZeXOS's own apps install in the same pacman run, and `pacman -Syu`
+  updates them like any other package.
+- When something does have to be built, it builds while pacman installs
+  the rest, and Noctalia builds next to the smaller ones instead of
+  after them.
 
 ## [1.1.0] - 2026-10-03
 

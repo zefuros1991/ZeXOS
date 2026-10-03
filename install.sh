@@ -221,11 +221,13 @@ fi
 
 # A few apps aren't in the Arch/CachyOS repos (the patched Noctalia, the
 # login theme, the wallpaper picker, ...). They come one of two ways:
-#   prebuilt  ready-made packages: from the AUR if you have yay or paru and
-#             they're there, otherwise from ZeXOS's GitHub release. Fast.
+#   prebuilt  ready-made packages from ZeXOS's own package repo (a GitHub
+#             release that pacman reads like any repo, added to
+#             /etc/pacman.conf, so pacman -Syu keeps them up to date).
+#             If that's unreachable: the AUR, or single downloads. Fast.
 #   source    built on this computer from the recipes in packaging/.
 #             Slower (Noctalia alone takes a few minutes), nothing downloaded
-#             ready-made.
+#             ready-made, and ZeXOS's repo is taken out of pacman.conf.
 # Skip the question with ZEXOS_PACKAGES=prebuilt or ZEXOS_PACKAGES=source.
 # The answer is remembered as the default for the next run.
 method_file="${XDG_STATE_HOME:-$HOME/.local/state}/zexos/packages-method"

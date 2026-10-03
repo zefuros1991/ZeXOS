@@ -1,3 +1,5 @@
-# Added to the Arch live ISO package list (releng) for the TUI installer.
+# Added to the Arch live ISO package list (releng) for the TUI installer
+# (libnewt is whiptail, jq writes the archinstall config).
 libnewt
 git
+jq

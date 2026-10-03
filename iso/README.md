@@ -6,7 +6,7 @@ ZeXOS while installing.
 
 | ISO | What you get |
 |---|---|
-| `tui` | Text installer: archinstall for the base system, then a ZeXOS menu to pick compositors and shells. |
+| `tui` | Text installer: a few plain questions, one screen to check them, then it installs everything by itself. |
 | `gui` | Graphical installer: Calamares on a small niri desktop, with language, disk, compositor, shell and user pages and a slideshow while it installs. |
 
 On both you can pick any mix of compositors (niri, Hyprland, Mango) and
@@ -33,6 +33,28 @@ iso/
 sudo pacman -S --needed archiso
 sudo ZEXOS_BRANCH=beta ./iso/build.sh tui
 ```
+
+## What the text installer does
+
+`zexos-tui` asks, one step at a time: keyboard, Wi-Fi (only if there is no
+cable), your name and password, computer name, time zone, disk, disk
+encryption and which compositors and shells to install. Then it shows all
+the answers on one screen; pick a line to change it. After that it does the
+rest by itself: it writes an archinstall config (an EFI partition plus a
+btrfs root, encrypted if you said yes), runs archinstall without its menus,
+and puts ZeXOS on the new system before the first boot.
+
+Installing the same way on many machines, or testing:
+
+```bash
+zexos-tui --answers answers.sh            # no questions
+zexos-tui --answers answers.sh --dry-run  # only writes the config to /tmp/zexos
+```
+
+`answers.sh` sets `USERNAME`, `PASSWORD`, `DISK` and `TIMEZONE` (needed) and
+`KEYMAP`, `HOSTNAME`, `ENCRYPT`, `COMPOSITORS`, `SHELLS` (optional) as
+shell variables. Arch's own installer menus are still in the first menu ("Install with
+Arch's own installer menus") for anything the questions don't cover.
 
 ## Building the graphical ISO
 

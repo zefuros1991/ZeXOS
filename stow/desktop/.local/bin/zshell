@@ -171,15 +171,17 @@ link_noctalia() {
         echo '# Written by zshell: nothing extra for this compositor.' > "$dir/zexos-compositor.toml"
     fi
     # Only one shell installed: nothing to switch to, so take the switch
-    # button off the bar. Noctalia merges every .toml here, and bar groups
-    # with the same id replace each other.
+    # button off the bar. Noctalia merges every .toml here, but a list of
+    # bar groups replaces the whole list, so copy all the groups, not just
+    # the one with the button.
     if installed dms; then
         rm -f "$dir/zexos-single-shell.toml"
     else
-        local members
-        members="$(sed -n '/^id = "right"/{n;p;q}' "$dir/noctalia.toml" | sed 's/, *"shell_switch"//')"
-        [ -n "$members" ] && printf '%s\n' '# Written by zshell: DMS is not installed.' '' \
-            '[[bar.default.capsule_group]]' 'id = "right"' "$members" > "$dir/zexos-single-shell.toml"
+        local groups
+        groups="$(awk '/^\[/ { on = ($0 == "[[bar.default.capsule_group]]") }
+            on { sub(/, *"shell_switch"/, ""); print }' "$dir/noctalia.toml")"
+        [ -n "$groups" ] && printf '%s\n' '# Written by zshell: DMS is not installed.' '' \
+            "$groups" > "$dir/zexos-single-shell.toml"
     fi
 }
 

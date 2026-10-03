@@ -1,30 +1,405 @@
 #!/usr/bin/env bash
 # The ZeXOS text installer: the menu on the first screen of the TUI ISO.
-# Installing is two steps: archinstall sets up plain Arch (disk, user,
-# bootloader) with ZeXOS defaults filled in, then zexos-install-into puts
-# ZeXOS on it before the first boot.
+#
+# "Install ZeXOS" asks a few plain questions (keyboard, account, time zone,
+# disk, encryption, desktop), shows them all on one screen to check, then
+# does the rest by itself: archinstall sets up Arch from a config written
+# here (it never shows its own menus), and zexos-install-into puts ZeXOS
+# on it before the first boot.
+#
+# Testing, or installing the same way on many machines:
+#   zexos-tui --answers FILE [--dry-run]
+# FILE sets KEYMAP USERNAME PASSWORD HOSTNAME TIMEZONE DISK ENCRYPT
+# COMPOSITORS SHELLS as shell variables; the questions are skipped. With
+# --dry-run it only writes the archinstall files to /tmp/zexos and stops.
 
 TITLE="ZeXOS installer"
 PRESET=/etc/zexos/archinstall.json
 ROOT=/mnt
+WORK=/tmp/zexos
+LOG=/var/log/zexos-install.log
+
+# The answers, with their defaults.
+KEYMAP=us
+USERNAME=
+PASSWORD=
+HOSTNAME=zexos
+TIMEZONE=
+DISK=
+ENCRYPT=yes
+COMPOSITORS="niri hyprland mango"
+SHELLS="noctalia dms"
+WIFI_SSID=
+WIFI_PASS=
 
 msg() { whiptail --title "$TITLE" --msgbox "$1" 0 0; }
+# whiptail draws on the terminal and answers on stderr: swap them.
+ask() { whiptail --title "$TITLE" "$@" 3>&1 1>&2 2>&3; }
 
 online() { curl -fsI --max-time 8 https://github.com >/dev/null 2>&1; }
 
+# Wi-Fi: pick a network from a list, type its password.
 wifi() {
+    local dev nets=() line ssid
+    dev=$(iwctl device list 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | awk '$0 ~ /station/ { print $1; exit }')
+    if [ -z "$dev" ]; then
+        msg "No Wi-Fi card found. Plug in a network cable instead (it works by itself)."
+        return 1
+    fi
+    while :; do
+        iwctl station "$dev" scan >/dev/null 2>&1
+        sleep 3
+        nets=()
+        # get-networks: a header, then one line per network; the strongest
+        # first. The name is everything before the security column.
+        while IFS= read -r line; do
+            ssid=$(sed -E 's/^[ >]*//; s/ +(psk|open|8021x|wep) +\*+ *$//' <<<"$line")
+            [ -n "$ssid" ] && nets+=("$ssid" "")
+        done < <(iwctl station "$dev" get-networks 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' \
+                  | grep -E ' (psk|open|8021x|wep) +\*+ *$')
+        nets+=("(scan again)" "")
+        ssid=$(ask --cancel-button Back --menu "Pick your Wi-Fi network" 0 0 0 "${nets[@]}") || return 1
+        [ "$ssid" = "(scan again)" ] && continue
+
+        WIFI_PASS=$(ask --cancel-button Back --passwordbox "Password for $ssid\n(leave empty for an open network)" 0 0) || continue
+        infobox "Connecting to $ssid..."
+        if [ -n "$WIFI_PASS" ]; then
+            iwctl --passphrase "$WIFI_PASS" station "$dev" connect "$ssid" >/dev/null 2>&1
+        else
+            iwctl station "$dev" connect "$ssid" >/dev/null 2>&1
+        fi
+        for _ in 1 2 3 4 5 6 7 8 9 10; do online && break; sleep 2; done
+        if online; then
+            WIFI_SSID=$ssid
+            return 0
+        fi
+        msg "Could not get online through $ssid. Check the password and try again."
+    done
+}
+
+infobox() { TERM=ansi whiptail --title "$TITLE" --infobox "$1" 0 0; }
+
+ask_keyboard() {
+    local k
+    k=$(ask --cancel-button Back --default-item "$KEYMAP" --menu "Keyboard layout" 0 0 0 \
+        us "English (US)" \
+        uk "English (UK)" \
+        de-latin1 "German" \
+        fr-latin1 "French" \
+        es "Spanish" \
+        it "Italian" \
+        gr "Greek" \
+        pl "Polish" \
+        pt-latin1 "Portuguese" \
+        br-abnt2 "Portuguese (Brazil)" \
+        ru "Russian" \
+        sv-latin1 "Swedish" \
+        no-latin1 "Norwegian" \
+        dk-latin1 "Danish" \
+        fi "Finnish" \
+        trq "Turkish" \
+        other "Something else...") || return 1
+    if [ "$k" = other ]; then
+        local items=()
+        while read -r m; do items+=("$m" ""); done < <(localectl list-keymaps)
+        k=$(ask --cancel-button Back --menu "Keyboard layout (all of them)" 0 0 20 "${items[@]}") || return 1
+    fi
+    KEYMAP=$k
+    loadkeys "$KEYMAP" 2>/dev/null
+    return 0
+}
+
+ask_account() {
+    local u p p2 h
+    while :; do
+        u=$(ask --cancel-button Back --inputbox "Your username (small letters, numbers, - and _)" 0 0 "$USERNAME") || return 1
+        if [[ ! $u =~ ^[a-z_][a-z0-9_-]{0,31}$ ]]; then
+            msg "\"$u\" can't be a username. Start with a small letter, then use small letters, numbers, - or _."
+        elif getent passwd "$u" >/dev/null; then
+            msg "\"$u\" is a name the system already uses. Pick another one."
+        else
+            break
+        fi
+    done
+    while :; do
+        p=$(ask --cancel-button Back --passwordbox "Password for $u\n(it is also the sudo password, and the disk password if you encrypt)" 0 0) || return 1
+        p2=$(ask --cancel-button Back --passwordbox "The same password again" 0 0) || continue
+        if [ -z "$p" ]; then
+            msg "The password can't be empty."
+        elif [ "$p" != "$p2" ]; then
+            msg "The two passwords are different. Try again."
+        else
+            break
+        fi
+    done
+    while :; do
+        h=$(ask --cancel-button Back --inputbox "Computer name (how it shows up on your network)" 0 0 "$HOSTNAME") || return 1
+        [[ $h =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$ ]] && break
+        msg "\"$h\" can't be a computer name. Use letters, numbers and -, and don't start or end with -."
+    done
+    USERNAME=$u PASSWORD=$p HOSTNAME=$h
+    return 0
+}
+
+ask_timezone() {
+    local guess region city items=()
+    if [ -z "$TIMEZONE" ]; then
+        guess=$(curl -fsS --max-time 5 https://ipapi.co/timezone 2>/dev/null)
+        [ -n "$guess" ] && [ -f "/usr/share/zoneinfo/$guess" ] && TIMEZONE=$guess
+    fi
+    if [ -n "$TIMEZONE" ]; then
+        whiptail --title "$TITLE" --yes-button "Yes" --no-button "Pick another" \
+            --yesno "Your time zone looks like:\n\n    $TIMEZONE\n\nUse it?" 0 0 && return 0
+    fi
+    while :; do
+        items=()
+        while read -r region; do items+=("$region" ""); done < <(timedatectl list-timezones | awk -F/ 'NF > 1 { print $1 }' | uniq)
+        items+=(UTC "")
+        region=$(ask --cancel-button Back --menu "Time zone: your region" 0 0 0 "${items[@]}") || return 1
+        if [ "$region" = UTC ]; then TIMEZONE=UTC; return 0; fi
+        items=()
+        while read -r city; do items+=("$city" ""); done < <(timedatectl list-timezones | grep "^$region/" | cut -d/ -f2-)
+        city=$(ask --cancel-button Back --menu "Time zone: the city nearest you" 0 0 20 "${items[@]}") || continue
+        TIMEZONE=$region/$city
+        return 0
+    done
+}
+
+# The disk the ISO itself runs from, so it is never offered.
+live_disk() {
+    local src
+    src=$(findmnt -no SOURCE /run/archiso/bootmnt 2>/dev/null) || return
+    # A USB stick written with dd holds the ISO from its first byte, so the
+    # mount source can be the whole disk, which has no parent.
+    lsblk -no PKNAME "$src" 2>/dev/null | head -n1 | grep . || basename "$src"
+}
+
+ask_disk() {
+    local live items=() name size model d
+    live=$(live_disk)
+    while read -r name type size model; do
+        [ "$type" = disk ] || continue
+        case ${name##*/} in "$live" | zram* | loop*) continue ;; esac
+        items+=("$name" "$size  ${model:-disk}")
+    done < <(lsblk -dpno NAME,TYPE,SIZE,MODEL)
+    if [ ${#items[@]} -eq 0 ]; then
+        msg "No disk to install on was found."
+        return 1
+    fi
+    while :; do
+        d=$(ask --cancel-button Back --default-item "${DISK:-${items[0]}}" --menu "Which disk should ZeXOS go on?" 0 0 0 "${items[@]}") || return 1
+        if [ "$(lsblk -bdno SIZE "$d")" -lt $((20 * 1024 ** 3)) ]; then
+            msg "$d is too small. ZeXOS needs at least 20 GB."
+            continue
+        fi
+        whiptail --title "$TITLE" --defaultno --yes-button "Erase it" --no-button "Back" --yesno \
+            "EVERYTHING on $d will be erased:\n\n$(lsblk -no NAME,SIZE,FSTYPE,LABEL "$d")\n\nZeXOS gets the whole disk. Erase it?" 0 0 || continue
+        DISK=$d
+        return 0
+    done
+}
+
+ask_encrypt() {
+    local r
+    r=$(ask --cancel-button Back --default-item "$ENCRYPT" --menu "Encrypt the disk?\n\nThen nobody can read your files without the password, even with the disk taken out (good for laptops). You type the password once at every start." 0 0 0 \
+        yes "Encrypt (uses your account password)" \
+        no  "Don't encrypt") || return 1
+    ENCRYPT=$r
+    return 0
+}
+
+ask_desktop() {
+    local c s
+    while :; do
+        c=$(ask --cancel-button Back --separate-output --checklist "Which compositors? (space ticks, Enter confirms)\nYou can switch between them at login." 0 0 0 \
+            niri     "Scrolling tiling" "$(on niri "$COMPOSITORS")" \
+            hyprland "Dynamic tiling, lots of eye candy" "$(on hyprland "$COMPOSITORS")" \
+            mango    "dwl-style tags, light and fast" "$(on mango "$COMPOSITORS")") || return 1
+        [ -n "$c" ] && break
+        msg "Pick at least one compositor."
+    done
+    while :; do
+        s=$(ask --cancel-button Back --separate-output --checklist "Which desktop shells? (with both, a button on the bar switches between them)" 0 0 0 \
+            noctalia "Noctalia" "$(on noctalia "$SHELLS")" \
+            dms      "DankMaterialShell" "$(on dms "$SHELLS")") || return 1
+        [ -n "$s" ] && break
+        msg "Pick at least one shell."
+    done
+    COMPOSITORS=${c//$'\n'/ } SHELLS=${s//$'\n'/ }
+    return 0
+}
+
+on() { [[ " $2 " == *" $1 "* ]] && echo ON || echo OFF; }
+
+# Everything on one screen; pick a line to change it.
+review() {
+    local c
+    while :; do
+        c=$(ask --cancel-button "Cancel" --ok-button "Select" --menu "Check everything, then pick Install.\nPick any other line to change it." 0 0 0 \
+            install  ">> Install ZeXOS now <<" \
+            keyboard "Keyboard:       $KEYMAP" \
+            account  "User:           $USERNAME   (computer: $HOSTNAME)" \
+            timezone "Time zone:      $TIMEZONE" \
+            disk     "Disk:           $DISK  $(lsblk -dno SIZE "$DISK")  -- WILL BE ERASED" \
+            encrypt  "Encryption:     $ENCRYPT" \
+            desktop  "Desktop:        $COMPOSITORS + $SHELLS") || return 1
+        case $c in
+            install) return 0 ;;
+            *) "ask_$c" ;;
+        esac
+    done
+}
+
+# Writes the archinstall config and credentials for the answers.
+write_config() {
+    local mib=$((1024 * 1024)) size boot_start boot_size root_start root_size hash enc
+    mkdir -p "$WORK"
+    chmod 700 "$WORK"
+    size=$(lsblk -bdno SIZE "$DISK")
+    size=$((size / mib * mib))
+    boot_start=$mib
+    boot_size=$((1024 * mib))
+    root_start=$((boot_start + boot_size))
+    root_size=$((size - root_start - mib))   # the last MiB holds the backup GPT
+
+    enc=false
+    [ "$ENCRYPT" = yes ] && enc=true
+
+    jq -n --arg disk "$DISK" --arg host "$HOSTNAME" --arg tz "$TIMEZONE" --arg km "$KEYMAP" \
+        --argjson bs "$boot_start" --argjson bz "$boot_size" \
+        --argjson rs "$root_start" --argjson rz "$root_size" --argjson enc "$enc" '
+    def sz(v): {unit: "B", value: v, sector_size: {unit: "B", value: 512}};
+    {
+      "archinstall-language": "English",
+      app_config: {
+        audio_config: {audio: "pipewire"},
+        bluetooth_config: {enabled: true}
+      },
+      bootloader_config: {bootloader: "Systemd-boot", uki: false, removable: true},
+      disk_config: ({
+        config_type: "default_layout",
+        device_modifications: [{
+          device: $disk,
+          wipe: true,
+          partitions: [
+            {
+              obj_id: "zexos-boot", status: "create", type: "primary",
+              start: sz($bs), size: sz($bz),
+              fs_type: "fat32", mountpoint: "/boot", mount_options: [],
+              flags: ["boot", "esp"], btrfs: [], dev_path: null
+            },
+            {
+              obj_id: "zexos-root", status: "create", type: "primary",
+              start: sz($rs), size: sz($rz),
+              fs_type: "btrfs", mountpoint: null, mount_options: ["compress=zstd"],
+              flags: [], dev_path: null,
+              btrfs: [
+                {name: "@", mountpoint: "/"},
+                {name: "@home", mountpoint: "/home"},
+                {name: "@log", mountpoint: "/var/log"},
+                {name: "@pkg", mountpoint: "/var/cache/pacman/pkg"}
+              ]
+            }
+          ]
+        }]
+      } + (if $enc then {disk_encryption: {
+        encryption_type: "luks", partitions: ["zexos-root"], lvm_volumes: [], iter_time: 2000
+      }} else {} end)),
+      hostname: $host,
+      kernels: ["linux"],
+      locale_config: {kb_layout: $km, sys_lang: "en_US.UTF-8", sys_enc: "UTF-8"},
+      network_config: {type: "nm"},
+      ntp: true,
+      packages: ["git", "curl", "sudo"],
+      parallel_downloads: 8,
+      profile_config: {profile: {main: "Minimal"}},
+      swap: {enabled: true, algorithm: "zstd"},
+      timezone: $tz,
+      services: [],
+      custom_commands: []
+    }' > "$WORK/user_configuration.json" || return 1
+
+    hash=$(printf '%s' "$PASSWORD" | openssl passwd -6 -stdin) || return 1
+    ( umask 077
+      jq -n --arg u "$USERNAME" --arg h "$hash" --arg p "$PASSWORD" --argjson enc "$enc" '
+      {
+        root_enc_password: $h,
+        users: [{username: $u, enc_password: $h, sudo: true, groups: []}]
+      } + (if $enc then {encryption_password: $p} else {} end)' > "$WORK/user_credentials.json" ) || return 1
+}
+
+# The Wi-Fi picked here also works after the first boot.
+carry_wifi() {
+    [ -n "$WIFI_SSID" ] || return 0
+    local f="$ROOT/etc/NetworkManager/system-connections/$WIFI_SSID.nmconnection"
+    mkdir -p "${f%/*}"
+    ( umask 077
+      {
+        printf '[connection]\nid=%s\ntype=wifi\n\n[wifi]\nmode=infrastructure\nssid=%s\n\n' "$WIFI_SSID" "$WIFI_SSID"
+        [ -n "$WIFI_PASS" ] && printf '[wifi-security]\nkey-mgmt=wpa-psk\npsk=%s\n\n' "$WIFI_PASS"
+        printf '[ipv4]\nmethod=auto\n\n[ipv6]\nmethod=auto\n'
+      } > "$f" )
+}
+
+run_install() {
     clear
-    echo "Wi-Fi setup (iwctl). Type for example:"
-    echo "  device list"
-    echo "  station wlan0 scan"
-    echo "  station wlan0 get-networks"
-    echo "  station wlan0 connect <network name>"
-    echo "Then type: exit"
+    echo "Installing ZeXOS on $DISK. This takes a while; you can leave it alone."
+    echo "Everything is logged to $LOG."
     echo
-    iwctl
+    {
+        echo "== $(date) archinstall"
+        archinstall --config "$WORK/user_configuration.json" --creds "$WORK/user_credentials.json" --silent
+    } 2>&1 | tee -a "$LOG"
+    rm -f "$WORK/user_credentials.json"
+
+    if [ ! -f "$ROOT/etc/os-release" ] || ! awk -F: -v u="$USERNAME" '$1 == u { f = 1 } END { exit !f }' "$ROOT/etc/passwd"; then
+        msg "Setting up Arch failed, so ZeXOS was not installed. The log is at $LOG (and /var/log/archinstall/install.log).\n\nOpen a shell from the menu to look, or start again."
+        return 1
+    fi
+    carry_wifi
+    cp -f "$LOG" "$ROOT/var/log/zexos-install-arch.log" 2>/dev/null
+
+    export ZEXOS_COMPOSITORS="$COMPOSITORS" ZEXOS_SHELLS="$SHELLS"
+    echo
+    echo "Arch is set up. Now ZeXOS itself for $USERNAME."
+    echo
+    if zexos-install-into "$ROOT" "$USERNAME"; then
+        [ -n "$ANSWERS" ] && return 0
+        if whiptail --title "$TITLE" --yesno "ZeXOS is installed.\n\nReboot now? (Take the USB stick or ISO out when the screen goes dark.)" 0 0; then
+            umount -R "$ROOT" 2>/dev/null
+            systemctl reboot
+        fi
+    else
+        msg "The ZeXOS step failed. The log is at $ROOT/var/log/zexos-install.log.\n\nThe Arch system itself is installed; you can open a shell from the menu and look, or try again."
+        return 1
+    fi
 }
 
 install_zexos() {
+    until online; do
+        whiptail --title "$TITLE" --yes-button "Set up Wi-Fi" --no-button "Back" --yesno \
+            "No internet connection. ZeXOS is downloaded while it installs, so it needs one.\n\nWith a network cable, plug it in and wait a few seconds." 0 0 || return
+        wifi
+    done
+
+    msg "Welcome! A few questions, then ZeXOS installs by itself.\n\nBack (or Esc) always goes one step back. Nothing is changed on your disks until you pick Install on the last screen."
+
+    local steps=(keyboard account timezone disk encrypt desktop) i=0
+    while [ $i -lt ${#steps[@]} ]; do
+        if "ask_${steps[i]}"; then
+            i=$((i + 1))
+        else
+            i=$((i - 1))
+            [ $i -lt 0 ] && return
+        fi
+    done
+    review || return
+    write_config || { msg "Could not write the install settings. Nothing was changed."; return; }
+    run_install
+}
+
+# The old way: Arch's own installer menus, with the ZeXOS defaults picked.
+install_manual() {
     until online; do
         whiptail --title "$TITLE" --yesno "No internet connection. This installer downloads everything, so it needs one.\n\nSet up Wi-Fi now?" 0 0 || return
         wifi
@@ -40,39 +415,23 @@ install_zexos() {
         return
     fi
 
+    local users=() items=() u
     mapfile -t users < <(awk -F: '$3 >= 1000 && $3 < 60000 { print $1 }' "$ROOT/etc/passwd")
     case ${#users[@]} in
         0) msg "The new system has no normal user. Run the install again and add a user (as a superuser)."; return ;;
-        1) user=${users[0]} ;;
+        1) USERNAME=${users[0]} ;;
         *)
-            items=()
             for u in "${users[@]}"; do items+=("$u" ""); done
-            user=$(whiptail --title "$TITLE" --menu "Which user gets ZeXOS?" 0 0 0 "${items[@]}" 3>&1 1>&2 2>&3) || return
+            USERNAME=$(ask --menu "Which user gets ZeXOS?" 0 0 0 "${items[@]}") || return
             ;;
     esac
+    ask_desktop || return
 
-    # Tick any mix; everything is ticked to start with.
-    while :; do
-        comps=$(whiptail --title "$TITLE" --separate-output --checklist "Which compositors? (space ticks, Enter confirms)" 0 0 0 \
-            niri     "Scrolling tiling" ON \
-            hyprland "Dynamic tiling, lots of eye candy" ON \
-            mango    "dwl-style tags, light and fast" ON 3>&1 1>&2 2>&3) || return
-        [ -n "$comps" ] && break
-        msg "Pick at least one compositor."
-    done
-    while :; do
-        shells=$(whiptail --title "$TITLE" --separate-output --checklist "Which desktop shells? (with both, a button on the bar switches between them)" 0 0 0 \
-            noctalia "Noctalia" ON \
-            dms      "DankMaterialShell" ON 3>&1 1>&2 2>&3) || return
-        [ -n "$shells" ] && break
-        msg "Pick at least one shell."
-    done
-    export ZEXOS_COMPOSITORS="${comps//$'\n'/ }" ZEXOS_SHELLS="${shells//$'\n'/ }"
-
+    export ZEXOS_COMPOSITORS="$COMPOSITORS" ZEXOS_SHELLS="$SHELLS"
     clear
-    echo "Step 2 of 2: installing ZeXOS for $user. This takes a few minutes."
+    echo "Step 2 of 2: installing ZeXOS for $USERNAME. This takes a few minutes."
     echo
-    if zexos-install-into "$ROOT" "$user"; then
+    if zexos-install-into "$ROOT" "$USERNAME"; then
         if whiptail --title "$TITLE" --yesno "ZeXOS is installed.\n\nReboot now? (Take the USB stick or ISO out when the screen goes dark.)" 0 0; then
             umount -R "$ROOT" 2>/dev/null
             systemctl reboot
@@ -82,16 +441,42 @@ install_zexos() {
     fi
 }
 
+ANSWERS=
+DRY=
+while [ $# -gt 0 ]; do
+    case $1 in
+        --answers) ANSWERS=$2; shift ;;
+        --dry-run) DRY=1 ;;
+    esac
+    shift
+done
+if [ -n "$ANSWERS" ]; then
+    # shellcheck disable=SC1090
+    . "$ANSWERS" || exit 1
+    for v in USERNAME PASSWORD DISK TIMEZONE; do
+        [ -n "${!v}" ] || { echo "$ANSWERS does not set $v" >&2; exit 1; }
+    done
+    write_config || exit 1
+    if [ -n "$DRY" ]; then
+        echo "Wrote $WORK/user_configuration.json and $WORK/user_credentials.json"
+        exit 0
+    fi
+    run_install
+    exit
+fi
+
 while true; do
-    choice=$(whiptail --title "$TITLE" --nocancel --menu "Welcome to ZeXOS. What would you like to do?" 0 0 0 \
+    choice=$(ask --nocancel --menu "Welcome to ZeXOS. What would you like to do?" 0 0 0 \
         install "Install ZeXOS" \
         wifi    "Connect to Wi-Fi" \
+        manual  "Install with Arch's own installer menus (advanced)" \
         shell   "Open a shell (type exit to come back)" \
         reboot  "Reboot" \
-        off     "Power off" 3>&1 1>&2 2>&3)
+        off     "Power off")
     case $choice in
         install) install_zexos ;;
-        wifi) wifi ;;
+        wifi) online && msg "You are already online." || wifi ;;
+        manual) install_manual ;;
         shell) clear; echo "Type exit to return to the ZeXOS menu."; zsh ;;
         reboot) systemctl reboot ;;
         off) systemctl poweroff ;;

@@ -55,11 +55,15 @@ mkdir -p "$ROOT/etc/sudoers.d"
 printf '%s ALL=(ALL:ALL) NOPASSWD: ALL\nDefaults:%s !authenticate\n' "$USERNAME" "$USERNAME" > "$dropin"
 chmod 440 "$dropin"
 
+# install.sh draws on the terminal, so give it a real one even when this
+# runs unattended (no TERM, or "dumb").
+case "${TERM:-dumb}" in dumb) TERM=linux ;; esac
+
 url="https://raw.githubusercontent.com/zefuros1991/ZeXOS/$ZEXOS_BRANCH/install.sh"
 arch-chroot "$ROOT" runuser -u "$USERNAME" -- env -i \
     HOME="$home" USER="$USERNAME" LOGNAME="$USERNAME" SHELL=/bin/bash \
     PATH=/usr/local/sbin:/usr/local/bin:/usr/bin \
-    TERM="${TERM:-linux}" LANG="${LANG:-C.UTF-8}" \
+    TERM="$TERM" LANG="${LANG:-C.UTF-8}" \
     ZEXOS_PACKAGES=prebuilt ZEXOS_BRANCH="$ZEXOS_BRANCH" \
     ZEXOS_COMPOSITORS="${ZEXOS_COMPOSITORS:-}" ZEXOS_SHELLS="${ZEXOS_SHELLS:-}" \
     bash -c 'cd "$HOME" && curl -fsSL "$0" -o /tmp/zexos-install.sh && bash /tmp/zexos-install.sh; rc=$?; rm -f /tmp/zexos-install.sh; exit $rc' "$url"

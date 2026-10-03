@@ -149,7 +149,7 @@ zexos_banner_animate() {
     done
 }
 
-clear
+clear 2>/dev/null || true
 
 echo
 for r in "${!ZEXOS_BANNER_ROWS[@]}"; do

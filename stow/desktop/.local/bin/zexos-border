@@ -1,0 +1,321 @@
+#!/usr/bin/env python3
+"""Window borders in two colours picked from the wallpaper, on niri and Hyprland.
+
+The focused window gets a gradient between the wallpaper's two most
+different main colours (top-left to bottom-right, mixed in OKLab). If the
+picture is mostly one hue, a small but vivid accent (green lines on a
+purple map) wins over a second shade of that hue, because that is the
+colour the eye picks out. The other windows get a faint line: a dark,
+quiet shade of the first colour. Mango can only draw one colour, so it
+keeps the shell's own border colours.
+
+    zexos-border noctalia    run by Noctalia on every wallpaper change
+    zexos-border dms         run by DankMaterialShell on every colour change
+
+Each shell has its own pair of files, which zshell includes for that shell:
+  noctalia: ~/.config/niri/zexos-border.kdl,     ~/.config/hypr/zexos-border.lua
+  dms:      ~/.config/niri/zexos-border-dms.kdl, ~/.config/hypr/zexos-border-dms.lua
+niri and Hyprland reload them by themselves. Run it by hand to rewrite now.
+
+Reading the picture needs Pillow (python-pillow); without it the borders use
+the ZeXOS brand colours. The pair is remembered per wallpaper file.
+"""
+import colorsys
+import hashlib
+import json
+import math
+import os
+import sys
+
+CONFIG = os.environ.get("XDG_CONFIG_HOME") or os.path.expanduser("~/.config")
+CACHE = os.path.join(os.environ.get("XDG_CACHE_HOME") or os.path.expanduser("~/.cache"),
+                     "zexos", "border")
+NOCTALIA_STATE = os.path.expanduser("~/.local/state/noctalia/settings.toml")
+DMS_WALLPAPER = os.path.join(CONFIG, "zexos", "dms-wallpaper")
+DMS_SESSION = os.path.expanduser("~/.local/state/DankMaterialShell/session.json")
+URGENT = "#e5484d"
+CLOSE = 110            # pairs nearer than this look like one colour
+ACCENT_MIN = 0.001     # a vivid accent this big (share of pixels) counts
+FALLBACK = [(124, 92, 255), (61, 220, 151)]   # ZeXOS brand colours
+GREY = [(232, 232, 238), (138, 138, 150)]
+
+
+# ── Colour maths ────────────────────────────────────────────────────────────
+
+def rgb(h):
+    h = h.lstrip("#")
+    return tuple(int(h[k:k + 2], 16) for k in (0, 2, 4))
+
+
+def hexc(c):
+    return "#%02x%02x%02x" % tuple(c)
+
+
+def distance(a, b):
+    """How different two colours look ("redmean" weighted RGB distance)."""
+    rm = (a[0] + b[0]) / 2
+    dr, dg, db = (a[k] - b[k] for k in range(3))
+    return ((2 + rm / 256) * dr * dr + 4 * dg * dg + (2 + (255 - rm) / 256) * db * db) ** 0.5
+
+
+def _lin(v):
+    v /= 255
+    return v / 12.92 if v <= 0.04045 else ((v + 0.055) / 1.055) ** 2.4
+
+
+def _gam(v):
+    v = v * 12.92 if v <= 0.0031308 else 1.055 * v ** (1 / 2.4) - 0.055
+    return round(min(max(v, 0), 1) * 255)
+
+
+def oklch(c):
+    """sRGB -> (L, C, h in degrees), Björn Ottosson's OKLab."""
+    r, g, b = map(_lin, c)
+    l = (0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b) ** (1 / 3)
+    m = (0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b) ** (1 / 3)
+    s = (0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b) ** (1 / 3)
+    L = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s
+    A = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s
+    B = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s
+    return L, (A * A + B * B) ** 0.5, math.degrees(math.atan2(B, A)) % 360
+
+
+def from_oklch(L, C, h):
+    A, B = C * math.cos(math.radians(h)), C * math.sin(math.radians(h))
+    l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3
+    m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3
+    s = (L - 0.0894841775 * A - 1.2914855480 * B) ** 3
+    return (_gam(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s),
+            _gam(-1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s),
+            _gam(-0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s))
+
+
+def in_gamut(L, C, h):
+    """OKLCH -> sRGB, lowering chroma until it fits (keeps the hue)."""
+    for _ in range(40):
+        A, B = C * math.cos(math.radians(h)), C * math.sin(math.radians(h))
+        l = (L + 0.3963377774 * A + 0.2158037573 * B) ** 3
+        m = (L - 0.1055613458 * A - 0.0638541728 * B) ** 3
+        s = (L - 0.0894841775 * A - 1.2914855480 * B) ** 3
+        lin = (4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+               -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+               -0.0041960863 * l - 0.7034186147 * m + 1.7076147010 * s)
+        if all(-0.001 <= v <= 1.001 for v in lin):
+            break
+        C *= 0.95
+    return from_oklch(L, C, h)
+
+
+def lift(c):
+    """Bright and colourful enough to stand out on a dark desktop. Done in
+    OKLCH so the hue stays the one you see."""
+    L, C, h = oklch(c)
+    return in_gamut(min(max(L, 0.62), 0.80), max(C, 0.18), h)
+
+
+# ── Reading the wallpaper ───────────────────────────────────────────────────
+
+def image_colours(path):
+    """[(rgb, share)] of the image's main colours, lifted to read on dark."""
+    from PIL import Image
+    im = Image.open(path)
+    im.draft("RGB", (160, 160))             # JPEG: decode small, fast
+    im = im.convert("RGB")
+    im.thumbnail((96, 96))
+    q = im.quantize(16, method=Image.Quantize.MEDIANCUT)
+    pal, total, out, faint = q.getpalette(), im.width * im.height, [], []
+    for n, i in q.getcolors():
+        h, l, s = colorsys.rgb_to_hls(*(pal[3 * i + k] / 255 for k in range(3)))
+        if n / total < 0.02 or s < 0.12 or l < 0.06:
+            continue                        # tiny, grey or black: no colour to borrow
+        c = (lift(tuple(pal[3 * i:3 * i + 3])), n / total)
+        # near-grey: lifting it can invent a colour, so only if nothing stronger exists
+        (faint if oklch(tuple(pal[3 * i:3 * i + 3]))[1] < 0.04 else out).append(c)
+    return out or faint
+
+
+def one_hue(pair):
+    """Both colours are shades of the same hue (e.g. purple and lavender)."""
+    if distance(*pair) < CLOSE:
+        return True
+    (_, c1, h1), (_, c2, h2) = oklch(pair[0]), oklch(pair[1])
+    d = abs(h1 - h2) % 360
+    return c1 > 0.04 and c2 > 0.04 and min(d, 360 - d) < 35
+
+
+def accent(path, main):
+    """A vivid colour of another hue that covers little area (thin bright
+    lines get averaged away by the 16-colour count). Only strong, clearly
+    different hues count, at least ACCENT_MIN of the picture."""
+    from PIL import Image
+    im = Image.open(path)
+    im.draft("RGB", (1024, 1024))
+    im = im.convert("RGB")
+    im.thumbnail((512, 512))                # thin lines vanish at smaller sizes
+    px = list(im.get_flattened_data() if hasattr(im, "get_flattened_data") else im.getdata())
+    main_h = colorsys.rgb_to_hsv(*(v / 255 for v in main))[0]
+    bins, members = [0] * 12, [[] for _ in range(12)]
+    for c in px:
+        h, s, v = colorsys.rgb_to_hsv(*(x / 255 for x in c))
+        d = abs(h - main_h) % 1
+        if s > 0.35 and v > 0.35 and min(d, 1 - d) >= 1 / 6:  # 60 degrees off
+            k = int(h * 12) % 12
+            bins[k] += 1
+            members[k].append(c)
+    k = max(range(12), key=lambda i: bins[i] + bins[i - 1] / 2 + bins[(i + 1) % 12] / 2)
+    near = members[k - 1] + members[k] + members[(k + 1) % 12]
+    if len(near) < ACCENT_MIN * len(px):
+        return None
+
+    def vivid(c):                           # the bright core of a line, not its glow
+        h, s, v = colorsys.rgb_to_hsv(*(x / 255 for x in c))
+        return s * v * v
+    near.sort(key=vivid, reverse=True)
+    near = near[:max(3, len(near) // 30)]
+    return lift(tuple(round(sum(c[j] for c in near) / len(near)) for j in range(3)))
+
+
+def best_pair(cands):
+    """The pair that differs most, favouring colours with a bigger share."""
+    pairs = [(a, b) for n, a in enumerate(cands) for b in cands[n + 1:]]
+    if not pairs:
+        return None
+    a, b = max(pairs, key=lambda p: distance(p[0][0], p[1][0]) * min(p[0][1], p[1][1]) ** 0.25)
+    return [a[0], b[0]]
+
+
+def wallpaper_pair(path):
+    """Two colours from the image; remembered per wallpaper file."""
+    st = os.stat(path)
+    key = hashlib.sha1(repr((path, st.st_mtime, st.st_size, 1)).encode()).hexdigest()[:12]
+    memo = os.path.join(CACHE, key)
+    try:
+        return [rgb(h) for h in open(memo).read().split()]
+    except (OSError, ValueError):
+        pass
+    try:
+        cands = image_colours(path)
+    except Exception:                       # no Pillow, odd file: brand colours
+        return None
+    pair = best_pair(cands)
+    if not pair and cands:                  # one colour only
+        pair = [cands[0][0], cands[0][0]]
+    if not pair:
+        pair = GREY
+    elif one_hue(pair) and (acc := accent(path, max(pair, key=lambda c: oklch(c)[1]))):
+        pair = [max(pair, key=lambda c: oklch(c)[1]), acc]
+    elif distance(*pair) < CLOSE:           # one hue: a mid and a light shade of it
+        L, C, h = oklch(max(pair, key=lambda c: oklch(c)[1]))
+        pair = [in_gamut(0.60, C, h), in_gamut(0.84, C * 0.75, h)]
+    os.makedirs(CACHE, exist_ok=True)
+    tmp = memo + ".tmp%d" % os.getpid()
+    with open(tmp, "w") as f:
+        f.write(" ".join(hexc(c) for c in pair))
+    os.replace(tmp, memo)
+    return pair
+
+
+# ── Which wallpaper ─────────────────────────────────────────────────────────
+
+def current_shell():
+    """The desktop shell zshell runs now: "noctalia" or "dms"."""
+    try:
+        with open(os.path.join(CONFIG, "zexos", "shell")) as f:
+            return f.readline().strip() or "noctalia"
+    except OSError:
+        return "noctalia"
+
+
+def dms_wallpaper():
+    """The wallpaper DMS shows: written by DMS on every colour change
+    (zexos.toml.in); DMS's own session file is the fallback."""
+    try:
+        with open(DMS_WALLPAPER) as f:
+            path = f.readline().strip()
+        if os.path.isfile(path):
+            return path
+    except OSError:
+        pass
+    try:
+        with open(DMS_SESSION) as f:
+            path = json.load(f).get("wallpaperPath", "")
+        return path if os.path.isfile(path) else None
+    except (OSError, ValueError):
+        return None
+
+
+def noctalia_wallpaper():
+    try:
+        import tomllib
+        with open(NOCTALIA_STATE, "rb") as f:
+            w = tomllib.load(f).get("wallpaper", {})
+    except (OSError, ValueError):
+        return None
+    for entry in [w.get("last")] + list(w.get("monitors", {}).values()) + [w.get("default")]:
+        if isinstance(entry, dict) and os.path.isfile(os.path.expanduser(entry.get("path", ""))):
+            return os.path.expanduser(entry["path"])
+    return None
+
+
+# ── Writing the border files ────────────────────────────────────────────────
+
+def niri(a, b, faint):
+    return f"""// Written by zexos-border. Don't edit this file: it is rewritten every
+// time the wallpaper changes, in two colours picked from the wallpaper.
+layout {{
+    border {{
+        active-gradient from="{hexc(a)}" to="{hexc(b)}" angle=135 in="oklab"
+        inactive-color "{hexc(faint)}"
+        urgent-color   "{URGENT}"
+    }}
+}}
+"""
+
+
+def hypr(a, b, faint):
+    return f"""-- Written by zexos-border. Don't edit this file: it is rewritten every
+-- time the wallpaper changes, in two colours picked from the wallpaper.
+-- shell-colors.lua loads this after the shell's own colours, so it wins.
+hl.config({{
+    general = {{
+        col = {{
+            active_border = {{
+                colors = {{ "rgb({hexc(a)[1:]})", "rgb({hexc(b)[1:]})" }},
+                angle = 135,
+            }},
+            inactive_border = "rgb({hexc(faint)[1:]})",
+        }},
+    }},
+}})
+"""
+
+
+def write(path, text):
+    try:
+        if open(path).read() == text:
+            return
+    except OSError:
+        pass
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    tmp = path + ".tmp"
+    with open(tmp, "w") as f:
+        f.write(text)
+    os.replace(tmp, path)
+
+
+def main():
+    shell = sys.argv[1] if len(sys.argv) > 1 else current_shell()
+    if shell == "dms":
+        wall, suffix = dms_wallpaper(), "-dms"
+    else:
+        # Noctalia hands us the new wallpaper; otherwise read its state file.
+        wall, suffix = os.environ.get("NOCTALIA_WALLPAPER_PATH") or noctalia_wallpaper(), ""
+    a, b = (wall and os.path.isfile(wall) and wallpaper_pair(wall)) or FALLBACK
+    _, chroma, hue = oklch(a)
+    faint = in_gamut(0.30, min(chroma, 0.07), hue)
+    write(os.path.join(CONFIG, "niri", f"zexos-border{suffix}.kdl"), niri(a, b, faint))
+    write(os.path.join(CONFIG, "hypr", f"zexos-border{suffix}.lua"), hypr(a, b, faint))
+
+
+if __name__ == "__main__":
+    main()

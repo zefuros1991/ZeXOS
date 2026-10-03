@@ -68,3 +68,6 @@ stow/niri/.config/niri/motion.kdl
 stow/hyprland/.config/hypr/motion.lua
 stow/mango/.config/mango/motion.conf
 stow/noctalia/.config/noctalia/zexos-motion.toml
+
+# ready-made packages made by scripts/make-prebuilt.sh (uploaded, not committed)
+/dist/

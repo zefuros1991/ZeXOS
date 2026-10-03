@@ -34,7 +34,8 @@ New work is tested on the `beta` branch first and is listed under
   See [iso/README.md](iso/README.md).
 - Systems installed from a ZeXOS ISO are called ZeXOS (`ID=zexos`,
   `ID_LIKE=arch`), kept after updates by a pacman hook. Script installs keep
-  their distro's name.
+  their distro's name. The ISOs' live system is called ZeXOS too (name,
+  host name `zexos`, welcome text), not Arch.
 - A terminal look in kitty, in the wallpaper's colours: the system info in a
   box under your distro's logo (the ZeXOS Z on ISO installs) and a two-line
   prompt with folder, git branch, status and time, for bash, zsh and fish.

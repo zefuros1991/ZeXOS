@@ -118,7 +118,7 @@ The first time DMS starts it gets a ZeXOS look copied from `stow/dms/.local/shar
 
 The window you're using gets a frame that fades between two of the wallpaper's colours. The others get a thin, faint line and are dimmed a little, so your eye lands on the right one. That works the same in both shells on niri and Hyprland. Mango can only draw a frame in one colour, so there it's one colour plus the same dimming.
 
-Everything follows the wallpaper in both shells: window borders, kitty, Dolphin and other KDE apps, GTK apps, fuzzel menus, btop, the folder icons and the login screen. A very bright wallpaper switches to light mode. Noctalia does this by itself; for DMS a small watcher, `zexos-dms-sync`, does the parts DMS doesn't (`systemctl --user status zexos-dms-sync.path`). To pick dark or light mode yourself, create `~/.config/zexos/manual-theme-mode`.
+Everything follows the wallpaper in both shells: window borders, kitty, Dolphin and other KDE apps, GTK apps, fuzzel menus, btop, the folder icons and the login screen. A very bright wallpaper switches to light mode. Noctalia does this by itself; for DMS a small watcher, `zexos-dms-sync`, does the parts DMS doesn't (`systemctl --user status zexos-dms-sync.path`). To pick dark or light mode yourself, create `~/.config/zexos/manual-theme-mode`. GTK apps that are already open (like Shelly) keep their old colours until you close and reopen them, because GTK only reads its colours when an app starts; Noctalia's own docs say the same. Open KDE apps, kitty and the rest change by themselves.
 
 What DMS can't do yet, compared to Noctalia: there is no USB drive island (drives still mount from Dolphin) and no "Restart to UEFI" in the power menu.
 

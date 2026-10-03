@@ -24,9 +24,9 @@ What you get:
 
 ## Screenshots
 
-<p align="center"><a href="https://zefuros1991.github.io/ZeXOS/?from=readme#1"><img src="docs/screenshots/showcase.webp" alt="ZeXOS on niri, Hyprland and Mango, each with Noctalia and with DankMaterialShell: the launcher opens, then a new wallpaper recolours the whole desktop" width="860"></a></p>
+<p align="center"><a href="https://zefuros1991.github.io/ZeXOS/?from=readme#1"><img src="docs/screenshots/showcase.webp" alt="ZeXOS on niri, Hyprland and Mango, each with Noctalia and with DankMaterialShell, each showing a different feature: launcher and wallpaper colours, overview, wallpaper picker, apps recolouring, colour schemes, control center" width="860"></a></p>
 
-<p align="center"><b><a href="https://zefuros1991.github.io/ZeXOS/?from=readme#1">Open the gallery</a></b>: every compositor and shell, switching shells, the wallpaper picker, light mode and more, as short clips. Use the arrow keys to move between them; Esc or a click outside the picture brings you back here.</p>
+<p align="center"><b><a href="https://zefuros1991.github.io/ZeXOS/?from=readme#1">Open the gallery</a></b>: all six compositor and shell combinations, each showing a different feature, plus switching shells, as short clips. Use the arrow keys to move between them; Esc or a click outside the picture brings you back here.</p>
 
 The whole desktop takes its colours from the wallpaper, so every clip looks different.
 

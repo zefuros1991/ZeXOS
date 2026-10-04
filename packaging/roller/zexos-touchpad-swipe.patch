@@ -15,7 +15,7 @@ index fd7bb54..bd6d7fd 100644
 +    // card per swipePixels of finger travel; an up/down swipe does nothing.
 +    // The tile MouseAreas and the full-screen MouseArea in Main.qml swallow
 +    // wheel events, so they forward here too.
-+    property real swipePixels: 160
++    property real swipePixels: 80
 +    function wheelStep(e) {
          if (root.count === 0) return
 +        // Only touchpads report finger travel in pixels; a wheel does not.

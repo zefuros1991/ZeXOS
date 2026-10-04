@@ -5,6 +5,6 @@ noctalia-zexos 5.1.0-2 noctalia-zexos-5.1.0-2-x86_64.pkg.tar.zst 8f347829137a708
 pixie-sddm-zexos 3.0-3 pixie-sddm-zexos-3.0-3-any.pkg.tar.zst 1d5a4e274ade63c5e9e09bb5dd25d2661f347557d60f2bcee3d015fc4e966488
 bibata-cursor-zexos 2.0.7-1 bibata-cursor-zexos-2.0.7-1-any.pkg.tar.zst 77ab31fc78eb1518cad4c962d8e92131013f6debb6a3fcfdd18dde0d5f7cd34b
 qt6ct-kde 0.11-11 qt6ct-kde-0.11-11-x86_64.pkg.tar.zst f0c944ed9a5202c54348e4689142bc1b0fab06b4178314810de75e187dea5c09 qt=6.11.2-3
-roller 0.1.0.r4.g184debe-4 roller-0.1.0.r4.g184debe-4-x86_64.pkg.tar.zst 9648b3c98a3b7913bc6895db221d685e44b14a4b043d489f14ba26818cca9b8d
+roller 0.1.0.r4.g184debe-5 roller-0.1.0.r4.g184debe-5-x86_64.pkg.tar.zst bf067d138b887d290733c487bdca815a4a394bb5fb8b051b102f58ca5768373a
 mpvpaper 1.9-1 mpvpaper-1.9-1-x86_64.pkg.tar.zst b94417769b261f4b2689a306146be17a1bd1b595f32294cb8dd5d63051d5f070
-zexos.db repo zexos.db 14fecc6346f4fb9ee40f6d9b1ca689342ff1f7f573a9b8c36440eb0b21239443
+zexos.db repo zexos.db e4e089fb1f833a907a1740858085b3f761016a7a78e211f59e4d802c3cbd4e8a

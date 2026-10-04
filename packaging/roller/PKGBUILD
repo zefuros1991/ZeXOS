@@ -12,15 +12,15 @@
 #     too, instead of starting (and killing) its own mpvpaper, because the
 #     shell's video wallpaper plugin owns the player
 # and a third one (zexos-touchpad-swipe.patch):
-#   - on a touchpad only a sideways two-finger swipe moves the cards, slower
-#     than before (one card per 160 px); the mouse wheel is unchanged
+#   - on a touchpad only a sideways two-finger swipe moves the cards,
+#     one card per 80 px of finger travel; the mouse wheel is unchanged
 #   - scrolling or swiping works anywhere on screen, not only over the cards
 # Built by scripts/packages.sh with `makepkg -si`.
 
 pkgname=roller
 _commit=184debe0f6a7dbf077259f8a5d68f0f798cb0ad1
 pkgver=0.1.0.r4.g184debe
-pkgrel=4
+pkgrel=5
 pkgdesc='Coverflow wallpaper picker for wlr-layer-shell desktops (ZeXOS patched)'
 arch=('x86_64')
 url="https://github.com/zyrophix/roller"

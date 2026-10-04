@@ -25,6 +25,9 @@ python-pillow
 zexos-calamares
 qt6-wayland
 qt6ct-kde
+mpvpaper
+socat
+ffmpeg
 qt6-imageformats
 breeze-icons
 noto-fonts

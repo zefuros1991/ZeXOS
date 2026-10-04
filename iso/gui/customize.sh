@@ -86,19 +86,24 @@ for f in kdeglobals gtkrc quickshell; do
 done
 # Not stow/desktop/.config/qt6ct: the live qt6ct.conf has the installer's
 # fonts. Both read Noctalia's colours (qt6ct-kde reads its .colors file).
-for w in aurora topo-energy dots-forest bars-ocean mark-ember aurora-ocean; do
-    small "$repo/wallpapers/zexos-$w.jpg" "$home/Pictures/Wallpapers/zexos-$w.jpg"
+# Every ZeXOS wallpaper, so Mod+W can try them all. Pictures are shrunk to
+# screen size; videos go in as they are, in Animated/ where roller and
+# zshell look for them (mpvpaper plays them).
+mkdir -p "$home/Pictures/Wallpapers/Animated"
+for f in "$repo/wallpapers/"*.jpg; do
+    small "$f" "$home/Pictures/Wallpapers/${f##*/}"
 done
+cp "$repo/wallpapers/"*.mp4 "$home/Pictures/Wallpapers/Animated/"
 
 # Trim the bar for the live session: no update counter or USB widget, and
-# only the keybind cheatsheet plugin. Fail loudly if a line moved.
+# only the keybind cheatsheet and video wallpaper plugins. Fail loudly if a line moved.
 toml="$home/.config/noctalia/noctalia.toml"
 live_edit() {
     grep -q "$1" "$toml" || { echo "customize.sh: '$1' not found in noctalia.toml" >&2; exit 1; }
     sed -i "s|$1|$2|" "$toml"
 }
 live_edit 'members = \["sysmon", "arch_updates", "usb"\]' 'members = ["sysmon"]'
-live_edit 'enabled = \["yuuto/arch-updater", "kenn/keybind-cheatsheet", "aristides/udiskie", "noctalia/mpvpaper"\]' 'enabled = ["kenn/keybind-cheatsheet"]'
+live_edit 'enabled = \["yuuto/arch-updater", "kenn/keybind-cheatsheet", "aristides/udiskie", "noctalia/mpvpaper"\]' 'enabled = ["kenn/keybind-cheatsheet", "noctalia/mpvpaper"]'
 live_edit 'pinned = \["kitty", "org.kde.dolphin"\]' 'pinned = ["zexos-installer", "kitty"]'
 live_edit '"network", "shell_switch"\]' '"network"]'
 

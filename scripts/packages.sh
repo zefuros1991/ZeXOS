@@ -797,6 +797,24 @@ EOF
 
     echo -e "${GREEN}✔ Pixie theme configured${RESET}"
 
+    # The login screen runs on X11, where a touchpad tap is not a click
+    # unless you turn it on. Only added if you have no touchpad file of
+    # your own. https://wiki.archlinux.org/title/Libinput#Via_Xorg_configuration_file
+    tap=/etc/X11/xorg.conf.d/30-touchpad.conf
+    if [ ! -e "$tap" ]; then
+        sudo mkdir -p /etc/X11/xorg.conf.d
+        sudo tee "$tap" >/dev/null <<EOF
+# ZeXOS: tap the touchpad to click on the login screen (and any X11 session).
+Section "InputClass"
+    Identifier "touchpad"
+    MatchIsTouchpad "on"
+    MatchDriver "libinput"
+    Option "Tapping" "on"
+EndSection
+EOF
+        echo -e "${GREEN}✔ Login screen: touchpad tap clicks${RESET}"
+    fi
+
 else
     echo -e "${RED}✖ Pixie theme directory not found${RESET}"
 fi

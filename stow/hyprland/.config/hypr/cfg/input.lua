@@ -29,5 +29,5 @@ hl.config({
     },
 })
 
--- Three fingers left or right on the touchpad changes workspace.
-hl.gesture({ fingers = 3, direction = "horizontal", action = "workspace" })
+-- Three fingers up or down on the touchpad changes workspace, like niri.
+hl.gesture({ fingers = 3, direction = "vertical", action = "workspace" })

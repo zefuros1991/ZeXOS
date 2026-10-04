@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+# Next workspace on Mango, the way niri does it: you can go one empty
+# workspace past the last one with windows, but no further. With tag_gather
+# on, workspaces with windows never have gaps, so going on is allowed only
+# when the current one has windows.
+import json
+import subprocess
+
+out = subprocess.run(["mmsg", "get", "all-monitors"], capture_output=True, text=True).stdout
+for mon in json.loads(out or '{"monitors": []}')["monitors"]:
+    if mon["active"]:
+        cur = mon["active_tags"][0]
+        if any(t["index"] == cur and t["client_count"] > 0 for t in mon["tags"]):
+            subprocess.run(["mmsg", "dispatch", "viewtoright"])
+        break

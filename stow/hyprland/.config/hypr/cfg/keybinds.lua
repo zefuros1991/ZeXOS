@@ -134,7 +134,21 @@ hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true, description
 -- Hold Mod and scroll: up/down changes workspace, sideways moves between
 -- windows. Add Ctrl to take the window along.
 hl.bind("SUPER + mouse_up", hl.dsp.focus({ workspace = "m-1" }), { description = "Previous workspace" })
-hl.bind("SUPER + mouse_down", hl.dsp.focus({ workspace = "m+1" }), { description = "Next workspace" })
+-- Next workspace, like niri: one empty workspace after the last one with
+-- windows, and no further. ("m+1" alone only visits workspaces that exist,
+-- so the empty one was never reached.)
+hl.bind("SUPER + mouse_down", function()
+    local cur = hl.get_active_workspace()
+    if cur == nil or cur.windows == 0 then return end
+    for _, ws in ipairs(hl.get_workspaces()) do
+        if not ws.special and ws.monitor ~= nil and cur.monitor ~= nil
+            and ws.monitor.id == cur.monitor.id and ws.id > cur.id then
+            hl.dispatch(hl.dsp.focus({ workspace = "m+1" }))
+            return
+        end
+    end
+    hl.dispatch(hl.dsp.focus({ workspace = "emptynm" }))
+end, { description = "Next workspace" })
 hl.bind("SUPER + mouse_left", hl.dsp.focus({ direction = "left" }), { description = "Focus the window to the left" })
 hl.bind("SUPER + mouse_right", hl.dsp.focus({ direction = "right" }), { description = "Focus the window to the right" })
 hl.bind("SUPER + CTRL + mouse_up", hl.dsp.window.move({ workspace = "r-1" }), { description = "Move the window to the previous workspace" })

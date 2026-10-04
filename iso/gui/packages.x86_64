@@ -1,9 +1,18 @@
 # Added to the Arch live ISO package list (releng) for the GUI installer.
-# The live desktop: niri with a wallpaper, and Calamares on top.
+# The live desktop: a small ZeXOS desktop (niri + Noctalia, the same keys
+# as the installed system) with Calamares on top. Only what the live
+# session needs; the full app set comes with the install.
 niri
 xwayland-satellite
-swaybg
+noctalia-zexos
+bibata-cursor-zexos
 kitty
+networkmanager
+pipewire
+pipewire-pulse
+wireplumber
+brightnessctl
+python-pillow
 zexos-calamares
 qt6-wayland
 qt6ct
@@ -12,6 +21,7 @@ breeze-icons
 noto-fonts
 noto-fonts-emoji
 ttf-jetbrains-mono-nerd
+ttf-nunito
 mesa
 vulkan-swrast
 git

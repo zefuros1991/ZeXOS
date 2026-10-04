@@ -1,0 +1,7 @@
+[Desktop Entry]
+Type=Application
+Name=Install ZeXOS
+Comment=Install ZeXOS on this computer
+Exec=zexos-gui-installer
+Icon=/etc/calamares/branding/zexos/icon.png
+Categories=System;

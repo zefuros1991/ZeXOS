@@ -3,4 +3,7 @@
 # Its log goes to /root/.cache/calamares/session.log.
 pgrep -x calamares >/dev/null && exit 0
 export QT_QPA_PLATFORM=wayland QT_QPA_PLATFORMTHEME=qt6ct
+# The desktop draws Qt apps 20% bigger (niri's misc.kdl); the installer is
+# laid out for normal size, so it fits small laptop screens.
+unset QT_SCALE_FACTOR
 exec calamares -d

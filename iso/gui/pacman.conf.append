@@ -4,3 +4,9 @@
 [zexos-iso]
 SigLevel = Optional TrustAll
 Server = file://@LOCALREPO@
+
+# Prebuilt ZeXOS packages (noctalia-zexos, bibata-cursor-zexos) for the live
+# desktop. The installed system adds this repo itself.
+[zexos]
+SigLevel = Optional TrustAll
+Server = https://github.com/zefuros1991/ZeXOS/releases/download/prebuilt

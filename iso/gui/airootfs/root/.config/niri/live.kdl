@@ -1,0 +1,21 @@
+// Live ISO only. iso/gui/customize.sh copies the installed ZeXOS niri setup
+// (stow/niri) next to this file and adds an include for it, so the live
+// desktop has the same look and the same keys as the installed system.
+// These are the extras the live desktop needs on top.
+
+// The installer opens by itself; Mod+I (or "Install ZeXOS" in the
+// launcher, Mod+Space) opens it again after you close it.
+spawn-at-startup "zexos-gui-installer"
+
+binds {
+    Mod+I hotkey-overlay-title="Install ZeXOS" { spawn "zexos-gui-installer"; }
+}
+
+// The installer floats as a normal-sized window in the middle of the
+// screen (floating windows open centred), not stretched to full screen.
+window-rule {
+    match app-id="calamares"
+    open-floating true
+    default-column-width { proportion 0.6; }
+    default-window-height { proportion 0.75; }
+}

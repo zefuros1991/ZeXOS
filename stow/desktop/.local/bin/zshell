@@ -35,6 +35,11 @@ DMS_DIR="$CONF_DIR/DankMaterialShell"
 DMS_SEED="${XDG_DATA_HOME:-$HOME/.local/share}/zexos/dms"
 WALL_DIR="$HOME/Pictures/Wallpapers"
 SHELLS="noctalia dms"
+STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}"
+# The animated wallpaper zshell plays under DMS (see dms_video below).
+DMS_VIDEO="$STATE_DIR/zexos/dms-video"
+DMS_VIDEO_PID="${XDG_RUNTIME_DIR:-/tmp}/zexos-dms-video.pid"
+DMS_VIDEO_SOCK="${XDG_RUNTIME_DIR:-/tmp}/zexos-dms-video.sock"
 
 installed() {
     case "$1" in
@@ -382,7 +387,11 @@ start() {
     drop_stale
     case "$shell" in
         noctalia) link_noctalia; exec noctalia ;;
-        dms)      seed_dms; setup_dms; exec dms run ;;
+        dms)
+            seed_dms; setup_dms
+            # Your animated wallpaper, if you picked one (it waits for DMS).
+            [ -s "$DMS_VIDEO" ] && setsid -f "$0" dms-video >/dev/null 2>&1
+            exec dms run ;;
     esac
     echo "zshell: no desktop shell installed" >&2
     exit 1
@@ -461,6 +470,8 @@ switch() {
     for s in $SHELLS; do
         [ "$s" = "$new" ] || stop "$s"
     done
+    # Noctalia plays videos with its own plugin; stop the one zshell played for DMS.
+    [ "$new" = dms ] || dms_video_stop
     running "$new" && return 0
     curtain_up "$new"
     # Let the compositor start it, the same way it does at login.
@@ -502,9 +513,7 @@ saved_wallpaper() {
                 "${XDG_STATE_HOME:-$HOME/.local/state}/noctalia/mpvpaper/assignments.json" 2>/dev/null)"
             [ -n "$w" ] || w="$(sed -n '/^\[wallpaper\.\(monitors\..*\|last\)\]/,/^path/ s/^path = "\(.*\)"$/\1/p' \
                 "${XDG_STATE_HOME:-$HOME/.local/state}/noctalia/settings.toml" 2>/dev/null | head -n1)" ;;
-        dms)
-            w="$(sed -n 's/.*"wallpaperPath": *"\([^"]*\)".*/\1/p' \
-                "${XDG_STATE_HOME:-$HOME/.local/state}/DankMaterialShell/session.json" 2>/dev/null | head -n1)" ;;
+        dms)      w="$(dms_picture)" ;;
     esac
     if [ -n "$w" ] && is_video "$w"; then w="$(poster "$w")"; fi
     [ -f "$w" ] && printf '%s\n' "$w"
@@ -527,6 +536,7 @@ curtain_down() {
     for sock in "${XDG_STATE_HOME:-$HOME/.local/state}"/noctalia/mpvpaper/ipc-*.sock; do
         [ -S "$sock" ] && videos="$videos$sock:"
     done
+    [ -S "$DMS_VIDEO_SOCK" ] && videos="$videos$DMS_VIDEO_SOCK:"
     ZX_STYLE="$style" \
     ZX_VIDEOS="$videos" \
     ZX_OLD_WALL="$(current_wallpaper)" \
@@ -642,7 +652,7 @@ random_wallpaper() {
 # by Noctalia's video wallpaper plugin, our copy with the `set` command. The
 # shell itself still gets a picture, the video's first frame (its "poster"),
 # so the colours follow the video too. DMS can't play videos, so under DMS
-# only the poster is shown.
+# zshell plays the video itself (dms_video).
 is_video() {
     case "$(printf %s "${1##*.}" | tr '[:upper:]' '[:lower:]')" in
         mp4|webm|mkv|mov) return 0 ;;  # keep in step with roller's video_extensions
@@ -691,9 +701,77 @@ noctalia_random_wallpaper() {
 # Noctalia copies each new wallpaper to the login screen by itself (its
 # wallpaper_changed hook). DMS has no such hook, so do it here for DMS.
 dms_wallpaper() {
-    if is_video "$1"; then set -- "$(poster "$1")" || return; fi
+    local video=""
+    if is_video "$1"; then video="$1"; set -- "$(poster "$1")" || return; fi
+    dms_video_stop
     dms ipc call wallpaper set "$1" || return
+    if [ -n "$video" ]; then
+        mkdir -p "$(dirname "$DMS_VIDEO")"
+        printf '%s\n' "$video" > "$DMS_VIDEO"
+        setsid -f "$0" dms-video >/dev/null 2>&1
+    else
+        rm -f "$DMS_VIDEO"
+    fi
     "$HOME/.local/bin/sync-sddm-wallpaper.sh" "$1" >/dev/null 2>&1 || true
+}
+
+# The picture DMS shows (from its session.json).
+dms_picture() {
+    sed -n 's/.*"wallpaperPath": *"\([^"]*\)".*/\1/p' \
+        "$STATE_DIR/DankMaterialShell/session.json" 2>/dev/null | head -n1
+}
+
+# DMS can't play videos, so zshell plays an animated wallpaper itself, with
+# mpvpaper (the same player Noctalia's plugin uses). It goes on the "bottom"
+# layer: always above DMS's own wallpaper (on "background"), still under
+# every window. DMS shows the video's first frame underneath, so its colours
+# follow the video and nothing flashes before the video starts.
+# This runs in the background (`zshell dms-video`) and stops the video when
+# DMS quits, or when you pick another wallpaper in DMS's own settings.
+dms_video() {
+    local video poster player=""
+    video="$(cat "$DMS_VIDEO" 2>/dev/null)"
+    [ -f "$video" ] || exit 0
+    poster="$(poster "$video")" || exit 1
+    dms_video_stop
+    echo $$ > "$DMS_VIDEO_PID"
+    # At login DMS is still starting, and it saves a new wallpaper a moment
+    # after it is set. Wait for both (20 s at most).
+    for _ in $(seq 100); do
+        running dms && [ "$(dms_picture)" = "$poster" ] && break
+        sleep 0.2
+    done
+    running dms && [ "$(dms_picture)" = "$poster" ] || { rm -f "$DMS_VIDEO_PID"; exit 0; }
+    trap 'kill $player 2>/dev/null; rm -f "$DMS_VIDEO_PID" "$DMS_VIDEO_SOCK"; exit 0' TERM INT
+    mpvpaper -p -l bottom \
+        -o "loop-file=inf panscan=1.0 no-audio hwdec=auto input-ipc-server=$DMS_VIDEO_SOCK" \
+        '*' "$video" >/dev/null 2>&1 &
+    player=$!
+    while kill -0 "$player" 2>/dev/null && running dms; do
+        if [ "$(dms_picture)" != "$poster" ]; then
+            rm -f "$DMS_VIDEO"   # you picked another wallpaper in DMS
+            break
+        fi
+        sleep 2 & wait $!
+    done
+    kill "$player" 2>/dev/null
+    rm -f "$DMS_VIDEO_PID" "$DMS_VIDEO_SOCK"
+}
+
+# Stop the video zshell plays under DMS, if one is playing. Also any of
+# our players left behind without their watcher (it was force-quit), found
+# by their control socket; Noctalia's own players are left alone.
+dms_video_stop() {
+    local pid
+    pid="$(cat "$DMS_VIDEO_PID" 2>/dev/null)"
+    if [ -n "$pid" ] && [ "$pid" != $$ ] && grep -q dms-video "/proc/$pid/cmdline" 2>/dev/null; then
+        kill "$pid" 2>/dev/null
+        for _ in $(seq 20); do kill -0 "$pid" 2>/dev/null || break; sleep 0.05; done
+    fi
+    for pid in $(pgrep -u "$(id -u)" -x mpvpaper); do
+        grep -qF "$DMS_VIDEO_SOCK" "/proc/$pid/cmdline" 2>/dev/null && kill "$pid" 2>/dev/null
+    done
+    return 0
 }
 
 # Mango's shortcut list, for shells that can't show it themselves
@@ -778,6 +856,7 @@ case "$cmd" in
     menu)    menu ;;
     current) current ;;
     relink)  link_kitty "$(current)"; link_theme "$(current)" ;;
+    dms-video) dms_video ;;   # used by zshell itself, see dms_video
     ""|-h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//' ;;
     *)
         act "$(current)" "$cmd" "$@"

@@ -13,10 +13,10 @@ navigation: widget
 strings:
     productName:         ZeXOS
     shortProductName:    ZeXOS
-    version:             1.2
-    shortVersion:        1.2
-    versionedName:       ZeXOS 1.2
-    shortVersionedName:  ZeXOS 1.2
+    version:             @VERSION@
+    shortVersion:        @VERSION@
+    versionedName:       ZeXOS @VERSION@
+    shortVersionedName:  ZeXOS @VERSION@
     bootloaderEntryName: ZeXOS
     productUrl:          https://github.com/zefuros1991/ZeXOS
     supportUrl:          https://github.com/zefuros1991/ZeXOS/issues

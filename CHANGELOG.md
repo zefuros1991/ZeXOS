@@ -23,6 +23,12 @@ New work is tested on the `beta` branch first and is listed under
 
 ### Added
 
+- An overview on Mango and Hyprland, like niri's:
+  [mango-overview](https://github.com/zefuros1991/mango-overview).
+  `Mod+O`, a double tap of `Mod`, or four fingers up opens it. Drag
+  windows between workspaces; three-finger swipes follow your fingers
+  (up/down for workspaces, sideways for windows, several in one swipe).
+  The double tap of `Mod` works on niri too.
 - Pick what to install: `ZEXOS_COMPOSITORS` (niri, hyprland, mango) and
   `ZEXOS_SHELLS` (noctalia, dms) choose any mix; the default is all of
   them. The pick is remembered for later updates. With one shell, the

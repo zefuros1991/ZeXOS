@@ -7,4 +7,5 @@ bibata-cursor-zexos 2.0.7-1 bibata-cursor-zexos-2.0.7-1-any.pkg.tar.zst 77ab31fc
 qt6ct-kde 0.11-11 qt6ct-kde-0.11-11-x86_64.pkg.tar.zst f0c944ed9a5202c54348e4689142bc1b0fab06b4178314810de75e187dea5c09 qt=6.11.2-3
 roller 0.1.0.r4.g184debe-5 roller-0.1.0.r4.g184debe-5-x86_64.pkg.tar.zst bf067d138b887d290733c487bdca815a4a394bb5fb8b051b102f58ca5768373a
 mpvpaper 1.9-1 mpvpaper-1.9-1-x86_64.pkg.tar.zst b94417769b261f4b2689a306146be17a1bd1b595f32294cb8dd5d63051d5f070
-zexos.db repo zexos.db e4e089fb1f833a907a1740858085b3f761016a7a78e211f59e4d802c3cbd4e8a
+mango-overview 0.1.2-1 mango-overview-0.1.2-1-x86_64.pkg.tar.zst d930bc5c0953cd217dd345c75ca380e4ef9870c5e296728f40128603f908ba7e qt=6.11.2-3
+zexos.db repo zexos.db dbac18821dd69ec139b56fb196b3ee65988128d5845730c8a8271786a8cea4e9

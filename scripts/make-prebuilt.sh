@@ -41,7 +41,7 @@ GH_REPO="zefuros1991/ZeXOS"
 TAG="prebuilt"
 OUT="$REPO_ROOT/dist/prebuilt"
 LIST="$REPO_ROOT/packaging/prebuilt.list"
-PACKAGES=(noctalia-zexos pixie-sddm-zexos bibata-cursor-zexos qt6ct-kde roller mpvpaper)
+PACKAGES=(noctalia-zexos pixie-sddm-zexos bibata-cursor-zexos qt6ct-kde roller mpvpaper mango-overview)
 
 upload=1 build=1
 BUILD=("${PACKAGES[@]}")
@@ -126,7 +126,7 @@ else
             ver="$(. "$REPO_ROOT/packaging/$pkg/PKGBUILD"; echo "$pkgver-$pkgrel")"
             sum="$(sha256sum "$OUT/$f" | cut -d' ' -f1)"
             extra=""
-            [ "$pkg" = qt6ct-kde ] && extra=" qt=$qt"
+            case $pkg in qt6ct-kde|mango-overview) extra=" qt=$qt" ;; esac
             echo "$pkg $ver $f $sum$extra"
         done
         echo "$db_line"

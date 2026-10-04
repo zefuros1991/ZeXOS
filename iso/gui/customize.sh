@@ -84,7 +84,8 @@ cp -r "$repo/stow/kitty/." "$home/"    # terminal look: logo, details, prompt
 for f in kdeglobals gtkrc quickshell; do
     cp -r "$repo/stow/desktop/.config/$f" "$home/.config/"
 done
-# Not stow/desktop/.config/qt6ct: the live qt6ct.conf styles the installer.
+# Not stow/desktop/.config/qt6ct: the live qt6ct.conf has the installer's
+# fonts. Both read Noctalia's colours (qt6ct-kde reads its .colors file).
 for w in aurora topo-energy dots-forest bars-ocean mark-ember aurora-ocean; do
     small "$repo/wallpapers/zexos-$w.jpg" "$home/Pictures/Wallpapers/zexos-$w.jpg"
 done

@@ -35,7 +35,7 @@ done
 # Logo and icon.
 rsvg-convert -w 256 -h 256 "$repo/docs/logo/zexos-mark.svg" -o "$brand/logo.png"
 rsvg-convert -w 64 -h 64 "$repo/docs/logo/zexos-mark.svg" -o "$brand/icon.png"
-rsvg-convert -w 900 "$repo/docs/logo/zexos-logo-dark.svg" -o "$brand/welcome.png"
+rsvg-convert -w 640 "$repo/docs/logo/zexos-logo-dark.svg" -o "$brand/welcome.png"
 
 # Picker previews: recorded clips live in iso/gui/previews/<id>.webp. Until
 # one is recorded, a still placeholder stands in for it.

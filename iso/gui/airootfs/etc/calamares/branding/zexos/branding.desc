@@ -3,7 +3,7 @@
 ---
 componentName:  zexos
 welcomeStyleCalamares: false
-welcomeExpandingLogo: true
+welcomeExpandingLogo: false
 windowExpanding: normal
 windowSize: 1180px,720px
 windowPlacement: center

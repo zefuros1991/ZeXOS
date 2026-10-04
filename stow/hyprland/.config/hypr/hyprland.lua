@@ -20,6 +20,7 @@ require("cfg.input")
 require("cfg.layout")
 require("cfg.rules")
 require("cfg.misc")
+require("cfg.overview")
 
 -- The animation style you picked with `zexos-motion`, if you changed it.
 -- Comes after cfg/animation.lua so it wins. Don't edit it by hand.

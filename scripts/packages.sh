@@ -213,6 +213,7 @@ declare -A REPLACES=(
     [pixie-sddm-zexos]=pixie-sddm-git
     [bibata-cursor-zexos]=bibata-cursor-theme
     [qt6ct-kde]=qt6ct
+    [mango-overview]=mango-overview-bin
 )
 
 # Is <package> in the distro's own repos? ZeXOS's repo (below) doesn't count.
@@ -435,6 +436,17 @@ HYPR_PACMAN=(
 want_shell dms && pacman -Si dms-shell-hyprland &>/dev/null && HYPR_PACMAN+=(dms-shell-hyprland)
 
 want_compositor hyprland && install_pacman "Hyprland" "${HYPR_PACMAN[@]}"
+
+# -----------------------------
+# OVERVIEW FOR MANGO AND HYPRLAND (mango-overview)
+# -----------------------------
+# niri has its own overview. On Mango and Hyprland, Super+O (or tapping
+# Super twice, or four fingers up) opens ZeXOS's: every workspace as a
+# card with live window previews; drag windows between them, swipe with
+# three fingers. Not in the repos -- built from packaging/mango-overview.
+if want_compositor mango || want_compositor hyprland; then
+    install_local "Overview (mango-overview)" mango-overview
+fi
 
 # -----------------------------
 # ZEXOS'S OWN PACKAGES

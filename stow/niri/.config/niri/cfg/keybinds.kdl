@@ -52,6 +52,7 @@ binds {
     Mod+F       { maximize-column; }          // full width, bar stays visible
     Mod+Shift+F { fullscreen-window; }        // whole screen, bar hidden
     Mod+O repeat=false { toggle-overview; }   // zoom out to see every workspace
+    Mod+Super_L repeat=false { spawn "super-double-tap"; }   // or tap Super twice
 
     // ── Move focus (arrows) ─────────────────────────────
     Mod+Left  { focus-column-left; }

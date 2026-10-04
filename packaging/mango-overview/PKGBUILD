@@ -1,0 +1,34 @@
+# mango-overview (https://github.com/zefuros1991/mango-overview): the
+# zoom-out overview on Mango and Hyprland -- every workspace as a card with
+# live window previews, drag windows between them, three-finger swipes.
+# Built from the release tag. Has a small Qt plugin, so the ready-made
+# build is tied to one Qt version (like qt6ct-kde).
+
+pkgname=mango-overview
+pkgver=0.1.2
+pkgrel=1
+pkgdesc='Zoom-out overview with live window previews for Mango and Hyprland (ZeXOS)'
+arch=('x86_64')
+url='https://github.com/zefuros1991/mango-overview'
+license=('GPL-3.0-or-later')
+depends=('quickshell' 'qt6-base' 'qt6-declarative' 'wayland')
+makedepends=('git' 'cmake' 'ninja' 'wayland-protocols')
+optdepends=('mangowm: the Mango compositor'
+            'hyprland: the Hyprland compositor'
+            'ffmpeg: blurred background from video wallpapers')
+provides=('mango-overview')
+conflicts=('mango-overview-bin')
+source=("$pkgname::git+$url.git#tag=v$pkgver")
+b2sums=('SKIP')
+
+build() {
+	cmake -B build -S "$pkgname" -G Ninja \
+		-DCMAKE_BUILD_TYPE=None \
+		-DCMAKE_INSTALL_PREFIX=/usr \
+		-Wno-dev
+	cmake --build build
+}
+
+package() {
+	DESTDIR="$pkgdir" cmake --install build
+}

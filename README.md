@@ -127,6 +127,7 @@ Every step keeps a log in `~/.dotfiles`: `install.log`, `bootstrap.log`, `packag
 | `Mod+Ctrl+W` | Random wallpaper |
 | `Mod+L` | Lock screen |
 | `Mod+Escape` | Power menu |
+| `Mod+O`, or tap `Mod` twice | Overview of every workspace (four fingers up on a touchpad) |
 | `Mod+F1` | Keybind cheatsheet |
 | `Mod+Shift+Escape` | niri's hotkey overlay |
 | `Mod+Shift+D` | Change desktop shell (Noctalia or DankMaterialShell) |
@@ -159,6 +160,8 @@ The compositor is the part that draws and arranges your windows. ZeXOS sets up t
 
 Mango is set up to feel like niri: windows sit side by side in a row that scrolls sideways, each one half the screen wide at first, with the same gaps, borders, round corners, blur and keys. Both shells work in it, `Mod+Shift+D` switches between them, and window colours follow the wallpaper the same way. Mango's config is in `~/.config/mango`.
 
+Mango and Hyprland have no overview like niri's, so ZeXOS adds its own, [mango-overview](https://github.com/zefuros1991/mango-overview). `Mod+O`, a quick double tap of `Mod`, or four fingers up opens it: every workspace as a card with live window previews. Drag a window onto another workspace to move it, swipe three fingers up or down to go through the workspaces and sideways to go through the windows (one swipe can cross several), and press `Enter` or click to go there. Four fingers down or `Esc` closes it. Mango's own built-in overview is still on `Mod+Shift+O`.
+
 Some niri things Mango doesn't have, so in Mango:
 
 - Workspaces are Mango's "tags" 1 to 9. Each screen has its own; `Mod+Tab` goes back to the last one.
@@ -171,7 +174,7 @@ Hyprland is the odd one out on purpose: it **tiles** instead of scrolling. Each 
 
 What is different in Hyprland:
 
-- There is no overview (`Mod+O`) and no jump to the first or last window (`Mod+Home`/`Mod+End`).
+- There is no jump to the first or last window (`Mod+Home`/`Mod+End`).
 - `Mod+Minus`/`Mod+Equal` move the line between two windows left or right by 100 pixels (with Shift, up or down): one window grows and its neighbour shrinks.
 - `Mod+Shift+Escape` shows the same cheat sheet as `Mod+F1`.
 

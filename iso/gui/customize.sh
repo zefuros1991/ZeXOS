@@ -73,6 +73,14 @@ cp -r "$repo/stow/noctalia/.local/share/." "$home/.local/share/"
 cp "$repo/stow/noctalia/.local/bin/"* "$repo/stow/desktop/.local/bin/"* "$home/.local/bin/"
 cp -r "$repo/stow/roller/." "$home/"   # wallpaper picker (Mod+W) settings
 cp -r "$repo/stow/kitty/." "$home/"    # terminal look: logo, details, prompt
+# mkarchiso makes every file 644 unless profiledef.sh lists it, so the
+# scripts would not run (no bar, no zexos-fetch). List each one as 755.
+{
+    echo "file_permissions+=("
+    for f in "$home/.local/bin/"*; do echo "  [\"/root/.local/bin/${f##*/}\"]=\"0:0:755\""; done
+    echo "  [\"/root/.local/share/roller/bin/waypaper\"]=\"0:0:755\""   # roller's helper
+    echo ")"
+} >> "$profile/profiledef.sh"
 for f in kdeglobals gtkrc quickshell; do
     cp -r "$repo/stow/desktop/.config/$f" "$home/.config/"
 done

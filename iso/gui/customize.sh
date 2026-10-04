@@ -18,9 +18,14 @@ fi
 sed -i "s|@LOCALREPO@|$local_repo|" "$profile/pacman.conf"
 
 # The installed system gets plain Arch: same pacman.conf minus the
-# live-only repos.
+# live-only repos, and back on the live system's own mirror list and
+# download folder (build.sh points the build at folders of its own, which
+# do not exist on the ISO).
 mkdir -p "$air/etc/zexos"
-sed '/^# ZEXOS-LIVE-ONLY/,$d' "$profile/pacman.conf" > "$air/etc/zexos/pacman-arch.conf"
+sed -e '/^# ZEXOS-LIVE-ONLY/,$d' \
+    -e 's|^Include = .*/mirrorlist$|Include = /etc/pacman.d/mirrorlist|' \
+    -e '/^CacheDir = /d' \
+    "$profile/pacman.conf" > "$air/etc/zexos/pacman-arch.conf"
 
 # Wallpaper for the live desktop, and backdrops for the install slideshow.
 mkdir -p "$air/usr/share/zexos" "$brand/slides" "$brand/previews"

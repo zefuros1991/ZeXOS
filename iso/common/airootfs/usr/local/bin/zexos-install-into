@@ -75,4 +75,14 @@ arch-chroot "$ROOT" runuser -u "$USERNAME" -- env -i \
     ZEXOS_COMPOSITORS="${ZEXOS_COMPOSITORS:-}" ZEXOS_SHELLS="${ZEXOS_SHELLS:-}" \
     bash -c 'cd "$HOME" && curl -fsSL "$0" -o /tmp/zexos-install.sh && bash /tmp/zexos-install.sh; rc=$?; rm -f /tmp/zexos-install.sh; exit $rc' "$url"
 
+# First login: niri with Noctalia, the same desktop as the live ISO (Noctalia
+# is zshell's default already). The login screen preselects the session saved
+# in its state file, and with none it picks the first alphabetically
+# (Hyprland). After that it remembers whatever you pick.
+niri=/usr/share/wayland-sessions/niri.desktop
+if [ -f "$ROOT$niri" ] && [ -d "$ROOT/var/lib/sddm" ] && [ ! -s "$ROOT/var/lib/sddm/state.conf" ]; then
+    printf '[Last]\nUser=%s\nSession=%s\n' "$USERNAME" "$niri" > "$ROOT/var/lib/sddm/state.conf"
+    arch-chroot "$ROOT" chown sddm:sddm /var/lib/sddm/state.conf
+fi
+
 echo "ZeXOS is installed for $USERNAME. Log: /var/log/zexos-install.log"

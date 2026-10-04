@@ -62,6 +62,12 @@ for part in common "$variant"; do
     [ -x "$here/$part/customize.sh" ] && "$here/$part/customize.sh" "$profile"
 done
 
+# Nothing on the ISO may point at this build computer's folders.
+if grep -rlF "$WORK" "$profile/airootfs"; then
+    echo "The files above point at $WORK, which only exists on this computer." >&2
+    exit 1
+fi
+
 echo "ZEXOS_BRANCH=$BRANCH" > "$profile/airootfs/etc/zexos-iso.conf"
 
 # The live system is called ZeXOS too, not Arch. /etc/os-release belongs to

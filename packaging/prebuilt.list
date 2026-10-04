@@ -1,10 +1,10 @@
 # Written by scripts/make-prebuilt.sh -- don't edit by hand.
 # Files: https://github.com/zefuros1991/ZeXOS/releases/tag/prebuilt
 # name version file sha256 [built against Qt]
-noctalia-zexos 5.1.0-2 noctalia-zexos-5.1.0-2-x86_64.pkg.tar.zst 2ed25e2fd6e84922dffb9b155722d0446469b62c0d12aa2e86e8771ad9d76931
-pixie-sddm-zexos 3.0-3 pixie-sddm-zexos-3.0-3-any.pkg.tar.zst 4fd743f716fc4de279dd5e9d58e13755125467d00c4bfadfc7852d015c3237ce
-bibata-cursor-zexos 2.0.7-1 bibata-cursor-zexos-2.0.7-1-any.pkg.tar.zst 2873ac7216c440c732d91d070189a61722b24337a362e17d6d11177e1e0c0dbf
-qt6ct-kde 0.11-11 qt6ct-kde-0.11-11-x86_64.pkg.tar.zst 6459d427291c0f1824b3e555d1e91742cb5637d25f759b3ca85e01a5c49c2ede qt=6.11.2-3
-roller 0.1.0.r4.g184debe-3 roller-0.1.0.r4.g184debe-3-x86_64.pkg.tar.zst 83eda16d56903144769a01bdb2bec4ccb70d8d6615a96c2b1fab3b2ddc2bafdd
-mpvpaper 1.9-1 mpvpaper-1.9-1-x86_64.pkg.tar.zst 49856fbc9cb68d8871e21c104756e89a76e788737804c084076d19b39ce69dbd
-zexos.db repo zexos.db 9c11b3bb5723845adb0a18ffbb6306a15de3f4aaf4e908d1d07a84e9b5a9e7a2
+noctalia-zexos 5.1.0-2 noctalia-zexos-5.1.0-2-x86_64.pkg.tar.zst 8f347829137a708c3b0d2218449247e8bdfbbc0a965e400cb3c0a5f7259fc9e4
+pixie-sddm-zexos 3.0-3 pixie-sddm-zexos-3.0-3-any.pkg.tar.zst 1d5a4e274ade63c5e9e09bb5dd25d2661f347557d60f2bcee3d015fc4e966488
+bibata-cursor-zexos 2.0.7-1 bibata-cursor-zexos-2.0.7-1-any.pkg.tar.zst 77ab31fc78eb1518cad4c962d8e92131013f6debb6a3fcfdd18dde0d5f7cd34b
+qt6ct-kde 0.11-11 qt6ct-kde-0.11-11-x86_64.pkg.tar.zst f0c944ed9a5202c54348e4689142bc1b0fab06b4178314810de75e187dea5c09 qt=6.11.2-3
+roller 0.1.0.r4.g184debe-4 roller-0.1.0.r4.g184debe-4-x86_64.pkg.tar.zst 9648b3c98a3b7913bc6895db221d685e44b14a4b043d489f14ba26818cca9b8d
+mpvpaper 1.9-1 mpvpaper-1.9-1-x86_64.pkg.tar.zst b94417769b261f4b2689a306146be17a1bd1b595f32294cb8dd5d63051d5f070
+zexos.db repo zexos.db 14fecc6346f4fb9ee40f6d9b1ca689342ff1f7f573a9b8c36440eb0b21239443

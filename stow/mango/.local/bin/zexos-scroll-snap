@@ -52,9 +52,11 @@ def tidy():
         return
 
     left, right = mon["x"] + EDGE, mon["x"] + mon["width"] - EDGE
-    # Tidy already: some window sits against the left or right screen edge.
-    if any(abs(c["x"] - left) <= SLACK or abs(c["x"] + c["width"] - right) <= SLACK
-           for c in strip):
+    gap = mon.get("gappih", 9)
+
+    # Tidy already: windows fill the screen from the left edge to the right one.
+    if (any(abs(c["x"] - left) <= SLACK for c in strip)
+            and any(abs(c["x"] + c["width"] - right) <= SLACK for c in strip)):
         return
 
     # Columns left to right; the neighbours of the focused window.
@@ -62,16 +64,20 @@ def tidy():
     i = next(n for n, c in enumerate(strip) if c["id"] == focused["id"])
     neighbours = [c for c in (strip[i - 1] if i > 0 else None,
                               strip[i + 1] if i + 1 < len(strip) else None) if c]
+    # A wide window that leaves no room for a neighbour is meant to sit alone.
+    neighbours = [c for c in neighbours
+                  if focused["width"] + c["width"] + gap <= right - left + SLACK]
+    if not neighbours:
+        return
 
     def shown(c):
         return max(0, min(c["x"] + c["width"], right) - max(c["x"], left))
 
-    # Keep the neighbour you can see more of on screen next to the focused one.
-    # Focusing it slides the strip so it touches the screen edge; focusing back
-    # leaves the strip there.
+    # Pair the focused window with the neighbour you can see more of (after a
+    # long swipe past the end of the strip there is only one). Focusing that
+    # neighbour makes Mango slide the strip so the pair fills the screen;
+    # focusing back leaves it there.
     n = max(neighbours, key=shown)
-    if shown(n) >= n["width"] - SLACK:
-        return  # it is fully on screen already; Mango would not move anything
     mmsg("dispatch", "focusid", "client," + str(n["id"]))
     time.sleep(0.02)
     mmsg("dispatch", "focusid", "client," + str(focused["id"]))

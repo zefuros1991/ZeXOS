@@ -36,6 +36,17 @@ rm -rf "$profile" "$WORK/work-$variant"
 mkdir -p "$WORK" "$OUT"
 cp -a /usr/share/archiso/configs/releng "$profile"
 
+# Plain Arch only, whatever the build computer runs: Arch's own mirrors, and
+# a download folder of the build's own. So a package from another distro
+# (say CachyOS's mpvpaper, same file name as ours) is never even looked at.
+cat > "$WORK/mirrorlist" <<'EOF'
+Server = https://geo.mirror.pkgbuild.com/$repo/os/$arch
+Server = https://fastly.mirror.pkgbuild.com/$repo/os/$arch
+EOF
+mkdir -p "$WORK/pkg-cache"
+sed -i -e "s|^Include = /etc/pacman.d/mirrorlist|Include = $WORK/mirrorlist|" \
+    -e "s|^#CacheDir .*|CacheDir = $WORK/pkg-cache/|" "$profile/pacman.conf"
+
 # Files: common ones first, then the variant's own.
 for part in common "$variant"; do
     [ -d "$here/$part/airootfs" ] && cp -a "$here/$part/airootfs/." "$profile/airootfs/"

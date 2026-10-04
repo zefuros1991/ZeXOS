@@ -42,6 +42,13 @@ trap cleanup EXIT
 # installer itself (a minimal install can leave them out).
 arch-chroot "$ROOT" pacman -S --needed --noconfirm git curl sudo
 
+# A ZeXOS installed from the ISO is a full distro, so it comes with what most
+# Arch-based distros ship (CachyOS, EndeavourOS, Manjaro): Firefox as the web
+# browser, and fish as the user's shell, like CachyOS. The ZeXOS terminal
+# look works the same in fish. Script installs on another distro keep theirs.
+arch-chroot "$ROOT" pacman -S --needed --noconfirm firefox fish
+arch-chroot "$ROOT" chsh -s /usr/bin/fish "$USERNAME"
+
 # Name the new system ZeXOS (it says ID_LIKE=arch, so everything still
 # treats it as Arch), and keep that name after updates.
 brand=/usr/local/share/zexos/branding

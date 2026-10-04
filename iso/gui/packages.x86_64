@@ -7,6 +7,13 @@ xwayland-satellite
 noctalia-zexos
 bibata-cursor-zexos
 kitty
+# Apps behind the main keys, so the live desktop is usable before
+# installing: Mod+B browser, Mod+E files, Mod+W wallpaper picker.
+firefox
+dolphin
+roller
+polkit-kde-agent
+xdg-utils
 networkmanager
 pipewire
 pipewire-pulse

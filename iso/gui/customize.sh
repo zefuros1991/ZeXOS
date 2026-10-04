@@ -64,6 +64,10 @@ cp -r "$repo/stow/noctalia/.config/noctalia/." "$home/.config/noctalia/"
 cp -r "$repo/stow/noctalia/.config/systemd/user/." "$repo/stow/desktop/.config/systemd/user/." "$home/.config/systemd/user/"
 cp -r "$repo/stow/noctalia/.local/share/." "$home/.local/share/"
 cp "$repo/stow/noctalia/.local/bin/"* "$repo/stow/desktop/.local/bin/"* "$home/.local/bin/"
+cp -r "$repo/stow/roller/." "$home/"   # wallpaper picker (Mod+W) settings
+for f in kdeglobals gtkrc quickshell; do
+    cp -r "$repo/stow/desktop/.config/$f" "$home/.config/"
+done
 # Not stow/desktop/.config/qt6ct: the live qt6ct.conf styles the installer.
 for w in aurora topo-energy dots-forest bars-ocean mark-ember aurora-ocean; do
     small "$repo/wallpapers/zexos-$w.jpg" "$home/Pictures/Wallpapers/zexos-$w.jpg"

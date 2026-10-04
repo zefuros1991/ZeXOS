@@ -3,7 +3,7 @@
 
 pkgname=zexos-calamares
 pkgver=3.3.14
-pkgrel=1
+pkgrel=2
 pkgdesc='Distribution-independent installer framework'
 arch=('x86_64')
 license=(GPL-3.0-or-later)
@@ -49,6 +49,15 @@ makedepends=(
 source=("calamares::git+${url}.git#tag=v${pkgver}")
 sha256sums=('SKIP')
 options=('!emptydirs')
+
+prepare() {
+    # Welcome page: upstream puts an empty stretch above the logo, so the
+    # logo only gets the bottom half of the page and sits low. Give the
+    # logo the stretch instead, so it is centred.
+    local f=calamares/src/modules/welcome/checker/ResultsListWidget.cpp
+    grep -q 'm_centralLayout->addWidget( imageLabel );' "$f"
+    sed -i 's|m_centralLayout->addWidget( imageLabel );|m_centralLayout->addWidget( imageLabel, 1 );|' "$f"
+}
 
 build() {
     cmake -S calamares -B build \

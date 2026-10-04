@@ -172,6 +172,7 @@ Rectangle {
                     source: picker.shown ? "previews/" + picker.shown + ".webp" : ""
                     fillMode: Image.PreserveAspectFit
                     playing: true
+                    speed: 0.75   // clips were recorded a bit fast
                     cache: false
                     opacity: status === Image.Ready ? 1 : 0
                     Behavior on opacity { NumberAnimation { duration: 200 } }

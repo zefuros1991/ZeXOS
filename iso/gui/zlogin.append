@@ -4,5 +4,8 @@
 # niri-session starts a new login shell, which runs this file again, and
 # so on forever.
 if [[ $(tty) == "/dev/tty1" ]] && [[ -z $WAYLAND_DISPLAY ]]; then
-    niri-session -l
+    # Hide niri-session's start-up chatter (systemd warnings about the
+    # shell's colour variables); niri's own log is in the journal.
+    clear
+    niri-session -l >/dev/null 2>&1
 fi

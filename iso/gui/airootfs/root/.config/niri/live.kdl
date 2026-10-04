@@ -11,11 +11,16 @@ binds {
     Mod+I hotkey-overlay-title="Install ZeXOS" { spawn "zexos-gui-installer"; }
 }
 
-// The installer floats as a normal-sized window in the middle of the
-// screen (floating windows open centred), not stretched to full screen.
+// The installer is a normal tiled window, so apps you open (Dolphin, a
+// terminal, Firefox) go next to it instead of hiding behind it. It can't
+// get narrower than 1024 px, so other windows open at 45% of the screen,
+// which still fits beside it on a 1920 px wide screen.
 window-rule {
     match app-id="calamares"
-    open-floating true
-    default-column-width { proportion 0.6; }
-    default-window-height { proportion 0.75; }
+    default-column-width { proportion 0.5; }
+}
+
+window-rule {
+    exclude app-id="calamares"
+    default-column-width { proportion 0.45; }
 }

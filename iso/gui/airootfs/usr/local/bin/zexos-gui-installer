@@ -6,4 +6,49 @@ export QT_QPA_PLATFORM=wayland QT_QPA_PLATFORMTHEME=qt6ct
 # The desktop draws Qt apps 20% bigger (niri's misc.kdl); the installer is
 # laid out for normal size, so it fits small laptop screens.
 unset QT_SCALE_FACTOR
+
+# The installer's look (stylesheet, sidebar, pickers) has its colours
+# written in. Swap them for the colours Noctalia made from the current
+# wallpaper, so the installer matches the desktop when it opens.
+# The untouched files stay in zexos.orig; every start themes a fresh copy.
+branding=/etc/calamares/branding
+colors=/root/.local/share/color-schemes/ZeXOS.colors
+[ -d "$branding/zexos.orig" ] || cp -a "$branding/zexos" "$branding/zexos.orig"
+rm -rf "$branding/zexos" && cp -a "$branding/zexos.orig" "$branding/zexos"
+# Noctalia writes the colours a moment after the desktop starts.
+for _ in $(seq 20); do [ -s "$colors" ] && break; sleep 0.5; done
+[ -s "$colors" ] && python3 - "$colors" "$branding/zexos" <<'PY'
+import configparser, pathlib, re, sys
+scheme = configparser.ConfigParser(interpolation=None)
+scheme.optionxform = str
+scheme.read(sys.argv[1])
+def get(group, key):
+    return tuple(int(v) for v in scheme[f"Colors:{group}"][key].split(","))
+def mix(a, b, t):  # a little of colour b blended into colour a
+    return tuple(round(x + (y - x) * t) for x, y in zip(a, b))
+bg, panel = get("View", "BackgroundNormal"), get("Window", "BackgroundNormal")
+field, fg = get("Button", "BackgroundNormal"), get("Window", "ForegroundNormal")
+muted, accent = get("Window", "ForegroundInactive"), get("Selection", "BackgroundNormal")
+on_accent = get("Selection", "ForegroundNormal")
+new = {  # the colour written in the files -> what it becomes
+    "0f0f14": bg, "14141c": panel, "1a1a24": field, "15151d": mix(field, bg, 0.5),
+    "20202c": mix(field, fg, 0.06), "22222e": mix(field, fg, 0.08),
+    "2a2a38": mix(field, fg, 0.15), "3a3a4c": mix(field, fg, 0.25),
+    "5a5a6e": mix(bg, muted, 0.5), "6a6a80": mix(bg, muted, 0.6),
+    "9a9ab0": muted, "c8c8d8": mix(muted, fg, 0.5), "e6e6ef": fg,
+    "7c5cff": accent, "a78bfa": mix(accent, fg, 0.3),
+}
+hexes = {k: "%02x%02x%02x" % v for k, v in new.items()}
+swap = lambda text: re.sub("|".join(hexes), lambda m: hexes[m.group(0).lower()], text, flags=re.I)
+for f in pathlib.Path(sys.argv[2]).glob("*"):
+    if f.suffix not in (".qss", ".qml", ".desc"):
+        continue
+    text = swap(f.read_text())
+    # Text sitting on the accent colour (Next button, current sidebar step).
+    text = text.replace(f"background: #{hexes['7c5cff']}; border-color: #{hexes['7c5cff']}; color: #ffffff;",
+                        f"background: #{hexes['7c5cff']}; border-color: #{hexes['7c5cff']}; color: #%02x%02x%02x;" % on_accent)
+    text = text.replace('SidebarTextCurrent:       "#ffffff"', 'SidebarTextCurrent:       "#%02x%02x%02x"' % on_accent)
+    f.write_text(text)
+PY
+
 exec calamares -d

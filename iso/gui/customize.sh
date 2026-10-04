@@ -32,6 +32,13 @@ for w in aurora topo-energy dots-forest bars-ocean mark-ember aurora-ocean; do
     i=$((i + 1))
 done
 
+# Version shown by the installer: the newest released version in
+# CHANGELOG.md ("## [2.0.0] - ..." shows as 2.0), so a release only needs
+# its changelog entry.
+version=$(sed -n 's/^## \[\([0-9]\+\.[0-9]\+\)\.[0-9]\+\].*/\1/p' "$repo/CHANGELOG.md" | head -n 1)
+[ -n "$version" ] || { echo "customize.sh: no version found in CHANGELOG.md" >&2; exit 1; }
+sed -i "s/@VERSION@/$version/g" "$brand/branding.desc"
+
 # Logo and icon.
 rsvg-convert -w 256 -h 256 "$repo/docs/logo/zexos-mark.svg" -o "$brand/logo.png"
 rsvg-convert -w 64 -h 64 "$repo/docs/logo/zexos-mark.svg" -o "$brand/icon.png"

@@ -3,7 +3,7 @@
 
 pkgname=zexos-calamares
 pkgver=3.3.14
-pkgrel=2
+pkgrel=3
 pkgdesc='Distribution-independent installer framework'
 arch=('x86_64')
 license=(GPL-3.0-or-later)
@@ -57,6 +57,18 @@ prepare() {
     local f=calamares/src/modules/welcome/checker/ResultsListWidget.cpp
     grep -q 'm_centralLayout->addWidget( imageLabel );' "$f"
     sed -i 's|m_centralLayout->addWidget( imageLabel );|m_centralLayout->addWidget( imageLabel, 1 );|' "$f"
+
+    # After the install, upstream keeps Back and Next on screen (Next still
+    # looks like the main button) and turns Cancel into a plain "Done" that
+    # is easy to miss. Hide Back and Next there, and make Done the main
+    # button (the stylesheet colours the default button with the accent).
+    f=calamares/src/libcalamaresui/ViewManager.cpp
+    grep -q 'UPDATE_BUTTON_PROPERTY( quitVisible, true );' "$f"
+    sed -i 's|UPDATE_BUTTON_PROPERTY( quitVisible, true );|&\n        UPDATE_BUTTON_PROPERTY( backAndNextVisible, false );|' "$f"
+    f=calamares/src/calamares/CalamaresWindow.cpp
+    grep -q '{ setButtonIcon( quit, n ); }' "$f"
+    sed -i -e 's|{ setButtonIcon( quit, n ); }|{ setButtonIcon( quit, n ); quit->setDefault( n == QStringLiteral( "dialog-ok-apply" ) ); quit->style()->unpolish( quit ); quit->style()->polish( quit ); }|' \
+        -e 's|^#include <QLabel>$|&\n#include <QStyle>|' "$f"
 }
 
 build() {

@@ -1,0 +1,111 @@
+#!/usr/bin/env python3
+# ZeXOS: tidy Mango's window strip after a sideways touchpad swipe.
+#
+# A 3-finger sideways swipe moves the windows live with your fingers, but
+# Mango leaves them wherever your fingers stopped, so a window can end up
+# half off the screen. This watches for the focus change a swipe makes and,
+# if the strip is left untidy, slides it back so the windows line up with
+# the screen edges again, like Mod+Left/Right does.
+#
+# Started by Mango (cfg/autostart.conf). Needs only mmsg (part of Mango).
+import json
+import os
+import subprocess
+import sys
+import time
+
+EDGE = 20      # Mango's scroller_structs: gap between a window and the screen edge
+SLACK = 4      # pixels of rounding we ignore
+
+
+def find_socket():
+    if os.environ.get("MANGO_INSTANCE_SIGNATURE"):
+        return
+    run = os.environ.get("XDG_RUNTIME_DIR", f"/run/user/{os.getuid()}")
+    socks = sorted(f for f in os.listdir(run) if f.startswith("mango-") and f.endswith(".sock"))
+    if socks:
+        os.environ["MANGO_INSTANCE_SIGNATURE"] = os.path.join(run, socks[0])
+
+
+def mmsg(*args):
+    out = subprocess.run(["mmsg", *args], capture_output=True, text=True, timeout=3)
+    return json.loads(out.stdout) if out.stdout.strip() else {}
+
+
+def tidy():
+    mons = {m["name"]: m for m in mmsg("get", "all-monitors").get("monitors", [])}
+    clients = mmsg("get", "all-clients").get("clients", [])
+    focused = next((c for c in clients if c.get("is_focused")), None)
+    if not focused or focused.get("is_floating") or focused.get("is_fullscreen"):
+        return
+    mon = mons.get(focused.get("monitor"))
+    if not mon or mon.get("keymode", "default") != "default":
+        return
+    if mon.get("layout_symbol") != "S":   # only the scroller layout
+        return
+    tags = set(focused.get("tags", []))
+    strip = [c for c in clients
+             if c.get("monitor") == mon["name"] and c.get("is_visible")
+             and not c.get("is_floating") and not c.get("is_fullscreen")
+             and not c.get("is_minimized") and set(c.get("tags", [])) & tags]
+    if len(strip) < 2:
+        return
+
+    left, right = mon["x"] + EDGE, mon["x"] + mon["width"] - EDGE
+    # Tidy already: some window sits against the left or right screen edge.
+    if any(abs(c["x"] - left) <= SLACK or abs(c["x"] + c["width"] - right) <= SLACK
+           for c in strip):
+        return
+
+    # Columns left to right; the neighbours of the focused window.
+    strip.sort(key=lambda c: c["x"])
+    i = next(n for n, c in enumerate(strip) if c["id"] == focused["id"])
+    neighbours = [c for c in (strip[i - 1] if i > 0 else None,
+                              strip[i + 1] if i + 1 < len(strip) else None) if c]
+
+    def shown(c):
+        return max(0, min(c["x"] + c["width"], right) - max(c["x"], left))
+
+    # Keep the neighbour you can see more of on screen next to the focused one.
+    # Focusing it slides the strip so it touches the screen edge; focusing back
+    # leaves the strip there.
+    n = max(neighbours, key=shown)
+    if shown(n) >= n["width"] - SLACK:
+        return  # it is fully on screen already; Mango would not move anything
+    mmsg("dispatch", "focusid", "client," + str(n["id"]))
+    time.sleep(0.02)
+    mmsg("dispatch", "focusid", "client," + str(focused["id"]))
+
+
+def main():
+    find_socket()
+    last = None
+    ignore_until = 0.0
+    while True:
+        watch = subprocess.Popen(["mmsg", "watch", "focusing-client"],
+                                 stdout=subprocess.PIPE, text=True)
+        for line in watch.stdout:
+            try:
+                fid = json.loads(line).get("id")
+            except ValueError:
+                continue
+            if fid == last:
+                continue   # same window, e.g. its title changed
+            last = fid
+            if fid is None or time.monotonic() < ignore_until:
+                continue
+            time.sleep(0.05)   # let Mango finish placing the windows
+            try:
+                before = time.monotonic()
+                tidy()
+                if time.monotonic() - before > 0.03:
+                    ignore_until = time.monotonic() + 0.5  # our own focus moves
+            except Exception as err:   # never die over one bad reading
+                print(f"zexos-scroll-snap: {err}", file=sys.stderr)
+        watch.wait()
+        time.sleep(1)   # Mango restarting; try again
+        find_socket()
+
+
+if __name__ == "__main__":
+    main()

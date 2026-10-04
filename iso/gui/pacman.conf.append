@@ -1,11 +1,6 @@
-
-# ZEXOS-LIVE-ONLY: repos used to build the live ISO, not the installed system.
-# Calamares is CachyOS's build, rebuilt as zexos-calamares (see
-# iso/gui/calamares-pkg); some of its dependencies only exist in CachyOS's
-# repo. Listed after Arch's own repos, so Arch's packages always win.
+# ZEXOS-LIVE-ONLY: the local repo with our Calamares build (zexos-calamares,
+# see iso/gui/calamares-pkg), used to build the live ISO only. Listed after
+# Arch's own repos, so Arch's packages always win.
 [zexos-iso]
 SigLevel = Optional TrustAll
 Server = file://@LOCALREPO@
-
-[cachyos]
-Server = https://mirror.cachyos.org/repo/$arch/$repo

@@ -58,22 +58,20 @@ Arch's own installer menus") for anything the questions don't cover.
 
 ## Building the graphical ISO
 
-The picker pages need Calamares' QML package chooser, which Arch's and
-CachyOS's packages leave out. So the graphical ISO uses its own Calamares
-package, `zexos-calamares`, served from a small local repo.
+Arch has no official Calamares package, so the graphical ISO builds its own
+from upstream Calamares (with the QML package chooser for the picker pages),
+`zexos-calamares`, served from a small local repo. Everything else comes from
+Arch's own repos.
 
-1. Build the package once (and after a PKGBUILD change). Use a clean
-   environment and generic CPU flags, so the binary runs on any x86-64 PC
-   and does not pick up a Python from your home folder:
+1. Build the package once (and after a PKGBUILD change). The script builds
+   it in a clean Arch Linux container (needs podman), so it runs on any
+   x86-64 PC. Do not build it with plain makepkg on a CachyOS host: its
+   compiler marks programs as needing a newest-generation CPU, and the
+   installer then will not start on most laptops.
 
    ```bash
    B=/path/to/calamares-build            # any roomy folder
-   mkdir -p $B/repo
-   sed 's/-march=native/-march=x86-64 -mtune=generic/' /etc/makepkg.conf > $B/makepkg.conf
-   cd iso/gui/calamares-pkg
-   env -i HOME=$HOME USER=$USER PATH=/usr/bin:/bin LANG=C.UTF-8 PKGDEST=$B/repo \
-       makepkg -s --config $B/makepkg.conf
-   repo-add $B/repo/zexos-iso.db.tar.gz $B/repo/zexos-calamares-*.pkg.tar.zst
+   iso/gui/build-calamares.sh $B/repo
    ```
 
 2. Build the ISO, pointing at that repo:

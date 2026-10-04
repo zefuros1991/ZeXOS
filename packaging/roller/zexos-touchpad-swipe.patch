@@ -1,0 +1,68 @@
+diff --git a/qml/Carousel.qml b/qml/Carousel.qml
+index fd7bb54..bd6d7fd 100644
+--- a/qml/Carousel.qml
++++ b/qml/Carousel.qml
+@@ -171,20 +171,35 @@ Item {
+     readonly property int committedIndex: ((Math.round(targetSelection)% (count||1))+(count||1))%(count||1)
+ 
+     property real wheelAcc: 0
+-    // one notch (120 units) = one card. The tile MouseAreas swallow wheel
+-    // events, so they forward here too.
+-    function wheelStep(a) {
++    property real swipeAcc: 0
++    // Mouse wheel: one notch (120 units) = one card, either direction.
++    // Touchpad: only a sideways two-finger swipe moves the cards, about one
++    // card per swipePixels of finger travel; an up/down swipe does nothing.
++    // The tile MouseAreas and the full-screen MouseArea in Main.qml swallow
++    // wheel events, so they forward here too.
++    property real swipePixels: 160
++    function wheelStep(e) {
+         if (root.count === 0) return
++        // Only touchpads report finger travel in pixels; a wheel does not.
++        let touchpad = e.pixelDelta.x !== 0 || e.pixelDelta.y !== 0
++        if (touchpad) {
++            root.swipeAcc += e.pixelDelta.x
++            while (root.swipeAcc >= swipePixels) { root.swipeAcc -= swipePixels; root.prev() }
++            while (root.swipeAcc <= -swipePixels) { root.swipeAcc += swipePixels; root.next() }
++            if (e.phase === Qt.ScrollEnd) root.swipeAcc = 0
++            return
++        }
++        let a = e.angleDelta
+         let d = Math.abs(a.y) >= Math.abs(a.x) ? a.y : a.x
+         root.wheelAcc += d
+         while (root.wheelAcc >= 120) { root.wheelAcc -= 120; root.prev() }
+         while (root.wheelAcc <= -120) { root.wheelAcc += 120; root.next() }
+     }
+-    WheelHandler { onWheel: (e) => root.wheelStep(e.angleDelta) }
++    WheelHandler { onWheel: (e) => root.wheelStep(e) }
+     MouseArea {
+         id: dragArea
+         anchors.fill: parent
+-        onWheel: (w) => root.wheelStep(w.angleDelta)
++        onWheel: (w) => root.wheelStep(w)
+         property real startX
+         property real startContentX
+         property bool dragging:false
+@@ -369,7 +384,7 @@ Item {
+             // Click handling
+             MouseArea {
+                 anchors.fill: parent
+-                onWheel: (w) => root.wheelStep(w.angleDelta)
++                onWheel: (w) => root.wheelStep(w)
+                 onClicked: {
+                     if (isSelected) root.applyRequested(realIdx)
+                     else root.setSelected(realIdx)
+diff --git a/qml/Main.qml b/qml/Main.qml
+index 75c6e7d..9799736 100644
+--- a/qml/Main.qml
++++ b/qml/Main.qml
+@@ -58,6 +58,9 @@ ApplicationWindow {
+     MouseArea {
+         anchors.fill: parent
+         onClicked: fadeQuit()
++        // Scrolling or swiping anywhere on screen moves the cards, not only
++        // over the carousel.
++        onWheel: (w) => carousel.wheelStep(w)
+     }
+ 
+     Item {

@@ -5,7 +5,8 @@
 SigLevel = Optional TrustAll
 Server = file://@LOCALREPO@
 
-# Prebuilt ZeXOS packages (noctalia-zexos, bibata-cursor-zexos, qt6ct-kde) for the live
+# Prebuilt ZeXOS packages (noctalia-zexos, bibata-cursor-zexos, qt6ct-kde,
+# mpvpaper) for the live
 # desktop. The installed system adds this repo itself.
 [zexos]
 SigLevel = Optional TrustAll

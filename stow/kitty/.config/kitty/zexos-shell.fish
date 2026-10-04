@@ -16,6 +16,9 @@ if test "$ZEXOS_TERM_FETCH" = 1
         end
     else
         zexos-fetch
+        # fish's own "Welcome to fish" line would sit under the logo; a
+        # greeting you or your distro set up is kept.
+        string match -q -r -- "^(embedded:|$__fish_data_dir/functions/)" $from; and function fish_greeting; end
     end
 end
 set -e ZEXOS_TERM_FETCH

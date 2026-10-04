@@ -72,6 +72,7 @@ cp -r "$repo/stow/noctalia/.config/systemd/user/." "$repo/stow/desktop/.config/s
 cp -r "$repo/stow/noctalia/.local/share/." "$home/.local/share/"
 cp "$repo/stow/noctalia/.local/bin/"* "$repo/stow/desktop/.local/bin/"* "$home/.local/bin/"
 cp -r "$repo/stow/roller/." "$home/"   # wallpaper picker (Mod+W) settings
+cp -r "$repo/stow/kitty/." "$home/"    # terminal look: logo, details, prompt
 for f in kdeglobals gtkrc quickshell; do
     cp -r "$repo/stow/desktop/.config/$f" "$home/.config/"
 done

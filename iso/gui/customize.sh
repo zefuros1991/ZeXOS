@@ -91,6 +91,7 @@ live_edit() {
 live_edit 'members = \["sysmon", "arch_updates", "usb"\]' 'members = ["sysmon"]'
 live_edit 'enabled = \["yuuto/arch-updater", "kenn/keybind-cheatsheet", "aristides/udiskie", "noctalia/mpvpaper"\]' 'enabled = ["kenn/keybind-cheatsheet"]'
 live_edit 'pinned = \["kitty", "org.kde.dolphin"\]' 'pinned = ["zexos-installer", "kitty"]'
+live_edit '"network", "shell_switch"\]' '"network"]'
 
 # Networking: NetworkManager instead of Arch's iwd + systemd-networkd, so the
 # bar's network menu works and Wi-Fi joined here carries over to the install.
@@ -104,3 +105,8 @@ mkdir -p "$wants/multi-user.target.wants" "$wants/network-online.target.wants"
 ln -sf /usr/lib/systemd/system/NetworkManager.service "$wants/multi-user.target.wants/NetworkManager.service"
 ln -sf /usr/lib/systemd/system/NetworkManager-wait-online.service "$wants/network-online.target.wants/NetworkManager-wait-online.service"
 ln -sf /usr/lib/systemd/system/NetworkManager-dispatcher.service "$wants/dbus-org.freedesktop.nm-dispatcher.service"
+
+# The live desktop uses fish, like an installed ZeXOS. Root logs in on tty1
+# with it, and /root/.config/fish/conf.d/zexos-live.fish starts niri.
+sed -i 's|^root:\(.*\):/usr/bin/zsh$|root:\1:/usr/bin/fish|' "$air/etc/passwd"
+grep -q '^root:.*:/usr/bin/fish$' "$air/etc/passwd"

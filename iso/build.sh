@@ -32,8 +32,11 @@ OUT="${ZEXOS_ISO_OUT:-$PWD/out}"
 WORK="${ZEXOS_ISO_WORK:-/var/tmp/zexos-iso}"
 profile="$WORK/profile-$variant"
 
-rm -rf "$profile" "$WORK/work-$variant"
 mkdir -p "$WORK" "$OUT"
+# Two builds at once would write over each other's files.
+exec 9>"$WORK/.lock"
+flock -n 9 || { echo "Another ISO build is running (lock: $WORK/.lock)." >&2; exit 1; }
+rm -rf "$profile" "$WORK/work-$variant"
 cp -a /usr/share/archiso/configs/releng "$profile"
 
 # Plain Arch only, whatever the build computer runs: Arch's own mirrors, and

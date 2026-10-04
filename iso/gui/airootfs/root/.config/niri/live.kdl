@@ -24,3 +24,13 @@ window-rule {
     exclude app-id="calamares"
     default-column-width { proportion 0.45; }
 }
+
+// The installer's pop-ups ("Cancel Installation?", errors) float in the
+// middle, on top of it, instead of opening as a window of their own beside
+// it. Every installer window but the main one ("ZeXOS Installer") is one.
+window-rule {
+    match app-id="calamares"
+    exclude title="^ZeXOS Installer$"
+    open-floating true
+    open-focused true
+}

@@ -1,5 +1,5 @@
-Welcome to the [38;2;23;147;209mZeXOS[0m installer.
+Welcome to the ZeXOS installer.
 
-To start it again: [35mzexos-tui[0m on the text ISO, [35mzexos-gui-installer[0m on the desktop ISO.
-For Wi-Fi, use the [35miwctl[0m utility. Wired internet works by itself.
+To start it again: zexos-tui on the text ISO, zexos-gui-installer on the desktop ISO.
+For Wi-Fi, use the iwctl utility. Wired internet works by itself.
 

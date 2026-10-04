@@ -1,5 +1,8 @@
 
 # ZeXOS: start the live desktop with the installer on the first screen.
+# "-l" tells niri-session we are already in a login shell. Without it,
+# niri-session starts a new login shell, which runs this file again, and
+# so on forever.
 if [[ $(tty) == "/dev/tty1" ]] && [[ -z $WAYLAND_DISPLAY ]]; then
-    niri-session
+    niri-session -l
 fi

@@ -33,10 +33,11 @@ podman run --rm \
         cd /out && repo-add zexos-iso.db.tar.gz zexos-calamares-*.pkg.tar.zst
     '
 
-# Check it really runs on older CPUs: no x86-64-v3/v4 mark on the program.
+# Check it really runs on older CPUs: the program must only *need* basic
+# x86-64 ("ISA used" may list newer levels, picked at run time when present).
 tmp=$(mktemp -d)
 bsdtar -xf "$repo"/zexos-calamares-*.pkg.tar.zst -C "$tmp" usr/bin/calamares
-if readelf -n "$tmp/usr/bin/calamares" | grep -q 'x86-64-v[34]'; then
+if readelf -n "$tmp/usr/bin/calamares" | grep 'ISA needed' | grep -q 'x86-64-v[234]'; then
     echo "ERROR: calamares is marked for a newer CPU than x86-64" >&2
     rm -rf "$tmp"; exit 1
 fi

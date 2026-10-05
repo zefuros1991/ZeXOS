@@ -440,8 +440,8 @@ want_compositor hyprland && install_pacman "Hyprland" "${HYPR_PACMAN[@]}"
 # -----------------------------
 # OVERVIEW FOR MANGO AND HYPRLAND (mango-overview)
 # -----------------------------
-# niri has its own overview. On Mango and Hyprland, Super+O (or tapping
-# Super twice, or four fingers up) opens ZeXOS's: every workspace as a
+# niri has its own overview. On Mango and Hyprland, Super+O (or four
+# fingers up) opens ZeXOS's: every workspace as a
 # card with live window previews; drag windows between them, swipe with
 # three fingers. Not in the repos -- built from packaging/mango-overview.
 if want_compositor mango || want_compositor hyprland; then

@@ -1,13 +1,11 @@
 -- The overview (mango-overview): every workspace as a card, stacked top to
 -- bottom, with live window previews, like niri's.
--- Open it with Mod+O, a quick double tap of Super (like on Mango), or four
--- fingers up on the touchpad.
+-- Open it with Mod+O, or four fingers up on the touchpad.
 -- Inside: arrows / WASD / HJKL to move, Enter or a click to go there,
 -- middle-click closes a window, Esc goes back.
 
 local exec = hl.dsp.exec_cmd
 hl.bind("SUPER + O", exec("mango-overview toggle"), { description = "Overview of all workspaces" })
-hl.bind("SUPER + Super_L", exec("super-double-tap"), { release = true, description = "Overview (tap Super twice)" })
 
 -- While the overview is open, Hyprland's own keys are off (the overview
 -- turns on this submap), so the keys reach the overview. It also blocks
@@ -16,7 +14,6 @@ hl.bind("SUPER + Super_L", exec("super-double-tap"), { release = true, descripti
 -- Only these get through (dont_inhibit / disable_inhibit):
 hl.define_submap("overview", function()
     hl.bind("SUPER + O", exec("mango-overview toggle"), { dont_inhibit = true })
-    hl.bind("SUPER + Super_L", exec("super-double-tap"), { release = true, dont_inhibit = true })
     -- Way out if the overview ever stops answering.
     hl.bind("SUPER + Escape", exec("mango-overview close; hyprctl dispatch 'hl.dsp.submap(\"reset\")'"), { dont_inhibit = true })
     -- Screenshots (the same keys as in keybinds.lua).

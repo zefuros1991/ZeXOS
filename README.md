@@ -127,7 +127,7 @@ Every step keeps a log in `~/.dotfiles`: `install.log`, `bootstrap.log`, `packag
 | `Mod+Ctrl+W` | Random wallpaper |
 | `Mod+L` | Lock screen |
 | `Mod+Escape` | Power menu |
-| `Mod+O`, or tap `Mod` twice | Overview of every workspace (four fingers up on a touchpad) |
+| `Mod+O` | Overview of every workspace (four fingers up on a touchpad) |
 | `Mod+F1` | Keybind cheatsheet |
 | `Mod+Shift+Escape` | niri's hotkey overlay |
 | `Mod+Shift+D` | Change desktop shell (Noctalia or DankMaterialShell) |

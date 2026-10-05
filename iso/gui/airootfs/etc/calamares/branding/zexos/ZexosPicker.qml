@@ -151,39 +151,54 @@ Rectangle {
             Item { Layout.fillHeight: true }
         }
 
-        ColumnLayout {   // the preview of whatever is hovered or last clicked
+        Item {   // the preview of whatever is hovered or last clicked
+            id: previewArea
             Layout.fillWidth: true
             Layout.fillHeight: true
-            spacing: 12
 
-            Rectangle {
-                Layout.fillWidth: true
-                Layout.fillHeight: true
-                radius: 14
-                color: "#14141c"
-                border.width: 1
-                border.color: "#22222e"
-                clip: true
+            // The box takes the clip's own shape and is as big as fits, so
+            // there are no empty bands around the clip at any window size.
+            readonly property real ratio: preview.implicitHeight > 0
+                ? preview.implicitWidth / preview.implicitHeight : 16 / 9
+            readonly property real pad: 8
+            readonly property real boxWidth: Math.min(width,
+                (height - caption.height - previewColumn.spacing - 2 * pad) * ratio + 2 * pad)
 
-                AnimatedImage {
-                    id: preview
-                    anchors.fill: parent
-                    anchors.margins: 8
-                    source: picker.shown ? "previews/" + picker.shown + ".webp" : ""
-                    fillMode: Image.PreserveAspectFit
-                    playing: true
-                    speed: 0.75   // clips were recorded a bit fast
-                    cache: false
-                    opacity: status === Image.Ready ? 1 : 0
-                    Behavior on opacity { NumberAnimation { duration: 200 } }
+            Column {
+                id: previewColumn
+                anchors.centerIn: parent
+                spacing: 12
+
+                Rectangle {
+                    width: previewArea.boxWidth
+                    height: (width - 2 * previewArea.pad) / previewArea.ratio + 2 * previewArea.pad
+                    radius: 14
+                    color: "#14141c"
+                    border.width: 1
+                    border.color: "#22222e"
+                    clip: true
+
+                    AnimatedImage {
+                        id: preview
+                        anchors.fill: parent
+                        anchors.margins: previewArea.pad
+                        source: picker.shown ? "previews/" + picker.shown + ".webp" : ""
+                        fillMode: Image.PreserveAspectFit
+                        playing: true
+                        speed: 0.75   // clips were recorded a bit fast
+                        cache: false
+                        opacity: status === Image.Ready ? 1 : 0
+                        Behavior on opacity { NumberAnimation { duration: 200 } }
+                    }
                 }
-            }
-            Text {
-                Layout.fillWidth: true
-                horizontalAlignment: Text.AlignHCenter
-                text: picker.optionFor(picker.shown).name + "  ·  " + picker.optionFor(picker.shown).tag
-                color: "#9a9ab0"
-                font.pixelSize: 13
+                Text {
+                    id: caption
+                    width: previewArea.boxWidth
+                    horizontalAlignment: Text.AlignHCenter
+                    text: picker.optionFor(picker.shown).name + "  ·  " + picker.optionFor(picker.shown).tag
+                    color: "#9a9ab0"
+                    font.pixelSize: 13
+                }
             }
         }
     }

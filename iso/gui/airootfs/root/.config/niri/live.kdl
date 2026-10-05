@@ -11,9 +11,15 @@ binds {
     Mod+I hotkey-overlay-title="Install ZeXOS" { spawn "zexos-gui-installer"; }
 }
 
-// The installer is a normal tiled window, so apps you open (Dolphin, a
-// terminal, Firefox) go next to it instead of hiding behind it. Every
-// window opens at half the screen, like on an installed ZeXOS.
+// The installer is a normal tiled window, most of the screen wide (so the
+// preview clips are big). Apps you open (Dolphin, a terminal, Firefox) go
+// to its right at half the screen, like on an installed ZeXOS, and you
+// scroll over to them. A floating installer can't do that: niri never
+// scrolls floating windows, so apps would sit behind it.
+window-rule {
+    match app-id="calamares" title="^ZeXOS Installer$"
+    default-column-width { proportion 0.84; }
+}
 
 // The installer's pop-ups ("Cancel Installation?", errors) float in the
 // middle, on top of it, instead of opening as a window of their own beside

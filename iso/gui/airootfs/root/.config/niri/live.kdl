@@ -12,18 +12,8 @@ binds {
 }
 
 // The installer is a normal tiled window, so apps you open (Dolphin, a
-// terminal, Firefox) go next to it instead of hiding behind it. It can't
-// get narrower than 1024 px, so other windows open at 45% of the screen,
-// which still fits beside it on a 1920 px wide screen.
-window-rule {
-    match app-id="calamares"
-    default-column-width { proportion 0.5; }
-}
-
-window-rule {
-    exclude app-id="calamares"
-    default-column-width { proportion 0.45; }
-}
+// terminal, Firefox) go next to it instead of hiding behind it. Every
+// window opens at half the screen, like on an installed ZeXOS.
 
 // The installer's pop-ups ("Cancel Installation?", errors) float in the
 // middle, on top of it, instead of opening as a window of their own beside

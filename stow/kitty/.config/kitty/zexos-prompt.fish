@@ -1,8 +1,8 @@
 # The ZeXOS prompt for fish, loaded by ~/.local/bin/zexos-kitty-shell, never
 # from your fish config. Same look as zexos-prompt.bash:
 #
-#   ╭─  ~/Projects/ZeXOS ─  main ─ ✔
-#   ╰─❯                                   01:50:45
+#   ╭─  ~/Projects/ZeXOS ─  main ─ ✔                01:50:45
+#   ╰─❯
 #
 # The colours follow a wallpaper or shell change at the next prompt. Don't
 # want it? Create ~/.config/zexos/no-prompt. It also leaves a prompt you made
@@ -78,7 +78,7 @@ if not test -e (set -q XDG_CONFIG_HOME; and echo $XDG_CONFIG_HOME; or echo $HOME
             set tail (string replace -r '^.*/' '' -- $p)
         end
         __zt_paint __zt_G 0 3 "╭─ "
-        __zt_icon $__zt_G[5] \uf07c
+        __zt_icon $__zt_G[5] \U000f0770
         __zt_paint __zt_G 5 16 "$head"
         set_color --bold
         __zt_paint __zt_G 16 22 "$tail"
@@ -91,29 +91,37 @@ if not test -e (set -q XDG_CONFIG_HOME; and echo $XDG_CONFIG_HOME; or echo $HOME
                 set branch (string sub -l 12 -- $branch)…(string sub -s -12 -- $branch)
             end
             __zt_paint __zt_G 22 26 " ─ "
-            __zt_icon $__zt_G[28] \ue725
+            __zt_icon $__zt_G[28] \U000f062c
             __zt_paint __zt_G 28 34 "$branch"
         end
 
         # how the last command went
         __zt_paint __zt_G 34 38 " ─ "
+        set -l mark ✔
         if test $st -eq 0
             set_color --bold $__zt_G[41]; printf '✔'
         else
+            set mark "✘ $st"
             set_color --bold $__zt_WARN; printf '✘'
             set_color normal; set_color $__zt_WARN; printf ' %s' $st
         end
         set_color normal
+
+        # the time at the right end of line 1
+        set -l t (date +%H:%M:%S)
+        set -l used (string length -- "╭─ x $p ─ $mark")
+        test -n "$branch"; and set used (math $used + (string length -- " ─ x $branch"))
+        set -l gap (math $COLUMNS - $used - (string length -- $t) - 1)
+        if test $gap -ge 2
+            printf '%*s' $gap ''
+            __zt_paint __zt_T 0 40 $t
+            set_color normal
+        end
 
         # line 2
         printf '\n'
         __zt_paint __zt_G 4 24 "╰─"
         set_color --bold $__zt_G[41]; printf '❯'
         set_color normal; printf ' '
-    end
-
-    function fish_right_prompt
-        __zt_paint __zt_T 0 40 (date +%H:%M:%S)
-        set_color normal
     end
 end

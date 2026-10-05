@@ -180,7 +180,7 @@ def sd_z(x, y):
 
 
 def z_lines(p, cols, rows):
-    """The Z as coloured half-block text, cols x rows cells."""
+    """The Z as coloured half-block text, at most cols x rows cells."""
     pw, ph = cols, rows * 2
     scale = 0.47 * min(cols / 44, rows / 21)
     ramp = [p["term"]] + [gradient(p["a"], p["b"], k / 64) for k in range(65)]
@@ -202,9 +202,14 @@ def z_lines(p, cols, rows):
             if cover / n > 0.06:
                 bgc, a = p["term"], cover / n
                 px[j][i] = tuple(round(col[k] / n + bgc[k] * (1 - a)) for k in range(3))
-    for r in range(rows):
+    # only the rows and columns the Z touches, so no empty margin around it
+    used_r = [r for r in range(rows) if any(px[2 * r]) or any(px[2 * r + 1])]
+    used_c = [c for c in range(cols) if any(px[j][c] for j in range(ph))]
+    if not used_r:
+        return []
+    for r in range(used_r[0], used_r[-1] + 1):
         line = []
-        for c in range(cols):
+        for c in range(used_c[0], used_c[-1] + 1):
             t, b = px[2 * r][c], px[2 * r + 1][c]
             if t and b:
                 line.append("\x1b[38;2;%d;%d;%d;48;2;%d;%d;%dm▀" % (*t, *b))
@@ -253,14 +258,14 @@ def version():
 
 # (fastfetch module, label, nerd icon, format or None for the default)
 FACTS = [
-    ("os", "os", "", None),
-    ("kernel", "kernel", "", "{release}"),
+    ("os", "os", "\U000f08c7", None),
+    ("kernel", "kernel", "\U000f033d", "{release}"),
     ("uptime", "uptime", "\U000f0150", None),
     ("packages", "packages", "\U000f03d7", "{all} ({pacman} pacman, {flatpak-all} flatpak)"),
-    ("shell", "shell", "", "{pretty-name} {version}"),
-    ("wm", "wm", "", "{pretty-name}"),
-    ("terminal", "terminal", "", "{pretty-name} {version}"),
-    ("cpu", "cpu", "", "{name}"),
+    ("shell", "shell", "\U000f018d", "{pretty-name} {version}"),
+    ("wm", "wm", "\U000f10ac", "{pretty-name}"),
+    ("terminal", "terminal", "\U000f07b7", "{pretty-name} {version}"),
+    ("cpu", "cpu", "\U000f0ee0", "{name}"),
     ("gpu", "gpu", "\U000f08ae", "{name}"),
     ("memory", "memory", "\U000f035b", None),
     ("disk", "disk", "\U000f02ca", None),
@@ -338,6 +343,7 @@ def details(r):
 
 
 DISTRO_LOGO = 46            # room a distro's own logo needs, padding included
+GAP = 3                     # columns between the logo and the box
 
 
 def fetch(cols):
@@ -346,32 +352,44 @@ def fetch(cols):
     box instead, so it is never just left out. The Z shrinks to fit."""
     p = palette()
     zexos = is_zexos()
-    side = cols - (BOX + 2) - 4 - 1          # room left of the box
+    side = cols - (BOX + 2) - GAP - 1        # room left of the box
     if zexos:
-        top = side < 24
+        top = side < 20
         zc = min(44, cols - 2) if top else min(44, side)
         zc = zc if zc >= 16 else 0
     else:
         top = cols < BOX + 2 + DISTRO_LOGO
         zc = -1 if cols >= DISTRO_LOGO else 0
-    zr = round(zc * 21 / 44)
     path = os.path.join(folder(p, zc, top, zexos, os_release().get("ID"), version()), "fastfetch.jsonc")
     if not os.path.exists(path):
         r = roles(p)
         display = {"separator": "", "color": {"output": "38;2;%d;%d;%d" % r["ink"]}}
+        mods = details(r)
         conf = {"$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
-                "display": display, "modules": details(r)}
-        pad = {"top": 1, "left": 1, "right": 0} if top else None
+                "display": display, "modules": mods}
         if zc < 0:
             # the distro's own logo; its colours $1..$9 go along the gradient
-            conf["logo"] = {"type": "builtin", "padding": pad or {"top": 1, "left": 1, "right": 4},
+            conf["logo"] = {"type": "builtin",
+                            "padding": {"top": 1, "left": 1, "right": 0} if top
+                                       else {"top": 1, "left": 1, "right": GAP},
                             "color": {str(k): "38;2;%d;%d;%d" % r["grad"]((k - 1) / 8)
                                       for k in range(1, 10)}}
         elif zc:
+            # Beside the box: as tall as the box less a row above and below,
+            # and centred on it. Above the box: the width it has.
+            boxh = len(mods)
+            want = zc if top else min(zc, round((boxh - 2) * 44 / 21 / 0.9))
+            lines = z_lines(p, want, round(want * 21 / 44))
+            while not top and want > 16 and len(lines) > boxh - 2:
+                want -= 1
+                lines = z_lines(p, want, round(want * 21 / 44))
+            w = max(len(re.sub(r"\x1b\[[0-9;]*m", "", l)) for l in lines)
+            pad = (boxh - len(lines)) // 2
             logo = os.path.join(os.path.dirname(path), "z.txt")
-            save(logo, "\n".join(z_lines(p, zc, zr)) + "\n")
-            conf["logo"] = {"type": "file-raw", "source": logo, "width": zc, "height": zr,
-                            "padding": pad or {"top": 0, "left": 1, "right": 4}}
+            save(logo, "\n".join(lines) + "\n")
+            conf["logo"] = {"type": "file-raw", "source": logo, "width": w, "height": len(lines),
+                            "padding": {"top": 1, "left": 2, "right": 0} if top
+                                       else {"top": pad, "left": 2, "right": GAP}}
         else:
             conf["logo"] = {"type": "none"}
         if top and zc:

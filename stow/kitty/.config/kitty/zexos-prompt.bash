@@ -1,8 +1,8 @@
 # The ZeXOS prompt for bash, loaded by ~/.local/bin/zexos-kitty-shell, never
 # from your bash config.
 #
-#   ╭─  ~/Projects/ZeXOS ─  main ─ ✔
-#   ╰─❯                                   01:50:45
+#   ╭─  ~/Projects/ZeXOS ─  main ─ ✔                01:50:45
+#   ╰─❯
 #
 # No fills: the lines, icons and text run along the wallpaper's two colours,
 # one character at a time. The colours follow a wallpaper or shell change at
@@ -66,7 +66,7 @@ __zt_prompt() {
     head= tail=$p
     [[ $p == ?*/* ]] && head=${p%/*}/ tail=${p##*/}
     __zt_paint __zt_G 0 3 "╭─ ";            out=$REPLY
-    __zt_fg "${__zt_G[4]}";                 out+="$REPLY"$'\uf07c '
+    __zt_fg "${__zt_G[4]}";                 out+="$REPLY"$'\U000f0770 '
     __zt_paint __zt_G 5 16 "$head"; out+=$REPLY
     __zt_paint __zt_G 16 22 "$tail"; out+="${__zt_O}${__zt_E}[1m${__zt_C}$REPLY${__zt_O}${__zt_E}[22m${__zt_C}"
 
@@ -74,7 +74,7 @@ __zt_prompt() {
     if branch=$(git symbolic-ref --short -q HEAD 2>/dev/null || git rev-parse --short HEAD 2>/dev/null); then
         (( ${#branch} > 32 )) && branch="${branch:0:12}…${branch: -12}"
         __zt_paint __zt_G 22 26 " ─ ";      out+=$REPLY
-        __zt_fg "${__zt_G[27]}";            out+="$REPLY"$'\ue725 '
+        __zt_fg "${__zt_G[27]}";            out+="$REPLY"$'\U000f062c '
         __zt_paint __zt_G 28 34 "$branch";  out+=$REPLY
     fi
 
@@ -86,11 +86,13 @@ __zt_prompt() {
         __zt_fg "$__zt_WARN";               out+="${__zt_O}${__zt_E}[1m${__zt_C}$REPLY✘${__zt_O}${__zt_E}[22m${__zt_C} $status"
     fi
 
-    # line 2: the time on the right, then ╰─❯
+    # the time at the right end of line 1
     t=$(printf '%(%H:%M:%S)T' -1)
     __zt_paint __zt_T 0 40 "$t"
-    out+="${__zt_N}${__zt_O}${__zt_E}7${__zt_E}[$((COLUMNS - ${#t} + 1))G$REPLY${__zt_E}8${__zt_C}"
-    __zt_paint __zt_G 4 24 "╰─";            out+=$REPLY
+    out+="${__zt_O}${__zt_E}7${__zt_E}[$((COLUMNS - ${#t}))G$REPLY${__zt_E}8${__zt_C}"
+
+    # line 2: ╰─❯
+    __zt_paint __zt_G 4 24 "╰─";            out+="${__zt_N}$REPLY"
     __zt_fg "${__zt_G[40]}";                out+="${__zt_O}${__zt_E}[1m${__zt_C}$REPLY❯${__zt_O}${__zt_E}[0m${__zt_C} "
     __zt_ps1=$out
 }

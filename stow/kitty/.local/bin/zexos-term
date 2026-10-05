@@ -341,34 +341,41 @@ DISTRO_LOGO = 46            # room a distro's own logo needs, padding included
 
 
 def fetch(cols):
-    """fastfetch config: the logo on the left, the box on the right. The Z
-    shrinks on narrow windows; any logo is left out when it does not fit."""
+    """fastfetch config: the logo on the left, the box on the right. When
+    the window is too narrow for both side by side, the logo goes above the
+    box instead, so it is never just left out. The Z shrinks to fit."""
     p = palette()
     zexos = is_zexos()
+    side = cols - (BOX + 2) - 4 - 1          # room left of the box
     if zexos:
-        zc = min(44, cols - (BOX + 2) - 4 - 1)
-        zc = zc if zc >= 24 else 0
+        top = side < 24
+        zc = min(44, cols - 2) if top else min(44, side)
+        zc = zc if zc >= 16 else 0
     else:
-        zc = -1 if cols >= BOX + 2 + DISTRO_LOGO else 0
+        top = cols < BOX + 2 + DISTRO_LOGO
+        zc = -1 if cols >= DISTRO_LOGO else 0
     zr = round(zc * 21 / 44)
-    path = os.path.join(folder(p, zc, zexos, os_release().get("ID"), version()), "fastfetch.jsonc")
+    path = os.path.join(folder(p, zc, top, zexos, os_release().get("ID"), version()), "fastfetch.jsonc")
     if not os.path.exists(path):
         r = roles(p)
         display = {"separator": "", "color": {"output": "38;2;%d;%d;%d" % r["ink"]}}
         conf = {"$schema": "https://github.com/fastfetch-cli/fastfetch/raw/dev/doc/json_schema.json",
                 "display": display, "modules": details(r)}
+        pad = {"top": 1, "left": 1, "right": 0} if top else None
         if zc < 0:
             # the distro's own logo; its colours $1..$9 go along the gradient
-            conf["logo"] = {"type": "builtin", "padding": {"top": 1, "left": 1, "right": 4},
+            conf["logo"] = {"type": "builtin", "padding": pad or {"top": 1, "left": 1, "right": 4},
                             "color": {str(k): "38;2;%d;%d;%d" % r["grad"]((k - 1) / 8)
                                       for k in range(1, 10)}}
         elif zc:
             logo = os.path.join(os.path.dirname(path), "z.txt")
             save(logo, "\n".join(z_lines(p, zc, zr)) + "\n")
             conf["logo"] = {"type": "file-raw", "source": logo, "width": zc, "height": zr,
-                            "padding": {"top": 0, "left": 1, "right": 4}}
+                            "padding": pad or {"top": 0, "left": 1, "right": 4}}
         else:
             conf["logo"] = {"type": "none"}
+        if top and zc:
+            conf["logo"]["position"] = "top"
         save(path, json.dumps(conf, indent=2, ensure_ascii=False) + "\n")
     return path
 

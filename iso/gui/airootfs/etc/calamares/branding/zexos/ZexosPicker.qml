@@ -18,6 +18,29 @@ Rectangle {
     property string shown: options.length ? options[0].id : ""
     property bool warnLast: false
 
+    // The clip must start from the beginning every time this page is
+    // entered, from either direction. Calamares shows the page and draws it
+    // straight away, before telling us, so rewinding on arrival flashes
+    // whatever frame was showing. Instead the clip is parked at its first
+    // frame (paused) as soon as the page is left, and only started again
+    // on arrival: the first thing drawn is then always frame 0.
+    // (packagechooserq does not pass onLeave on, so leaving is spotted
+    // through ViewManager: a step change that was not our own arrival.)
+    property bool running: false
+    property bool arriving: false
+    function onActivate() {
+        arriving = true
+        running = true
+    }
+    Connections {
+        target: ViewManager
+        function onCurrentStepChanged() {
+            if (picker.arriving) { picker.arriving = false; return }
+            picker.running = false
+            preview.currentFrame = 0
+        }
+    }
+
     color: "#0f0f14"
 
     function isPicked(id) { return picked.indexOf(id) >= 0 }
@@ -158,8 +181,9 @@ Rectangle {
 
             // The box takes the clip's own shape and is as big as fits, so
             // there are no empty bands around the clip at any window size.
-            readonly property real ratio: preview.implicitHeight > 0
-                ? preview.implicitWidth / preview.implicitHeight : 16 / 9
+            // Kept from the last loaded clip, so a rewind or a clip switch
+            // can never make the box jump to a different size for a frame.
+            property real ratio: 16 / 9
             readonly property real pad: 8
             readonly property real boxWidth: Math.min(width,
                 (height - caption.height - previewColumn.spacing - 2 * pad) * ratio + 2 * pad)
@@ -184,9 +208,11 @@ Rectangle {
                         anchors.margins: previewArea.pad
                         source: picker.shown ? "previews/" + picker.shown + ".webp" : ""
                         fillMode: Image.PreserveAspectFit
-                        playing: true
-                        speed: 0.75   // clips were recorded a bit fast
+                        playing: picker.running
+                        speed: 1   // clips are recorded at real speed
                         cache: false
+                        onStatusChanged: if (status === Image.Ready && implicitHeight > 0)
+                            previewArea.ratio = implicitWidth / implicitHeight
                         opacity: status === Image.Ready ? 1 : 0
                         Behavior on opacity { NumberAnimation { duration: 200 } }
                     }

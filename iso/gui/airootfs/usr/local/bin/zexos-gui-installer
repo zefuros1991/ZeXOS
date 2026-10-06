@@ -2,7 +2,11 @@
 # Starts the ZeXOS installer (Calamares) on the live desktop.
 # Its log goes to /root/.cache/calamares/session.log.
 pgrep -x calamares >/dev/null && exit 0
-export QT_QPA_PLATFORM=wayland QT_QPA_PLATFORMTHEME=qt6ct
+# Runs through X11 (xwayland-satellite), not native Wayland: on Wayland
+# Calamares' QML pages (the compositor and shell pickers) are drawn for one
+# frame at the window's left edge before jumping into place on every page
+# change. On X11 they appear in place straight away.
+export QT_QPA_PLATFORM=xcb QT_QPA_PLATFORMTHEME=qt6ct
 # The desktop draws Qt apps 20% bigger (niri's misc.kdl); the installer is
 # laid out for normal size, so it fits small laptop screens.
 unset QT_SCALE_FACTOR

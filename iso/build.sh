@@ -33,6 +33,10 @@ WORK="${ZEXOS_ISO_WORK:-/var/tmp/zexos-iso}"
 profile="$WORK/profile-$variant"
 
 mkdir -p "$WORK" "$OUT"
+# The build runs as root, but the ISOs are yours: hand the output folder back
+# to whoever ran sudo, so old ISOs can be deleted without sudo.
+owner="${SUDO_UID:-0}:${SUDO_GID:-0}"
+chown "$owner" "$OUT"
 # Two builds at once would write over each other's files.
 exec 9>"$WORK/.lock"
 flock -n 9 || { echo "Another ISO build is running (lock: $WORK/.lock)." >&2; exit 1; }
@@ -85,4 +89,5 @@ grep -rl "Arch Linux install medium" "$profile/efiboot" "$profile/syslinux" "$pr
     | xargs -r sed -i "s/Arch Linux install medium/ZeXOS installer ($variant)/g"
 
 mkarchiso -v -r -w "$WORK/work-$variant" -o "$OUT" "$profile"
+chown "$owner" "$OUT"/zexos-"$variant"-*.iso
 ls -lh "$OUT"/zexos-"$variant"-*.iso

@@ -35,7 +35,7 @@ Presentation {
     ZexosSlide {
         backdrop: "slides/5.jpg"
         title: "Plain Arch underneath"
-        body: "No forks, no custom repos for the base system: pacman, the Arch Wiki and the AUR all work exactly as you expect."
+        body: "The base system comes straight from Arch's own mirrors, so pacman and the Arch Wiki apply as usual. ZeXOS adds one small repo for its own apps. No AUR helper is preinstalled; add yay or paru if you want the AUR."
     }
     ZexosSlide {
         backdrop: "slides/6.jpg"

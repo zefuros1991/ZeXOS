@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# The administrator part of three welcome-app jobs. Started only through
+# pkexec (the system's password window) by zexos-welcome-job, in a terminal
+# you can see.
+#
+#   zexos-welcome-root leftovers <protected-list-file> <package>...
+#   zexos-welcome-root clean
+#   zexos-welcome-root unlock
+set -u
+
+case "${1:-}" in
+leftovers)
+    prot="$2"; shift 2
+    # Remove exactly the packages you were shown, nothing more: no recursive
+    # removal, so a package that was only needed by one of them stays (it
+    # shows up next time if it is a leftover too). A protected package is
+    # refused even if it was passed in.
+    todo=()
+    for p in "$@"; do
+        if [ -r "$prot" ] && grep -qx -- "$p" "$prot"; then
+            echo "Skipping $p (part of ZeXOS)"
+        else
+            todo+=("$p")
+        fi
+    done
+    [ ${#todo[@]} -eq 0 ] && exit 0
+    exec pacman -Rn --noconfirm "${todo[@]}"
+    ;;
+clean)
+    paccache -rk3 && paccache -ruk0
+    ;;
+unlock)
+    if pgrep -x pacman >/dev/null; then
+        exit 3
+    fi
+    rm -f /var/lib/pacman/db.lck
+    ;;
+*)
+    echo "usage: zexos-welcome-root leftovers <file> <pkg>... | clean | unlock" >&2
+    exit 2
+    ;;
+esac

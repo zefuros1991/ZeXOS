@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=ZeXOS - Welcome
+GenericName=Welcome
+Comment=Get started with ZeXOS: basic keys, system care and gaming setup
+Exec=zexos-welcome
+Icon=zexos-welcome
+Terminal=false
+Categories=System;Settings;
+Keywords=Welcome;ZeXOS;Hello;Start;Keys;Update;Gaming;
+StartupWMClass=zexos-welcome

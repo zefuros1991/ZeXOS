@@ -1,0 +1,3 @@
+#!/bin/sh
+# ZeXOS - Welcome. `zexos-welcome --help` lists what it can do from a terminal.
+exec python3 "${XDG_DATA_HOME:-$HOME/.local/share}/zexos-welcome/zexos-welcome.py" "$@"

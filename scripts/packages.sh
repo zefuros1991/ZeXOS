@@ -505,6 +505,27 @@ install_local "Login screen theme (Pixie)" pixie-sddm-zexos
 # It replaces plain qt6ct if something installed that.
 install_local "Qt settings for KDE apps (qt6ct-kde)" qt6ct-kde
 
+# -----------------------------
+# WELCOME APP (ZeXOS ISO installs only)
+# -----------------------------
+# "ZeXOS - Welcome" is part of the full ZeXOS distro: only a system installed
+# from the ZeXOS ISO gets it (/etc/os-release ID=zexos), never a script
+# install on CachyOS, Arch or EndeavourOS, and never the ISO's live desktop.
+# It needs Qt for Python, Arch's mirror tester and the tools its buttons use.
+zexos_welcome_wanted() {
+    [ ! -d /run/archiso ] && [ "$(. /etc/os-release 2>/dev/null; echo "${ID:-}")" = zexos ]
+}
+if zexos_welcome_wanted; then
+    install_pacman "Welcome app" pyside6 qt6-svg rate-mirrors pacman-contrib flatpak kitty
+    # Everything on this list is part of ZeXOS: the welcome app's "Remove
+    # leftover packages" never offers any of it, even when an older install
+    # marked it as "installed as a dependency".
+    # (Written next to the app; git-ignored, see .gitignore.)
+    welcome_share="${XDG_DATA_HOME:-$HOME/.local/share}/zexos-welcome"
+    mkdir -p "$welcome_share"
+    printf '%s\n' ${GROUP_PKGS[@]} "${LOCAL_DIRS[@]}" sddm | sort -u > "$welcome_share/protected.list"
+fi
+
 # =========================================================
 # 2. INSTALL EVERYTHING
 # =========================================================

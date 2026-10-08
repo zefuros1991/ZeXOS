@@ -385,6 +385,9 @@ start() {
         [ -z "$(printenv "$v")" ] && unset "$v"
     done
     drop_stale
+    # ZeXOS - Welcome, on systems installed from the ZeXOS ISO. It opens once
+    # per login and only while "Show at startup" is on; it decides that itself.
+    command -v zexos-welcome >/dev/null 2>&1 && setsid -f zexos-welcome --autostart >/dev/null 2>&1
     case "$shell" in
         noctalia) link_noctalia; exec noctalia ;;
         dms)

@@ -1,0 +1,171 @@
+#!/usr/bin/env bash
+# One System care / Gaming job, run where you can see it.
+#
+#   zexos-welcome-job <job>      update | rate-mirrors | leftovers | clean | unlock | gaming
+#
+# Shows what it is about to do, asks before installing or removing anything,
+# gets the administrator part done through the system's password window
+# (pkexec), and waits for Enter at the end so nothing scrolls away. The
+# window starts it in its own kitty terminal; `zexos-welcome <job>` runs it in
+# the terminal you are in. Everything shown is also written to
+# $XDG_RUNTIME_DIR/zexos-welcome/<job>.log (gone at logout).
+
+job="${1:?usage: zexos-welcome-job <job>}"
+here="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"
+logdir="${XDG_RUNTIME_DIR:-/tmp}/zexos-welcome"
+mkdir -p "$logdir"
+
+# Record the whole terminal (prompts and progress bars included) with
+# script(1), so the questions still talk to you directly.
+if [ -z "${ZEXOS_WELCOME_JOB_LOGGED:-}" ]; then
+    export ZEXOS_WELCOME_JOB_LOGGED=1
+    : > "$logdir/$job.log"
+    exec script -qfec "$(printf '%q ' "$0" "$@")" "$logdir/$job.log"
+fi
+
+BOLD=$'\e[1m'; DIM=$'\e[2m'; GREEN=$'\e[32m'; RED=$'\e[31m'; RESET=$'\e[0m'
+welcome() { python3 "$here/zexos-welcome.py" "$@"; }
+
+end() {
+    echo
+    read -r -p "Press Enter to close " _
+    exit "${1:-0}"
+}
+
+# Run the administrator part. 126/127 from pkexec = the password window was
+# closed or refused.
+as_admin() {
+    pkexec "$@"
+    local rc=$?
+    if [ $rc -eq 126 ] || [ $rc -eq 127 ]; then
+        echo
+        echo "${RED}Cancelled: the password window was closed. Nothing was changed.${RESET}"
+        end 2
+    fi
+    return $rc
+}
+
+ask() {
+    echo
+    local a
+    read -r -p "Continue? [y/N] " a
+    case "$a" in
+        y|Y|yes|Yes) return 0 ;;
+        *) echo "Stopped. Nothing was changed."; end 2 ;;
+    esac
+}
+
+title() { echo "${BOLD}$*${RESET}"; echo; }
+
+# What the job would do right now (same answer the window got).
+plan="$(welcome "$job" --check)"
+kind="${plan%%:*}"
+msg="$(printf '%s\n' "$plan" | head -1)"; msg="${msg#*: }"
+mapfile -t items < <(printf '%s\n' "$plan" | sed -n 's/^item: //p')
+
+if [ "$kind" = stop ]; then
+    echo "$msg"
+    end 3
+fi
+if [ "$kind" = nothing ]; then
+    echo "$msg"
+    end 0
+fi
+
+case "$job" in
+update)
+    title "Update"
+    echo "Updating the system. pacman shows what it will update and asks before it starts."
+    echo
+    as_admin pacman -Syu
+    rc=$?
+    if [ $rc -ne 0 ]; then
+        echo; echo "${RED}The system update did not finish (error $rc). Nothing more was done.${RESET}"
+        echo "If there is no internet connection, connect and try again."
+        end 1
+    fi
+    if command -v flatpak >/dev/null 2>&1; then
+        echo; echo "${BOLD}Flathub apps${RESET}"; echo
+        if ! flatpak update; then
+            echo; echo "${RED}Updating the Flathub apps failed.${RESET}"
+            end 1
+        fi
+    fi
+    echo; echo "${GREEN}Everything is up to date.${RESET}"
+    end 0
+    ;;
+rate-mirrors)
+    title "Faster download servers"
+    echo "Testing Arch's download servers and putting the fastest first."
+    echo "${DIM}This takes a minute. Your ZeXOS package source is not touched.${RESET}"
+    echo
+    tmp="$(mktemp)"
+    if ! rate-mirrors --save="$tmp" arch; then
+        rm -f "$tmp"
+        echo; echo "${RED}Testing the servers failed. Is there an internet connection?${RESET}"
+        end 1
+    fi
+    if ! grep -q '^Server *=' "$tmp"; then
+        rm -f "$tmp"; echo "${RED}No servers were found. Nothing was changed.${RESET}"; end 1
+    fi
+    echo
+    echo "Saving the new list (the old one is kept as /etc/pacman.d/mirrorlist.bak)."
+    as_admin sh -c 'cp /etc/pacman.d/mirrorlist /etc/pacman.d/mirrorlist.bak && install -m 644 "$1" /etc/pacman.d/mirrorlist' sh "$tmp"
+    rc=$?; rm -f "$tmp"
+    [ $rc -eq 0 ] && echo "${GREEN}Done. Downloads now use the fastest servers.${RESET}" || { echo "${RED}Saving failed.${RESET}"; end 1; }
+    end 0
+    ;;
+leftovers)
+    title "Remove leftover packages"
+    echo "These packages were installed only because something else needed them, and nothing needs them now:"
+    echo "${DIM}(your desktop, login screen and ZeXOS's own parts are never on this list)${RESET}"
+    echo
+    for p in "${items[@]}"; do echo "  - $p"; done
+    ask
+    as_admin "$here/zexos-welcome-root" leftovers "$(welcome protected-file)" "${items[@]}"
+    rc=$?
+    [ $rc -eq 0 ] && echo "${GREEN}Removed.${RESET}" || { echo "${RED}Removing failed (error $rc).${RESET}"; end 1; }
+    end 0
+    ;;
+clean)
+    title "Clean old package files"
+    echo "Old downloaded package files: $msg"
+    echo "${DIM}The 3 newest versions of every installed package are kept, so you can still go back after a bad update.${RESET}"
+    echo
+    for f in "${items[@]}"; do echo "  - $(basename "$f")"; done
+    ask
+    as_admin "$here/zexos-welcome-root" clean
+    rc=$?
+    [ $rc -eq 0 ] && echo "${GREEN}Cleaned.${RESET}" || { echo "${RED}Cleaning failed (error $rc).${RESET}"; end 1; }
+    end 0
+    ;;
+unlock)
+    title "Fix \"pacman is locked\""
+    echo "Installing software was cut off and left its lock behind. Removing the stuck lock."
+    as_admin "$here/zexos-welcome-root" unlock
+    rc=$?
+    case $rc in
+        0) echo "${GREEN}The lock is gone. Installing software works again.${RESET}" ;;
+        3) echo "Software is being installed right now, so the lock is in use and was kept."; end 3 ;;
+        *) echo "${RED}Removing the lock failed (error $rc).${RESET}"; end 1 ;;
+    esac
+    end 0
+    ;;
+gaming)
+    title "Set up for gaming"
+    echo "$msg"
+    echo "Everything comes from Arch's own software sources:"
+    echo
+    for p in "${items[@]}"; do echo "  - $p"; done
+    ask
+    as_admin pacman -S --needed --noconfirm "${items[@]}"
+    rc=$?
+    [ $rc -eq 0 ] && echo "${GREEN}Gaming is set up. Open Steam or Lutris from the app launcher.${RESET}" \
+        || { echo "${RED}Installing failed (error $rc). Nothing more was done.${RESET}"; end 1; }
+    end 0
+    ;;
+*)
+    echo "zexos-welcome-job: unknown job '$job'" >&2
+    exit 2
+    ;;
+esac

@@ -107,6 +107,13 @@ for pkg in "$STOW_DIR"/*; do
 
     package_name=$(basename "$pkg")
 
+    # The welcome app belongs to the full ZeXOS distro: only a system
+    # installed from the ZeXOS ISO links it (see packages.sh, WELCOME APP).
+    if [ "$package_name" = welcome ] && { [ -d /run/archiso ] ||
+        [ "$(. /etc/os-release 2>/dev/null; echo "${ID:-}")" != zexos ]; }; then
+        continue
+    fi
+
     echo -e "\n${YELLOW}==> Package: $package_name${RESET}"
 
     # -------------------------

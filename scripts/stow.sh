@@ -102,6 +102,17 @@ NOCTALIA_DROPIN="$HOME/.config/systemd/user/app-niri-noctalia-.scope.d"
 [ -L "$NOCTALIA_DROPIN" ] && rm "$NOCTALIA_DROPIN"
 mkdir -p "$NOCTALIA_DROPIN"
 
+# Folders other apps also write into (Steam, Flatpak and "Open with" add
+# launchers, icon themes add icons): they must be real folders, or stow
+# links the whole folder into the repo and those files land in ~/.dotfiles.
+# An earlier run may have done that already; undo it first.
+for dir in "$HOME/.local/share/applications" "$HOME/.local/share/icons"; do
+    if [ -L "$dir" ] && [[ "$(readlink -f "$dir")" == "$STOW_DIR"/* ]]; then
+        rm "$dir"
+    fi
+    mkdir -p "$dir"
+done
+
 for pkg in "$STOW_DIR"/*; do
     [ -d "$pkg" ] || continue
 

@@ -1,0 +1,18 @@
+# ZeXOS gaming plumbing: what Windows games and launchers need underneath,
+# with no apps of its own. The Arch-only version of CachyOS's
+# cachyos-gaming-meta (Arch's wine instead of wine-cachyos, Steam's own
+# Proton instead of proton-cachyos). zexos-gaming-applications pulls it in;
+# install it on its own if you only want the plumbing.
+# Graphics drivers are not in here: the ZeXOS installer sets those up.
+
+pkgname=zexos-gaming-meta
+pkgver=1.0
+pkgrel=1
+pkgdesc='ZeXOS: libraries and tools Windows games need (Wine, Proton helpers, 32-bit libraries, fonts)'
+arch=('any')
+url='https://github.com/zefuros1991/ZeXOS'
+license=('MIT')
+depends=('wine' 'winetricks' 'protontricks' 'umu-launcher' 'vulkan-tools'
+         'alsa-plugins' 'lib32-alsa-plugins' 'giflib' 'glfw' 'gst-plugins-base-libs'
+         'lib32-gtk3' 'libjpeg-turbo' 'lib32-libjpeg-turbo' 'libva' 'lib32-libva'
+         'libxslt' 'mpg123' 'openal' 'ocl-icd' 'lib32-ocl-icd' 'ttf-liberation')

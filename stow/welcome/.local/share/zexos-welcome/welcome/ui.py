@@ -157,6 +157,21 @@ def label(text, **props):
     return lab
 
 
+def status_label():
+    """The green note under a job ("Nothing to remove"): one line, as tall as its text."""
+    st = label("", ok=True, wrap=False)
+    st.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
+    st.hide()
+    return st
+
+
+def show_status(st, text):
+    st.setText(text)
+    st.setToolTip(text)
+    st.adjustSize()
+    st.show()
+
+
 def run_detached(cmd):
     QProcess.startDetached("sh", ["-c", cmd])
 
@@ -385,8 +400,7 @@ class Welcome(QMainWindow):
             tl.setSpacing(3)
             tl.addWidget(label(title, strong=True))
             tl.addWidget(label(desc, muted=True))
-            st = label("", ok=True)
-            st.hide()
+            st = status_label()
             tl.addWidget(st, 0, Qt.AlignmentFlag.AlignLeft)
             self.status[job] = st
             rl.addLayout(tl, 1)
@@ -404,7 +418,7 @@ class Welcome(QMainWindow):
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(14)
         self.heading(lay, "Gaming", "One click installs what you need to start playing: Steam, Lutris, Wine, and the tools "
-                                    "that make games run smoothly. Everything comes from Arch's own software sources.")
+                                    "that make games run smoothly. Everything comes from Arch's and ZeXOS's own software sources.")
         hero = QFrame()
         hero.setProperty("hero", True)
         hl = QVBoxLayout(hero)
@@ -421,8 +435,7 @@ class Welcome(QMainWindow):
         b.clicked.connect(lambda: self.run_job("gaming"))
         top.addWidget(b)
         hl.addLayout(top)
-        st = label("", ok=True)
-        st.hide()
+        st = status_label()
         hl.addWidget(st, 0, Qt.AlignmentFlag.AlignLeft)
         self.status["gaming"] = st
         lay.addWidget(hero)
@@ -432,8 +445,9 @@ class Welcome(QMainWindow):
         for name in core.GAMING_APPS:
             cl.add(label(name, chip=True, wrap=False))
         lay.addWidget(chips)
-        lay.addWidget(label("Plus 19 support libraries and fonts games need, and the 32-bit graphics piece for your "
-                            "graphics card if it's missing.", muted=True))
+        lay.addWidget(label("Installed as ZeXOS's zexos-gaming-applications package, with zexos-gaming-meta underneath "
+                            "(Wine and the libraries and fonts Windows games need). Graphics drivers come from the ZeXOS "
+                            "installer.", muted=True))
         return w
 
     def page_news(self):
@@ -482,18 +496,15 @@ class Welcome(QMainWindow):
         finally:
             QApplication.restoreOverrideCursor()
         if kind in ("nothing", "stop"):
-            st.setText(msg)
-            st.show()
+            show_status(st, msg)
             return
         term = shutil.which("kitty")
         if not term:
-            st.setText("No terminal (kitty) found.")
-            st.show()
+            show_status(st, "No terminal (kitty) found")
             return
         QProcess.startDetached(term, ["--class", "zexos-welcome-job", "--title", f"{TITLE}: {ACCESSIBLE[job]}",
                                       "-e", "bash", JOB, job])
-        st.setText("A terminal window opened for this job.")
-        st.show()
+        show_status(st, "Terminal opened")
 
     def show_about(self):
         d = QDialog(self)

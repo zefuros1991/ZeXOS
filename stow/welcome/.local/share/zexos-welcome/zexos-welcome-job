@@ -80,8 +80,10 @@ update)
     as_admin pacman -Syu
     rc=$?
     if [ $rc -ne 0 ]; then
-        echo; echo "${RED}The system update did not finish (error $rc). Nothing more was done.${RESET}"
-        echo "If there is no internet connection, connect and try again."
+        # pacman also ends this way when you answer n: then nothing was
+        # changed, and the Flathub step is skipped too.
+        echo; echo "${RED}The system update did not run or did not finish (pacman said $rc). The Flathub apps were not updated either.${RESET}"
+        echo "If you answered n, nothing was changed. If there is no internet connection, connect and try again."
         end 1
     fi
     if command -v flatpak >/dev/null 2>&1; then
@@ -153,15 +155,14 @@ unlock)
     ;;
 gaming)
     title "Set up for gaming"
-    echo "$msg"
-    echo "Everything comes from Arch's own software sources:"
+    echo "Installing ZeXOS's gaming package: Steam, Lutris, GameMode, MangoHud, gamescope and GOverlay,"
+    echo "plus zexos-gaming-meta underneath (Wine and what Windows games need). All from Arch and ZeXOS."
+    echo "pacman lists everything it will install and asks before it starts."
     echo
-    for p in "${items[@]}"; do echo "  - $p"; done
-    ask
-    as_admin pacman -S --needed --noconfirm "${items[@]}"
+    as_admin pacman -S --needed "${items[@]}"
     rc=$?
     [ $rc -eq 0 ] && echo "${GREEN}Gaming is set up. Open Steam or Lutris from the app launcher.${RESET}" \
-        || { echo "${RED}Installing failed (error $rc). Nothing more was done.${RESET}"; end 1; }
+        || { echo "${RED}Nothing was installed (pacman said $rc).${RESET}"; end 1; }
     end 0
     ;;
 *)

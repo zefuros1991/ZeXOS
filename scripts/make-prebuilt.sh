@@ -41,7 +41,8 @@ GH_REPO="zefuros1991/ZeXOS"
 TAG="prebuilt"
 OUT="$REPO_ROOT/dist/prebuilt"
 LIST="$REPO_ROOT/packaging/prebuilt.list"
-PACKAGES=(noctalia-zexos pixie-sddm-zexos bibata-cursor-zexos qt6ct-kde roller mpvpaper mango-overview)
+PACKAGES=(noctalia-zexos pixie-sddm-zexos bibata-cursor-zexos qt6ct-kde roller mpvpaper mango-overview
+          zexos-gaming-meta zexos-gaming-applications)
 
 upload=1 build=1
 BUILD=("${PACKAGES[@]}")

@@ -20,6 +20,17 @@ if [ -e /var/lib/pacman/db.lck ]; then
     exit 1
 fi
 
+# Install any build tool that went missing (a cleanup removed cmake once,
+# and every rebuild after that failed). Read from the PKGBUILD, so the list
+# stays right if the recipe changes.
+pkgbuild="$ZEXOS_REPO/packaging/qt6ct-kde/PKGBUILD"
+mapfile -t needed < <(as_user bash -c '. "$1"; printf "%s\n" "${makedepends[@]}" "${depends[@]}"' _ "$pkgbuild")
+mapfile -t missing < <(pacman -T "${needed[@]}" || true)
+if [ "${#missing[@]}" -gt 0 ]; then
+    echo "Installing missing build tools: ${missing[*]}"
+    pacman -S --needed --noconfirm "${missing[@]}"
+fi
+
 build="$(as_user mktemp -d)"
 trap 'rm -rf "$build"' EXIT
 as_user cp "$ZEXOS_REPO/packaging/qt6ct-kde"/. "$build"/ -r

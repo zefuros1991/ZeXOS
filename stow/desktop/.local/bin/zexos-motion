@@ -191,12 +191,12 @@ def mango(picks):
         f"zoom_initial_ratio={op if ok == 'zoom' else 0.9:g}\n",
         f"zoom_end_ratio={cp if ck == 'zoom' else 0.9:g}\n",
         "animation_fade_in=1\nanimation_fade_out=1\n",
-        "fadein_begin_opacity=0\nfadeout_begin_opacity=1\n",
+        "fade_in_begin_opacity=0\nfade_out_begin_opacity=1\n",
         f"animation_duration_open={om}\nanimation_duration_close={cm}\n",
         f"animation_duration_move={ms}\nanimation_duration_tag={ms}\n",
         f"animation_curve_open={mc(oc)}\nanimation_curve_close={mc(cc)}\n",
         f"animation_curve_move={mc(curve)}\nanimation_curve_tag={mc(curve)}\n",
-        f"animation_curve_opafadein={mc(QUINT)}\nanimation_curve_opafadeout={mc(QUINT)}\n",
+        f"animation_curve_opacity_fade_in={mc(QUINT)}\nanimation_curve_opacity_fade_out={mc(QUINT)}\n",
     ])
 
 

@@ -23,6 +23,13 @@ window-rule {
     }
 }
 
+// ZeXOS - Welcome opens wider than a normal window (65% of the screen), so
+// its pages fit side by side.
+window-rule {
+    match app-id="^zexos-welcome$"
+    default-column-width { proportion 0.65; }
+}
+
 // Noctalia's settings window floats above the others, with blur.
 window-rule {
     match app-id="dev.noctalia.Noctalia"

@@ -1,0 +1,16 @@
+# ZeXOS gaming apps: Steam, Lutris and the tools that make games run
+# smoothly, plus zexos-gaming-meta underneath. The Arch-only version of
+# CachyOS's cachyos-gaming-applications (no Heroic or Faugus: they're not in
+# Arch's repos), with GameMode added. "Set up for gaming" in ZeXOS - Welcome
+# installs this; so does `sudo pacman -S zexos-gaming-applications`.
+# Graphics drivers are not in here: the ZeXOS installer sets those up.
+
+pkgname=zexos-gaming-applications
+pkgver=1.0
+pkgrel=1
+pkgdesc='ZeXOS: Steam, Lutris, GameMode, MangoHud, gamescope and GOverlay, ready to play'
+arch=('any')
+url='https://github.com/zefuros1991/ZeXOS'
+license=('MIT')
+depends=('zexos-gaming-meta' 'steam' 'lutris' 'gamemode' 'lib32-gamemode'
+         'mangohud' 'lib32-mangohud' 'gamescope' 'goverlay' 'wqy-zenhei')

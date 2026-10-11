@@ -37,10 +37,9 @@ GAMING = [
 GAMING_APPS = ["Steam", "Lutris", "Wine", "winetricks", "protontricks", "umu-launcher",
                "GameMode", "MangoHud", "gamescope", "GOverlay", "vulkan-tools"]
 
-VENDORS = {"0x1002": "amd", "0x8086": "intel", "0x10de": "nvidia"}
-PIECES = {"amd": ["vulkan-radeon", "lib32-vulkan-radeon"],
-          "intel": ["vulkan-intel", "lib32-vulkan-intel"]}
-FALLBACK = ["vulkan-swrast", "lib32-vulkan-swrast"]
+GAMING_PACKAGE = "zexos-gaming-applications"   # pulls in zexos-gaming-meta (packaging/)
+GAMING_PACKAGES = ["zexos-gaming-applications", "zexos-gaming-meta"]
+DRIVER_GUIDE = "https://wiki.archlinux.org/title/Vulkan#Installation"
 
 # The jobs (contracts/cli.md). Admin jobs open a terminal when they have something to do.
 ADMIN_JOBS = ["update", "rate-mirrors", "leftovers", "clean", "unlock", "gaming"]
@@ -156,7 +155,7 @@ def lock_state():
 
 
 def protected():
-    names = set(GAMING) | set(FALLBACK) | {p for v in PIECES.values() for p in v}
+    names = set(GAMING) | set(GAMING_PACKAGES)
     try:
         with open(PROTECTED_LIST) as fh:
             names |= set(fh.read().split())
@@ -207,54 +206,25 @@ def human_size(n):
 
 # ---------------------------------------------------------------- gaming
 
-def gpu_vendors():
-    """Brands of the graphics cards, from the kernel's own list (no hardware scanner).
-    ZEXOS_WELCOME_GPU_VENDORS=0x1002,0x8086 replaces the read (tests only)."""
-    fake = os.environ.get("ZEXOS_WELCOME_GPU_VENDORS")
-    ids = fake.split(",") if fake else []
-    if not fake:
-        for f in glob.glob("/sys/class/drm/card*/device/vendor"):
-            try:
-                ids.append(open(f).read().strip())
-            except OSError:
-                pass
-    brands = []
-    for i in ids:
-        b = VENDORS.get(i.strip().lower(), "unknown")
-        if b not in brands:
-            brands.append(b)
-    return brands
-
-
 def has_32bit_driver():
     r = run(["pacman", "-T", "lib32-vulkan-driver"])
     return r.returncode == 0 and not r.stdout.strip()
 
 
+def in_repos(pkg):
+    return run(["pacman", "-Si", pkg]).returncode == 0
+
+
 def gaming_plan():
-    """('nothing', msg, []) | ('stop', msg, []) | ('todo', summary, packages).
-    The graphics piece is decided here, before anything is installed (REQ-28)."""
-    missing = [p for p in GAMING if p not in installed_set(GAMING)]
-    extra = []
-    if not has_32bit_driver():
-        brands = gpu_vendors()
-        if "nvidia" in brands:
-            if installed("nvidia-utils"):
-                extra += ["lib32-nvidia-utils"]
-            else:
-                return ("stop", "Install the NVIDIA driver first: " + NVIDIA_GUIDE, [])
-        for b in ("amd", "intel"):
-            if b in brands:
-                extra += PIECES[b]
-        if not extra:
-            extra = list(FALLBACK)
-    todo = missing + [p for p in extra if p not in missing]
-    if not todo:
+    """Set up for gaming installs one ZeXOS package. Graphics drivers are the
+    ZeXOS installer's job: if they're missing, stop and say so (REQ-28)."""
+    if installed(GAMING_PACKAGE):
         return ("nothing", "Gaming is already set up", [])
-    note = ""
-    if extra == FALLBACK:
-        note = " (your graphics card wasn't recognised: a slow software-only graphics piece is added; games will run very slowly until a real driver is installed)"
-    return ("todo", f"{len(todo)} packages to install{note}", todo)
+    if not has_32bit_driver():
+        return ("stop", "Graphics drivers aren't set up yet. See the guide: " + DRIVER_GUIDE, [])
+    if not in_repos(GAMING_PACKAGE):
+        return ("stop", "The ZeXOS gaming package isn't available yet; update the system first.", [])
+    return ("todo", "Install ZeXOS's gaming package (pacman lists everything it brings)", [GAMING_PACKAGE])
 
 
 # ---------------------------------------------------------------- plans for every admin job

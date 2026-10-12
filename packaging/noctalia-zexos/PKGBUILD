@@ -1,10 +1,13 @@
 # ZeXOS build of Noctalia: the official Arch PKGBUILD plus one small patch
-# (zexos.patch) that adds two config options:
+# (zexos.patch) that adds two config options and fixes the Mango template:
 #  - `attached = true` on [[bar.*.capsule_group]]: the island gets square
 #    corners on the screen-edge side (hangs off the top like a tab) while its
 #    bottom corners stay rounded.
 #  - `[accessibility] launcher_scale`: an extra size multiplier for the app
 #    launcher only, on top of ui_scale.
+#  - Mango colours use mangowm 0.18's key names (root_color, focus_color, …),
+#    and its setup script also accepts `source_optional=` (0.18's spelling),
+#    so it doesn't add a second include to ZeXOS's config.conf.
 # Separate pkgname so a normal repo update can't silently replace it; bump
 # pkgver (and re-check the patch applies) when upstream releases.
 # Base: https://gitlab.archlinux.org/archlinux/packaging/packages/noctalia
@@ -12,7 +15,7 @@
 _pkgname=noctalia
 pkgname=noctalia-zexos
 pkgver=5.1.0
-pkgrel=2
+pkgrel=3
 pkgdesc='A sleek, customizable desktop shell crafted for Wayland'
 arch=('x86_64' 'aarch64')
 url='https://github.com/noctalia-dev/noctalia'
@@ -35,7 +38,7 @@ makedepends=('meson' 'ninja' 'nlohmann-json' 'pkgconf' 'stb' 'wayland-protocols'
 source=("${_pkgname}-${pkgver}.tar.gz::${url}/archive/refs/tags/v${pkgver//_/-}.tar.gz"
         'zexos.patch')
 sha256sums=('fcf37d99ecb6093b38df8f0d6a18012f518895cd8d3934fd16164a7d0b7b3062'
-            '9b0805f6db2d73dac368ccbc94869e36a94983612e7b27c1edb6c4b652cddc43')
+            '1e6878fa1b89e3872eca39546f5f97039e02c53ce0754617a63f5b1bde5eb490')
 
 prepare() {
   cd "${_pkgname}-${pkgver//_/-}"

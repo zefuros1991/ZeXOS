@@ -51,6 +51,11 @@ New work is tested on the `beta` branch first and is listed under
 
 ### Fixed
 
+- Mango works again on mangowm 0.18, which renamed most config settings
+  (`exec-once` → `exec_once`, `windowrule` → `window_rule`, colours like
+  `focuscolor` → `focus_color`, …). ZeXOS's Mango config and Noctalia's
+  Mango colours (noctalia-zexos 5.1.0-3) use the new names.
+
 - With Noctalia as the only shell, the bar lost its left and middle
   islands (only the right one showed).
 

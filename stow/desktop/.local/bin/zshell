@@ -97,7 +97,7 @@ link_colors() {
     if [ -d "$MANGO_DIR" ]; then
         if [ "$1" = dms ]; then
             printf '%s\n' '# Written by zshell: DankMaterialShell is the active shell.' \
-                'source-optional=./dms/colors.conf' > "$file"
+                'source_optional=./dms/colors.conf' > "$file"
         else
             printf '%s\n' '# Written by zshell: Noctalia is the active shell,' \
                 '# its colours come from noctalia.conf.' > "$file"

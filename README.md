@@ -206,7 +206,7 @@ The `wallpapers/make-*-video.py` scripts draw them (they need `python-numpy`, `p
 
 ## Screens
 
-niri detects your screens by itself. To set resolution, scale or position, run `niri msg outputs` and add blocks to `stow/niri/.config/niri/monitors.kdl` (there's a commented example in the file). For Mango, run `mmsg get all-monitors` and add `monitorrule=` lines to `stow/mango/.config/mango/monitors.conf`. For Hyprland, run `hyprctl monitors` and add `hl.monitor` lines to `stow/hyprland/.config/hypr/monitors.lua`.
+niri detects your screens by itself. To set resolution, scale or position, run `niri msg outputs` and add blocks to `stow/niri/.config/niri/monitors.kdl` (there's a commented example in the file). For Mango, run `mmsg get all-monitors` and add `monitor_rule=` lines to `stow/mango/.config/mango/monitors.conf`. For Hyprland, run `hyprctl monitors` and add `hl.monitor` lines to `stow/hyprland/.config/hypr/monitors.lua`.
 
 ## Config packages
 

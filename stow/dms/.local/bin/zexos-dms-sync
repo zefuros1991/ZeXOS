@@ -17,6 +17,7 @@ set -u
 STATE_DIR="${XDG_STATE_HOME:-$HOME/.local/state}"
 SESSION="$STATE_DIR/DankMaterialShell/session.json"
 SCHEME="${XDG_DATA_HOME:-$HOME/.local/share}/color-schemes/DankMatugen.colors"
+MANGO_COLORS="${XDG_CONFIG_HOME:-$HOME/.config}/mango/dms/colors.conf"
 MEMO="$STATE_DIR/zexos/dms-sync"
 mkdir -p "$MEMO"
 
@@ -28,7 +29,9 @@ changed() {   # changed <name> <value>
 
 # 1. Colours. Says (exit 0) whether there was anything new.
 sync_colors() {
-    [ -f "$SCHEME" ] && changed colors "$(md5sum < "$SCHEME")" || return 1
+    # Mango's colour file counts too: zshell relink gives Mango a copy with
+    # mangowm 0.18's names (see mango_dms_colors in zshell).
+    [ -f "$SCHEME" ] && changed colors "$(cat "$SCHEME" "$MANGO_COLORS" 2>/dev/null | md5sum)" || return 1
     zshell relink
     theme="$(gsettings get org.gnome.desktop.interface gtk-theme 2>/dev/null | tr -d "'")"
     if [ -n "$theme" ]; then

@@ -68,6 +68,25 @@ current() {
     echo "$shell"
 }
 
+# DMS 1.6.3 still writes Mango's colours with the names mangowm 0.17 used
+# (bordercolor, focuscolor, ...); mangowm 0.18 rejects those and shows a red
+# error bar. So Mango loads a copy with the 0.18 names (border_color, ...).
+# Lines that already use the new names are left alone. Runs again on every
+# DMS colour change (zexos-dms-sync -> zshell relink).
+mango_dms_colors() {
+    local src="$MANGO_DIR/dms/colors.conf" dst="$MANGO_DIR/dms-colors.conf"
+    [ -d "$MANGO_DIR" ] || return 0
+    if [ -f "$src" ]; then
+        sed -E -e 's/^([[:space:]]*)maximizescreencolor\b/\1maximized_screen_color/' \
+            -e 's/^([[:space:]]*)(border|focus|urgent|root|drop|split|scratchpad|global|overlay|shadows)color\b/\1\2_color/' \
+            "$src" > "$dst.tmp" && mv -f "$dst.tmp" "$dst"
+    else
+        echo '# Written by zshell: no DMS colours yet.' > "$dst"
+    fi
+    [ -n "${MANGO_INSTANCE_SIGNATURE:-}" ] && mmsg dispatch reload_config >/dev/null 2>&1
+    return 0
+}
+
 # Window colours (niri, Mango and Hyprland) come from the running shell.
 # config.kdl always loads noctalia.kdl and then shell-colors.kdl; for DMS
 # this file points at the colours DMS writes, so they win. niri reloads it
@@ -96,8 +115,10 @@ link_colors() {
     file="$MANGO_DIR/shell-colors.conf"
     if [ -d "$MANGO_DIR" ]; then
         if [ "$1" = dms ]; then
-            printf '%s\n' '# Written by zshell: DankMaterialShell is the active shell.' \
-                'source_optional=./dms/colors.conf' > "$file"
+            mango_dms_colors
+            printf '%s\n' '# Written by zshell: DankMaterialShell is the active shell' \
+                '# (its colours with mangowm 0.18 names, see mango_dms_colors).' \
+                'source_optional=./dms-colors.conf' > "$file"
         else
             printf '%s\n' '# Written by zshell: Noctalia is the active shell,' \
                 '# its colours come from noctalia.conf.' > "$file"
@@ -394,7 +415,20 @@ start() {
             seed_dms; setup_dms
             # Your animated wallpaper, if you picked one (it waits for DMS).
             [ -s "$DMS_VIDEO" ] && setsid -f "$0" dms-video >/dev/null 2>&1
-            exec dms run ;;
+            # DMS first unpacks its screens into $XDG_RUNTIME_DIR. Right after a
+            # quick log out and back in, the old session's clean-up can delete
+            # that folder halfway and DMS quits at once ("extract embedded UI:
+            # ... no such file"), leaving no bar. So if it quits within a few
+            # seconds with an error, start it again (at most 3 tries). Stopped on
+            # purpose (zshell switch kills it) is not an error: no new try.
+            local try t0 rc=1
+            for try in 1 2 3; do
+                t0=$SECONDS
+                dms run; rc=$?
+                [ $rc -eq 1 ] && [ $((SECONDS - t0)) -lt 15 ] || exit $rc
+                sleep 2
+            done
+            exit $rc ;;
     esac
     echo "zshell: no desktop shell installed" >&2
     exit 1
@@ -858,7 +892,8 @@ case "$cmd" in
     switch)  switch "$@" ;;
     menu)    menu ;;
     current) current ;;
-    relink)  link_kitty "$(current)"; link_theme "$(current)" ;;
+    relink)  link_kitty "$(current)"; link_theme "$(current)"
+             [ "$(current)" = dms ] && mango_dms_colors ;;
     dms-video) dms_video ;;   # used by zshell itself, see dms_video
     ""|-h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//' ;;
     *)

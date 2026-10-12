@@ -45,6 +45,7 @@ stow/niri/.config/niri/zexos-border.kdl
 stow/mango/.config/mango/shell-colors.conf
 stow/mango/.config/mango/noctalia.conf
 stow/mango/.config/mango/dms/
+stow/mango/.config/mango/dms-colors.conf
 stow/hyprland/.config/hypr/shell-colors.lua
 stow/hyprland/.config/hypr/noctalia.lua
 stow/hyprland/.config/hypr/zexos-border.lua

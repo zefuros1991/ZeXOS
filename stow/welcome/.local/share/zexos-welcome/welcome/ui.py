@@ -208,7 +208,7 @@ class CloseButton(QAbstractButton):
     the cross drawn as two lines from the exact middle, so it reads as a
     button and not as the letter x. Turns red on hover."""
 
-    W, H, ARM = 44, 36, 6.0
+    W, H, ARM = 58, 34, 6.0
 
     def __init__(self, parent=None):
         super().__init__(parent)
@@ -414,7 +414,7 @@ class Welcome(QMainWindow):
 
     def resizeEvent(self, ev):
         super().resizeEvent(ev)
-        self.close_btn.move(self.centralWidget().width() - self.close_btn.width() - 30, 12)  # lines up with the pages' right edge
+        self.close_btn.move(self.centralWidget().width() - self.close_btn.width() - 8, 8)  # tucked in the corner, like a window control
         self.close_btn.raise_()
 
     def restyle(self):

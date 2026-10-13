@@ -26,7 +26,10 @@ fi
 BOLD=$'\e[1m'; DIM=$'\e[2m'; GREEN=$'\e[32m'; RED=$'\e[31m'; RESET=$'\e[0m'
 welcome() { python3 "$here/zexos-welcome.py" "$@"; }
 
+# The window waits for this file to say how the job ended:
+# 0 done, 1 failed, 2 cancelled, 3 nothing was changed.
 end() {
+    printf '%s\n' "${1:-0}" > "$logdir/$job.rc"
     echo
     read -r -p "Press Enter to close " _
     exit "${1:-0}"

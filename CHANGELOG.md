@@ -53,6 +53,8 @@ New work is tested on the `beta` branch first and is listed under
 
 - With Noctalia as the only shell, the bar lost its left and middle
   islands (only the right one showed).
+- With DMS, the wallpaper colour sync (`zexos-dms-sync`) showed as
+  "failed" in systemd after every wallpaper change, even though it worked.
 
 ## [1.2.0] - 2026-10-03
 

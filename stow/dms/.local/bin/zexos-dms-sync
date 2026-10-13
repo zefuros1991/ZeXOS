@@ -74,3 +74,8 @@ while [ "$quiet" -lt 6 ]; do
     sync_wallpaper && quiet=0
     sync_colors && quiet=0
 done
+
+# The loop above stops when its last check finds nothing new, and bash would
+# hand that "nothing new" (exit 1) to systemd as a failure. Every run that
+# gets this far did its job.
+exit 0

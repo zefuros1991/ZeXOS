@@ -9,6 +9,7 @@ hl.on("hyprland.start", function()
     hl.exec_cmd("mango-overview")
 
     hl.exec_cmd("zshell start")
+    hl.exec_cmd("zexos-vm-cursor")
 
     -- The small window that asks for your password when an app needs admin rights.
     hl.exec_cmd("/usr/lib/polkit-kde-authentication-agent-1")

@@ -104,6 +104,10 @@ else
     echo -e "${RED}✖ Could not build the Papirus-ZeXOS folder icons${RESET}"
 fi
 
+# In a virtual machine, the pointer is drawn where clicks really land (see
+# zexos-vm-cursor). Done now so the very first login already has it.
+"$HOME/.local/bin/zexos-vm-cursor"
+
 # Point Qt, KDE, GTK, fuzzel and btop colours at the shell in use (see
 # `zshell relink`), and start the watcher that keeps them in step with
 # DankMaterialShell's colours when DMS is the shell (it does nothing under

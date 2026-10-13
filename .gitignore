@@ -68,6 +68,11 @@ stow/hyprland/.config/hypr/zexos-border-dms.lua
 stow/niri/.config/niri/motion.kdl
 stow/hyprland/.config/hypr/motion.lua
 stow/mango/.config/mango/motion.conf
+
+# written by zexos-vm-cursor (only inside a virtual machine)
+stow/niri/.config/niri/vm.kdl
+stow/hyprland/.config/hypr/vm.lua
+stow/mango/.config/mango/vm.conf
 stow/noctalia/.config/noctalia/zexos-motion.toml
 
 # ready-made packages made by scripts/make-prebuilt.sh (uploaded, not committed)

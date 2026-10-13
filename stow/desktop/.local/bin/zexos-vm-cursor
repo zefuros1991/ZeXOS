@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# zexos-vm-cursor -- in a virtual machine, let the desktop draw the mouse
+# pointer itself.
+#
+# Most VM graphics cards show the pointer as a separate overlay, and that
+# overlay is often drawn a little off from where a click really lands: you
+# have to point just below a button to hit it. Drawing the pointer as part of
+# the picture (a "software cursor") puts it exactly where clicks go. On real
+# hardware the overlay is fine and a bit faster, so nothing changes there.
+#
+# Writes (in a VM) or removes (on real hardware) one small file per
+# window manager, which their main config files load if it is there:
+#   ~/.config/niri/vm.kdl      niri reloads it by itself
+#   ~/.config/hypr/vm.lua      Hyprland reloads it by itself
+#   ~/.config/mango/vm.conf    Mango reads it at the next login
+# Runs at install and at every login. Don't edit those files by hand.
+set -u
+
+CONF="${XDG_CONFIG_HOME:-$HOME/.config}"
+
+put() {   # put <file> <text>: write only if different, so nothing reloads for no reason
+    [ -d "$(dirname "$1")" ] || return 0
+    [ "$(cat "$1" 2>/dev/null)" = "$2" ] && return 0
+    printf '%s\n' "$2" > "$1"
+}
+
+if systemd-detect-virt --vm --quiet 2>/dev/null; then
+    put "$CONF/niri/vm.kdl" '// Written by zexos-vm-cursor: this is a virtual machine. Do not edit.
+debug {
+    disable-cursor-plane
+}'
+    put "$CONF/hypr/vm.lua" '-- Written by zexos-vm-cursor: this is a virtual machine. Do not edit.
+hl.config({ cursor = { no_hardware_cursors = 1 } })'
+    put "$CONF/mango/vm.conf" '# Written by zexos-vm-cursor: this is a virtual machine. Do not edit.
+env=WLR_NO_HARDWARE_CURSORS,1'
+else
+    rm -f "$CONF/niri/vm.kdl" "$CONF/hypr/vm.lua" "$CONF/mango/vm.conf"
+fi
+exit 0

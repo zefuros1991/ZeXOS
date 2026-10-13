@@ -26,6 +26,10 @@ require("cfg.overview")
 -- Comes after cfg/animation.lua so it wins. Don't edit it by hand.
 pcall(require, "motion")
 
+-- Only in a virtual machine: the pointer drawn where clicks really land.
+-- Written by zexos-vm-cursor at login. Don't edit it by hand.
+pcall(require, "vm")
+
 -- Colours made from your wallpaper. Noctalia writes noctalia.lua on its
 -- own, so don't edit that file. It comes after layout.lua so its colours
 -- win. (Noctalia looks for the text require("noctalia") in this file and

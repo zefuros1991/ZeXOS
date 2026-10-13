@@ -4,6 +4,7 @@
 // zshell starts the one you picked (Noctalia or DankMaterialShell);
 // press Mod+Shift+D to change it.
 spawn-at-startup "zshell" "start"
+spawn-at-startup "zexos-vm-cursor"
 
 // The small window that asks for your password when an app needs admin rights.
 spawn-at-startup "/usr/lib/polkit-kde-authentication-agent-1"

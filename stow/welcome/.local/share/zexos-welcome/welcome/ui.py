@@ -83,6 +83,8 @@ def colours(pal):
         "capLine": mix(bg, text, 0.28),
         "ok": mix(QColor("#3ddc97"), text, 0.15) if dark else QColor("#1f7a4d"),
         "okBg": mix(bg, QColor("#3ddc97"), 0.18),
+        "wait": mix(QColor("#ffd166"), text, 0.15) if dark else QColor("#8a5a00"),
+        "waitBg": mix(bg, QColor("#ffd166"), 0.2),
         "bad": mix(QColor("#ff6b6b"), text, 0.15) if dark else QColor("#b42318"),
         "badBg": mix(bg, QColor("#ff6b6b"), 0.18),
         "knob": QColor("white") if dark else mix(bg, QColor("white"), 0.9),
@@ -102,6 +104,8 @@ QLabel[h2="true"] {{ font-family: Nunito; font-weight: 800; font-size: 19px; }}
 QLabel[strong="true"] {{ font-weight: 600; font-size: 15px; }}
 QLabel[ok="true"] {{ background: {h['okBg']}; color: {h['ok']}; border-radius: 10px; padding: 3px 10px;
                      font-size: 12px; font-weight: 600; }}
+QLabel[wait="true"] {{ background: {h['waitBg']}; color: {h['wait']}; border-radius: 10px; padding: 3px 10px;
+                       font-size: 12px; font-weight: 600; }}
 QLabel[bad="true"] {{ background: {h['badBg']}; color: {h['bad']}; border-radius: 10px; padding: 3px 10px;
                       font-size: 12px; font-weight: 600; }}
 QLabel[cap="true"] {{ font-family: 'JetBrains Mono'; font-size: 12px; padding: 2px 5px; border-radius: 6px;
@@ -180,10 +184,17 @@ def status_label():
     return st
 
 
-def show_status(st, text, bad=False):
-    if bool(st.property("bad")) != bad:
-        st.setProperty("ok", not bad)
-        st.setProperty("bad", bad)
+# The note's colour says where things stand:
+#   wait (yellow)  still going, e.g. "Updating…"
+#   ok   (green)   done, or nothing was needed ("Nothing to clean")
+#   bad  (red)     failed, cancelled, or could not start
+TONES = ("ok", "wait", "bad")
+
+
+def show_status(st, text, tone="ok"):
+    if not st.property(tone):
+        for t in TONES:
+            st.setProperty(t, t == tone)
         st.style().unpolish(st)
         st.style().polish(st)
     st.setText(text)
@@ -579,11 +590,11 @@ class Welcome(QMainWindow):
         finally:
             QApplication.restoreOverrideCursor()
         if kind in ("nothing", "stop"):
-            show_status(st, msg)
+            show_status(st, msg, "ok" if kind == "nothing" else "bad")
             return
         term = shutil.which("kitty")
         if not term:
-            show_status(st, "No terminal (kitty) found")
+            show_status(st, "No terminal (kitty) found", "bad")
             return
         if job in self.running:
             return
@@ -595,9 +606,9 @@ class Welcome(QMainWindow):
         ok, pid = QProcess.startDetached(term, ["--class", "zexos-welcome-job", "--title", f"{TITLE}: {ACCESSIBLE[job]}",
                                                 "-e", "bash", JOB, job])
         if not ok:
-            show_status(st, "The terminal did not open", bad=True)
+            show_status(st, "The terminal did not open", "bad")
             return
-        show_status(st, RUNNING[job])
+        show_status(st, RUNNING[job], "wait")
         # Detached on purpose: closing this window never stops an update.
         # The job writes how it ended to <job>.rc; watch for it.
         timer = QTimer(self)
@@ -621,13 +632,13 @@ class Welcome(QMainWindow):
         if rc == "0":
             show_status(st, DONE[job])
         elif rc == "2":
-            show_status(st, "Cancelled, nothing changed")
+            show_status(st, "Cancelled, nothing changed", "bad")
         elif rc == "3":
-            show_status(st, "Nothing changed, see the terminal")
+            show_status(st, "Could not start, see the terminal", "bad")
         elif rc is None:
-            show_status(st, "Stopped before it finished", bad=True)
+            show_status(st, "Stopped before it finished", "bad")
         else:
-            show_status(st, FAILED[job], bad=True)
+            show_status(st, FAILED[job], "bad")
 
     def show_about(self):
         d = QDialog(self)

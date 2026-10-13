@@ -10,9 +10,9 @@ import os
 import shutil
 import sys
 
-from PySide6.QtCore import (QEasingCurve, QEvent, QProcess, QPropertyAnimation, QRectF, QSize, Qt, QTimer, QUrl,
+from PySide6.QtCore import (QEasingCurve, QEvent, QPointF, QProcess, QPropertyAnimation, QRectF, QSize, Qt, QTimer, QUrl,
                             Property)
-from PySide6.QtGui import QColor, QDesktopServices, QFont, QFontDatabase, QIcon, QPainter, QPalette, QPixmap
+from PySide6.QtGui import QColor, QPen, QDesktopServices, QFont, QFontDatabase, QIcon, QPainter, QPalette, QPixmap
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (QAbstractButton, QApplication, QDialog, QFrame, QGridLayout, QHBoxLayout, QLabel,
                                QMainWindow, QPushButton, QScrollArea, QSizePolicy, QStackedWidget, QTextBrowser,
@@ -26,7 +26,6 @@ ASSETS = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__)
 JOB = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "zexos-welcome-job")
 
 ICONS = {  # stroke icons from the design, drawn in the text colour
-    "close": '<path d="M6 6l12 12M18 6L6 18"/>',
     "Welcome": '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
     "Keys": '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
     "System care": '<path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
@@ -113,9 +112,6 @@ QLabel[cap="true"] {{ font-family: 'JetBrains Mono'; font-size: 12px; padding: 2
                       background: {h['cap']}; border: 1px solid {h['capLine']}; border-bottom-width: 2px; }}
 QLabel[chip="true"] {{ padding: 4px 11px; border-radius: 13px; background: {h['surface']};
                        border: 1px solid {h['line']}; font-size: 13px; }}
-#close {{ background: transparent; border: 1px solid {h['line']}; border-radius: 17px; }}
-#close:hover {{ background: {h['badBg']}; border-color: {h['bad']}; }}
-#close:pressed {{ background: {h['bad']}; }}
 #side, #bottom {{ background: {h['side']}; }}
 #bottom {{ border-top: 1px solid {h['line']}; }}
 #brand {{ font-family: Nunito; font-weight: 800; font-size: 15px; }}
@@ -205,6 +201,50 @@ def show_status(st, text, tone="ok"):
     st.setToolTip(text)
     st.adjustSize()
     st.show()
+
+
+class CloseButton(QAbstractButton):
+    """The close button: a rounded rectangle like the About button, with
+    the cross drawn as two lines from the exact middle, so it reads as a
+    button and not as the letter x. Turns red on hover."""
+
+    W, H, ARM = 44, 36, 6.0
+
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(self.W, self.H)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setAttribute(Qt.WidgetAttribute.WA_Hover)
+
+    def paintEvent(self, ev):
+        c = getattr(self.window(), "c", None) or colours(QApplication.palette())
+        hover = self.underMouse()
+        down = self.isDown()
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        box = QRectF(self.rect()).adjusted(0.5, 0.5, -0.5, -0.5)
+        p.setPen(QPen(c["bad"] if hover or down else c["line"], 1))
+        p.setBrush(c["bad"] if down else c["badBg"] if hover else c["surface"])
+        p.drawRoundedRect(box, 8, 8)
+        pen = QPen(c["accentText"] if down else c["bad"] if hover else c["text"], 2.2)
+        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
+        p.setPen(pen)
+        cx, cy, a = box.center().x(), box.center().y(), self.ARM
+        p.drawLine(QPointF(cx - a, cy - a), QPointF(cx + a, cy + a))
+        p.drawLine(QPointF(cx + a, cy - a), QPointF(cx - a, cy + a))
+        if self.hasFocus():
+            p.setPen(QPen(c["accent"], 1.5))
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawRoundedRect(box.adjusted(1.5, 1.5, -1.5, -1.5), 7, 7)
+        p.end()
+
+    def enterEvent(self, ev):
+        self.update()
+        super().enterEvent(ev)
+
+    def leaveEvent(self, ev):
+        self.update()
+        super().leaveEvent(ev)
 
 
 class Toggle(QAbstractButton):
@@ -356,12 +396,9 @@ class Welcome(QMainWindow):
         # A close button in the top right corner, for anyone who doesn't
         # know Mod+Q yet. It floats over the pages, so it is placed by hand
         # (see resizeEvent).
-        self.close_btn = QPushButton(root, objectName="close")
+        self.close_btn = CloseButton(root)
         self.close_btn.setAccessibleName("Close")
         self.close_btn.setToolTip("Close  (Mod+Q closes any window)")
-        self.close_btn.setFixedSize(34, 34)
-        self.close_btn.setIconSize(QSize(16, 16))
-        self.close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         self.close_btn.clicked.connect(self.close)
         self.close_btn.raise_()
 
@@ -377,7 +414,7 @@ class Welcome(QMainWindow):
 
     def resizeEvent(self, ev):
         super().resizeEvent(ev)
-        self.close_btn.move(self.centralWidget().width() - self.close_btn.width() - 16, 14)
+        self.close_btn.move(self.centralWidget().width() - self.close_btn.width() - 30, 12)  # lines up with the pages' right edge
         self.close_btn.raise_()
 
     def restyle(self):
@@ -391,7 +428,7 @@ class Welcome(QMainWindow):
         QApplication.instance().setStyleSheet(qss(c))
         for name, b in self.nav.items():
             b.setIcon(svg_icon(ICONS[name], c["text"]))
-        self.close_btn.setIcon(svg_icon(ICONS["close"], c["muted"], 16))
+        self.close_btn.update()
         self.brand.setText(f'ZeXOS <span style="font-weight:600; color:{c["muted"].name()}">- Welcome</span>')
         logo = "zexos-logo-dark.svg" if c["dark"] else "zexos-logo-light.svg"
         self.hero_logo.setPixmap(svg_pixmap(os.path.join(ASSETS, logo), 64))

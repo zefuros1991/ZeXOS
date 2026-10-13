@@ -10,10 +10,11 @@ import os
 import shutil
 import sys
 
-from PySide6.QtCore import QEvent, QProcess, QSize, Qt, QTimer, QUrl
+from PySide6.QtCore import (QEasingCurve, QEvent, QProcess, QPropertyAnimation, QRectF, QSize, Qt, QTimer, QUrl,
+                            Property)
 from PySide6.QtGui import QColor, QDesktopServices, QFont, QFontDatabase, QIcon, QPainter, QPalette, QPixmap
 from PySide6.QtSvg import QSvgRenderer
-from PySide6.QtWidgets import (QApplication, QCheckBox, QDialog, QFrame, QGridLayout, QHBoxLayout, QLabel,
+from PySide6.QtWidgets import (QAbstractButton, QApplication, QDialog, QFrame, QGridLayout, QHBoxLayout, QLabel,
                                QMainWindow, QPushButton, QScrollArea, QSizePolicy, QStackedWidget, QTextBrowser,
                                QVBoxLayout, QWidget)
 
@@ -46,6 +47,16 @@ CARE = [  # job, title, one line, visible button text
 ACCESSIBLE = {"update": "Update", "rate-mirrors": "rate-mirrors", "leftovers": "Remove leftover packages",
               "clean": "Clean old package files", "unlock": 'Fix "pacman is locked"', "gaming": "Set up for gaming"}
 
+# The note under a job while its terminal is open, and when it is done.
+RUNNING = {"update": "Updating…", "rate-mirrors": "Rating mirrors…", "leftovers": "Removing leftovers…",
+           "clean": "Cleaning…", "unlock": "Fixing the lock…", "gaming": "Setting up gaming…"}
+DONE = {"update": "System updated", "rate-mirrors": "Mirrors rated", "leftovers": "Leftovers removed",
+        "clean": "Old package files cleaned", "unlock": "Lock removed", "gaming": "Gaming packages installed"}
+FAILED = {"update": "Update failed, see the terminal", "rate-mirrors": "Mirror rating failed, see the terminal",
+          "leftovers": "Removing leftovers failed, see the terminal", "clean": "Cleaning failed, see the terminal",
+          "unlock": "Fixing the lock failed, see the terminal", "gaming": "Gaming setup failed, see the terminal"}
+LOGDIR = os.path.join(os.environ.get("XDG_RUNTIME_DIR") or "/tmp", "zexos-welcome")
+
 
 # ---------------------------------------------------------------- colours from the palette
 
@@ -72,6 +83,9 @@ def colours(pal):
         "capLine": mix(bg, text, 0.28),
         "ok": mix(QColor("#3ddc97"), text, 0.15) if dark else QColor("#1f7a4d"),
         "okBg": mix(bg, QColor("#3ddc97"), 0.18),
+        "bad": mix(QColor("#ff6b6b"), text, 0.15) if dark else QColor("#b42318"),
+        "badBg": mix(bg, QColor("#ff6b6b"), 0.18),
+        "knob": QColor("white") if dark else mix(bg, QColor("white"), 0.9),
         "dark": dark,
     }
     return c
@@ -88,6 +102,8 @@ QLabel[h2="true"] {{ font-family: Nunito; font-weight: 800; font-size: 19px; }}
 QLabel[strong="true"] {{ font-weight: 600; font-size: 15px; }}
 QLabel[ok="true"] {{ background: {h['okBg']}; color: {h['ok']}; border-radius: 10px; padding: 3px 10px;
                      font-size: 12px; font-weight: 600; }}
+QLabel[bad="true"] {{ background: {h['badBg']}; color: {h['bad']}; border-radius: 10px; padding: 3px 10px;
+                      font-size: 12px; font-weight: 600; }}
 QLabel[cap="true"] {{ font-family: 'JetBrains Mono'; font-size: 12px; padding: 2px 5px; border-radius: 6px;
                       background: {h['cap']}; border: 1px solid {h['capLine']}; border-bottom-width: 2px; }}
 QLabel[chip="true"] {{ padding: 4px 11px; border-radius: 13px; background: {h['surface']};
@@ -112,7 +128,6 @@ QPushButton[tryit="true"] {{ background: transparent; color: {h['text']}; border
 QPushButton[tryit="true"]:disabled {{ border-color: {h['line']}; color: {h['muted']}; }}
 QPushButton[ghost="true"] {{ background: transparent; color: {h['text']}; border: 1px solid {h['line']};
                             border-radius: 8px; min-height: 36px; padding: 0 14px; font-size: 13px; }}
-QCheckBox {{ color: {h['text']}; spacing: 8px; }}
 QTextBrowser {{ background: {h['surface']}; color: {h['text']}; border: 0; border-radius: 12px; padding: 12px 16px; }}
 QScrollArea, QScrollArea > QWidget > QWidget {{ background: transparent; border: 0; }}
 QDialog {{ background: {h['bg']}; border: 2px solid {h['accent']}; border-radius: 16px; }}
@@ -165,11 +180,78 @@ def status_label():
     return st
 
 
-def show_status(st, text):
+def show_status(st, text, bad=False):
+    if bool(st.property("bad")) != bad:
+        st.setProperty("ok", not bad)
+        st.setProperty("bad", bad)
+        st.style().unpolish(st)
+        st.style().polish(st)
     st.setText(text)
     st.setToolTip(text)
     st.adjustSize()
     st.show()
+
+
+class Toggle(QAbstractButton):
+    """A phone-style on/off switch with its words on the left; the whole
+    thing is one button, so clicking the words flips it too."""
+
+    W, H = 44, 24
+
+    def __init__(self, text, parent=None):
+        super().__init__(parent)
+        self.setText(text)
+        self.setCheckable(True)
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self._pos = 0.0
+        self._anim = QPropertyAnimation(self, b"knob", self)
+        self._anim.setDuration(160)
+        self._anim.setEasingCurve(QEasingCurve.Type.InOutCubic)
+        self.toggled.connect(self._slide)
+
+    def get_knob(self):
+        return self._pos
+
+    def set_knob(self, v):
+        self._pos = v
+        self.update()
+
+    knob = Property(float, get_knob, set_knob)
+
+    def setChecked(self, on):
+        super().setChecked(on)
+        self._anim.stop()
+        self.set_knob(1.0 if on else 0.0)
+
+    def _slide(self, on):
+        self._anim.stop()
+        self._anim.setStartValue(self._pos)
+        self._anim.setEndValue(1.0 if on else 0.0)
+        self._anim.start()
+
+    def sizeHint(self):
+        return QSize(self.fontMetrics().horizontalAdvance(self.text()) + 12 + self.W, max(self.H, self.fontMetrics().height()) + 4)
+
+    def paintEvent(self, ev):
+        c = getattr(self.window(), "c", None) or colours(QApplication.palette())
+        p = QPainter(self)
+        p.setRenderHint(QPainter.RenderHint.Antialiasing)
+        tw = self.width() - self.W - 12
+        p.setPen(c["text"])
+        p.drawText(QRectF(0, 0, tw, self.height()), int(Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignRight), self.text())
+        track = QRectF(self.width() - self.W, (self.height() - self.H) / 2, self.W, self.H)
+        p.setPen(Qt.PenStyle.NoPen)
+        p.setBrush(mix(c["capLine"], c["accent"], self._pos))
+        p.drawRoundedRect(track, self.H / 2, self.H / 2)
+        d = self.H - 6
+        x = track.left() + 3 + (self.W - 6 - d) * self._pos
+        p.setBrush(c["knob"])
+        p.drawEllipse(QRectF(x, track.top() + 3, d, d))
+        if self.hasFocus():
+            p.setPen(c["accent"])
+            p.setBrush(Qt.BrushStyle.NoBrush)
+            p.drawRoundedRect(track.adjusted(-2, -2, 2, 2), self.H / 2 + 2, self.H / 2 + 2)
+        p.end()
 
 
 def run_detached(cmd):
@@ -186,6 +268,7 @@ class Welcome(QMainWindow):
         self.setMinimumSize(820, 560)
         self.comp = core.compositor()
         self.status = {}
+        self.running = {}
         root = QWidget(objectName="root")
         self.setCentralWidget(root)
         outer = QVBoxLayout(root)
@@ -248,7 +331,7 @@ class Welcome(QMainWindow):
         about.clicked.connect(self.show_about)
         bl.addWidget(about)
         bl.addStretch(1)
-        self.startup = QCheckBox("Show at startup")
+        self.startup = Toggle("Show at startup")
         self.startup.setAccessibleName("Show at startup")
         self.startup.setChecked(core.startup_on())
         self.startup.toggled.connect(core.set_startup)
@@ -502,9 +585,49 @@ class Welcome(QMainWindow):
         if not term:
             show_status(st, "No terminal (kitty) found")
             return
-        QProcess.startDetached(term, ["--class", "zexos-welcome-job", "--title", f"{TITLE}: {ACCESSIBLE[job]}",
-                                      "-e", "bash", JOB, job])
-        show_status(st, "Terminal opened")
+        if job in self.running:
+            return
+        rc_file = os.path.join(LOGDIR, f"{job}.rc")
+        try:
+            os.remove(rc_file)
+        except OSError:
+            pass
+        ok, pid = QProcess.startDetached(term, ["--class", "zexos-welcome-job", "--title", f"{TITLE}: {ACCESSIBLE[job]}",
+                                                "-e", "bash", JOB, job])
+        if not ok:
+            show_status(st, "The terminal did not open", bad=True)
+            return
+        show_status(st, RUNNING[job])
+        # Detached on purpose: closing this window never stops an update.
+        # The job writes how it ended to <job>.rc; watch for it.
+        timer = QTimer(self)
+        self.running[job] = timer
+        timer.timeout.connect(lambda j=job, f=rc_file, p=pid: self.check_job(j, f, p))
+        timer.start(700)
+
+    def check_job(self, job, rc_file, pid):
+        st = self.status[job]
+        try:
+            rc = open(rc_file).read().strip()
+        except OSError:
+            rc = None
+        if rc is None:
+            try:
+                os.kill(pid, 0)
+                return          # still running
+            except OSError:
+                pass            # terminal closed before the job finished
+        self.running.pop(job).stop()
+        if rc == "0":
+            show_status(st, DONE[job])
+        elif rc == "2":
+            show_status(st, "Cancelled, nothing changed")
+        elif rc == "3":
+            show_status(st, "Nothing changed, see the terminal")
+        elif rc is None:
+            show_status(st, "Stopped before it finished", bad=True)
+        else:
+            show_status(st, FAILED[job], bad=True)
 
     def show_about(self):
         d = QDialog(self)

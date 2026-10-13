@@ -12,7 +12,12 @@ for more):
 - **x.0.0** — a big change to what ZeXOS is; updating may need a reinstall or
   manual steps
 
-## Latest: 1.2.0 (released 2026-10-03)
+## Latest: 1.2.1 (released 2026-10-14)
+
+- Fix: with DMS, the wallpaper colour sync no longer shows as "failed"
+  after it worked
+
+### 1.2.0 (released 2026-10-03)
 
 - One pacman run for the whole install, falling back to one package at a
   time if it fails

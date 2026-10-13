@@ -26,6 +26,7 @@ ASSETS = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__)
 JOB = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), "zexos-welcome-job")
 
 ICONS = {  # stroke icons from the design, drawn in the text colour
+    "close": '<path d="M6 6l12 12M18 6L6 18"/>',
     "Welcome": '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
     "Keys": '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
     "System care": '<path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
@@ -112,6 +113,9 @@ QLabel[cap="true"] {{ font-family: 'JetBrains Mono'; font-size: 12px; padding: 2
                       background: {h['cap']}; border: 1px solid {h['capLine']}; border-bottom-width: 2px; }}
 QLabel[chip="true"] {{ padding: 4px 11px; border-radius: 13px; background: {h['surface']};
                        border: 1px solid {h['line']}; font-size: 13px; }}
+#close {{ background: transparent; border: 1px solid {h['line']}; border-radius: 17px; }}
+#close:hover {{ background: {h['badBg']}; border-color: {h['bad']}; }}
+#close:pressed {{ background: {h['bad']}; }}
 #side, #bottom {{ background: {h['side']}; }}
 #bottom {{ border-top: 1px solid {h['line']}; }}
 #brand {{ font-family: Nunito; font-weight: 800; font-size: 15px; }}
@@ -326,7 +330,7 @@ class Welcome(QMainWindow):
             sc.setFrameShape(QFrame.Shape.NoFrame)
             wrap = QWidget()
             wl = QVBoxLayout(wrap)
-            wl.setContentsMargins(30, 28, 30, 28)
+            wl.setContentsMargins(30, 56, 30, 28)
             wl.addWidget(p)
             wl.addStretch(1)
             sc.setWidget(wrap)
@@ -349,6 +353,18 @@ class Welcome(QMainWindow):
         bl.addWidget(self.startup)
         outer.addWidget(bottom)
 
+        # A close button in the top right corner, for anyone who doesn't
+        # know Mod+Q yet. It floats over the pages, so it is placed by hand
+        # (see resizeEvent).
+        self.close_btn = QPushButton(root, objectName="close")
+        self.close_btn.setAccessibleName("Close")
+        self.close_btn.setToolTip("Close  (Mod+Q closes any window)")
+        self.close_btn.setFixedSize(34, 34)
+        self.close_btn.setIconSize(QSize(16, 16))
+        self.close_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.close_btn.clicked.connect(self.close)
+        self.close_btn.raise_()
+
         self.restyle()
         self.show_page(0)
 
@@ -358,6 +374,11 @@ class Welcome(QMainWindow):
         if ev.type() in (QEvent.Type.PaletteChange, QEvent.Type.ApplicationPaletteChange, QEvent.Type.StyleChange):
             QTimer.singleShot(0, self.restyle)
         super().changeEvent(ev)
+
+    def resizeEvent(self, ev):
+        super().resizeEvent(ev)
+        self.close_btn.move(self.centralWidget().width() - self.close_btn.width() - 16, 14)
+        self.close_btn.raise_()
 
     def restyle(self):
         pal = QApplication.palette()
@@ -370,6 +391,7 @@ class Welcome(QMainWindow):
         QApplication.instance().setStyleSheet(qss(c))
         for name, b in self.nav.items():
             b.setIcon(svg_icon(ICONS[name], c["text"]))
+        self.close_btn.setIcon(svg_icon(ICONS["close"], c["muted"], 16))
         self.brand.setText(f'ZeXOS <span style="font-weight:600; color:{c["muted"].name()}">- Welcome</span>')
         logo = "zexos-logo-dark.svg" if c["dark"] else "zexos-logo-light.svg"
         self.hero_logo.setPixmap(svg_pixmap(os.path.join(ASSETS, logo), 64))

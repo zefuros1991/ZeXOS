@@ -25,10 +25,26 @@ New work is tested on the `beta` branch first and is listed under
 
 - An overview on Mango and Hyprland, like niri's:
   [mango-overview](https://github.com/zefuros1991/mango-overview).
-  `Mod+O`, a double tap of `Mod`, or four fingers up opens it. Drag
-  windows between workspaces; three-finger swipes follow your fingers
-  (up/down for workspaces, sideways for windows, several in one swipe).
-  The double tap of `Mod` works on niri too.
+  `Mod+O` or four fingers up opens it. Drag windows between workspaces;
+  three-finger swipes follow your fingers (up/down for workspaces,
+  sideways for windows, several in one swipe).
+- **ZeXOS - Welcome**, a welcome app for systems installed from the ZeXOS
+  ISO (script installs on another distro don't get it). Pages: Welcome,
+  Keys (12 basic keys, each with a Try it button), System care (update,
+  faster download servers, remove leftover packages, clean old package
+  files, fix "pacman is locked"), Gaming (one click, see below) and
+  What's new. Each job runs in a terminal you can watch, and the window
+  says how it ended. Opens at login until you switch "Show at startup"
+  off. Every button also works as `zexos-welcome <job>` in a terminal.
+- Gaming in one click: two ZeXOS packages, `zexos-gaming-meta` (Wine and
+  the libraries and fonts Windows games need) and
+  `zexos-gaming-applications` (Steam, Lutris, MangoHud, gamescope and
+  more), like CachyOS's gaming packages.
+- In a virtual machine, the mouse pointer is drawn where clicks really
+  land (`zexos-vm-cursor`, on niri, Hyprland and Mango). Real hardware
+  is not affected.
+- Systems installed from the ZeXOS ISO open web links in Firefox by
+  default, instead of asking which app to use.
 - Pick what to install: `ZEXOS_COMPOSITORS` (niri, hyprland, mango) and
   `ZEXOS_SHELLS` (noctalia, dms) choose any mix; the default is all of
   them. The pick is remembered for later updates. With one shell, the

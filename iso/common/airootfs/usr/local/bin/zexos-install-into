@@ -49,6 +49,20 @@ arch-chroot "$ROOT" pacman -S --needed --noconfirm git curl sudo
 arch-chroot "$ROOT" pacman -S --needed --noconfirm firefox fish
 arch-chroot "$ROOT" chsh -s /usr/bin/fish "$USERNAME"
 
+# ...and Firefox is the default for web links, for every app and Mod+B.
+# Without this, the first app that says it opens web links wins, which is
+# DankMaterialShell's dms-open: a picker that asks every time. This is the
+# system-wide default; your browser's "make default" button still wins.
+if [ ! -e "$ROOT/etc/xdg/mimeapps.list" ]; then
+    install -Dm644 /dev/stdin "$ROOT/etc/xdg/mimeapps.list" <<'MIME'
+[Default Applications]
+x-scheme-handler/http=firefox.desktop
+x-scheme-handler/https=firefox.desktop
+text/html=firefox.desktop
+application/xhtml+xml=firefox.desktop
+MIME
+fi
+
 # Name the new system ZeXOS (it says ID_LIKE=arch, so everything still
 # treats it as Arch), and keep that name after updates.
 brand=/usr/local/share/zexos/branding

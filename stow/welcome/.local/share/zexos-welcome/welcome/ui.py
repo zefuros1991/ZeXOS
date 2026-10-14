@@ -205,7 +205,7 @@ def show_status(st, text, tone="ok"):
 
 # Narrow window (for example tiled next to a terminal in Hyprland): below
 # these widths of the page area, the pages rearrange instead of being cut off.
-KEYS_ONE_COLUMN = 940   # Keys: one column of rows instead of two
+KEYS_ONE_COLUMN = 700   # Keys: one column of rows instead of two (two need about 705)
 STACK_HERO = 640        # Gaming: the big button goes under its text
 
 

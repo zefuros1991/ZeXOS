@@ -10,11 +10,11 @@ import os
 import shutil
 import sys
 
-from PySide6.QtCore import (QEasingCurve, QEvent, QPointF, QProcess, QPropertyAnimation, QRectF, QSize, Qt, QTimer, QUrl,
+from PySide6.QtCore import (QEasingCurve, QEvent, QPoint, QPointF, QProcess, QPropertyAnimation, QRect, QRectF, QSize, Qt, QTimer, QUrl,
                             Property)
 from PySide6.QtGui import QColor, QPen, QDesktopServices, QFont, QFontDatabase, QIcon, QPainter, QPalette, QPixmap
 from PySide6.QtSvg import QSvgRenderer
-from PySide6.QtWidgets import (QAbstractButton, QApplication, QDialog, QFrame, QGridLayout, QHBoxLayout, QLabel,
+from PySide6.QtWidgets import (QAbstractButton, QApplication, QBoxLayout, QDialog, QLayout, QFrame, QGridLayout, QHBoxLayout, QLabel,
                                QMainWindow, QPushButton, QScrollArea, QSizePolicy, QStackedWidget, QTextBrowser,
                                QVBoxLayout, QWidget)
 
@@ -203,6 +203,12 @@ def show_status(st, text, tone="ok"):
     st.show()
 
 
+# Narrow window (for example tiled next to a terminal in Hyprland): below
+# these widths of the page area, the pages rearrange instead of being cut off.
+KEYS_ONE_COLUMN = 940   # Keys: one column of rows instead of two
+STACK_HERO = 640        # Gaming: the big button goes under its text
+
+
 class CloseButton(QAbstractButton):
     """The close button: a rounded rectangle like the About button, with
     the cross drawn as two lines from the exact middle, so it reads as a
@@ -324,6 +330,7 @@ class Welcome(QMainWindow):
         self.comp = core.compositor()
         self.status = {}
         self.running = {}
+        self.care_buttons = []
         root = QWidget(objectName="root")
         self.setCentralWidget(root)
         outer = QVBoxLayout(root)
@@ -349,6 +356,7 @@ class Welcome(QMainWindow):
         brand.addWidget(self.brand, 1)
         sl.addLayout(brand)
         self.stack = QStackedWidget()
+        self.stack.setContentsMargins(0, 50, 0, 0)   # room for the close button, above any scroll bar
         self.nav = {}
         for i, name in enumerate(PAGES):
             b = QPushButton("  " + name)
@@ -370,7 +378,7 @@ class Welcome(QMainWindow):
             sc.setFrameShape(QFrame.Shape.NoFrame)
             wrap = QWidget()
             wl = QVBoxLayout(wrap)
-            wl.setContentsMargins(30, 56, 30, 28)
+            wl.setContentsMargins(30, 6, 30, 28)
             wl.addWidget(p)
             wl.addStretch(1)
             sc.setWidget(wrap)
@@ -414,8 +422,35 @@ class Welcome(QMainWindow):
 
     def resizeEvent(self, ev):
         super().resizeEvent(ev)
+        self.adapt()
         self.close_btn.move(self.centralWidget().width() - self.close_btn.width() - 8, 8)  # tucked in the corner, like a window control
         self.close_btn.raise_()
+
+    def adapt(self):
+        """Rearrange the pages for the width the page area has now."""
+        width = self.stack.width() - 60   # the pages' side margins
+        cols = 1 if width < KEYS_ONE_COLUMN else 2
+        if cols != self.key_cols:
+            self.key_cols = cols
+            for n, row in enumerate(self.key_rows):
+                self.key_grid.removeWidget(row)
+            for n, row in enumerate(self.key_rows):
+                self.key_grid.addWidget(row, n // cols, n % cols)
+        stacked = width < STACK_HERO
+        want = QBoxLayout.Direction.TopToBottom if stacked else QBoxLayout.Direction.LeftToRight
+        if self.hero_row.direction() != want:
+            self.hero_row.setDirection(want)
+            self.hero_row.setAlignment(self.hero_btn, Qt.AlignmentFlag.AlignLeft if stacked
+                                       else Qt.AlignmentFlag.AlignVCenter)
+
+    def even_care_buttons(self):
+        """System care buttons all as wide as the widest one, text centred,
+        so the column of buttons lines up at any window size."""
+        for b in self.care_buttons:
+            b.setMinimumWidth(0)
+        w = max(b.sizeHint().width() for b in self.care_buttons)
+        for b in self.care_buttons:
+            b.setFixedWidth(w)
 
     def restyle(self):
         pal = QApplication.palette()
@@ -426,6 +461,7 @@ class Welcome(QMainWindow):
         c = colours(pal)
         self.c = c
         QApplication.instance().setStyleSheet(qss(c))
+        QTimer.singleShot(0, self.even_care_buttons)   # once the new style has its sizes
         for name, b in self.nav.items():
             b.setIcon(svg_icon(ICONS[name], c["text"]))
         self.close_btn.update()
@@ -494,6 +530,7 @@ class Welcome(QMainWindow):
         grid = QGridLayout()
         grid.setHorizontalSpacing(14)
         grid.setVerticalSpacing(8)
+        self.key_grid, self.key_rows, self.key_cols = grid, [], 2
         two_shells = len(core.shells_installed()) >= 2
         for n, (caps, name, note, cmd, needs) in enumerate(KEYS):
             missing = needs == "two-shells" and not two_shells
@@ -533,6 +570,7 @@ class Welcome(QMainWindow):
             if missing:
                 row.setEnabled(False)
             grid.addWidget(row, n // 2, n % 2)
+            self.key_rows.append(row)
         lay.addLayout(grid)
         return w
 
@@ -558,6 +596,7 @@ class Welcome(QMainWindow):
             self.status[job] = st
             rl.addLayout(tl, 1)
             b = QPushButton(btn)
+            self.care_buttons.append(b)
             b.setAccessibleName(ACCESSIBLE[job])
             b.setProperty("primary", True)
             b.clicked.connect(lambda _=False, j=job: self.run_job(j))
@@ -576,7 +615,9 @@ class Welcome(QMainWindow):
         hero.setProperty("hero", True)
         hl = QVBoxLayout(hero)
         hl.setContentsMargins(24, 22, 24, 22)
-        top = QHBoxLayout()
+        top = QBoxLayout(QBoxLayout.Direction.LeftToRight)
+        top.setSpacing(16)
+        self.hero_row = top
         tl = QVBoxLayout()
         tl.addWidget(label("Set up for gaming", h2=True))
         tl.addWidget(label("Only what's missing is installed. You see the list in the terminal first.", muted=True))
@@ -586,7 +627,8 @@ class Welcome(QMainWindow):
         b.setProperty("primary", True)
         b.setProperty("big", True)
         b.clicked.connect(lambda: self.run_job("gaming"))
-        top.addWidget(b)
+        top.addWidget(b, 0, Qt.AlignmentFlag.AlignVCenter)
+        self.hero_btn = b
         hl.addLayout(top)
         st = status_label()
         hl.addWidget(st, 0, Qt.AlignmentFlag.AlignLeft)
@@ -594,9 +636,9 @@ class Welcome(QMainWindow):
         lay.addWidget(hero)
         lay.addWidget(label("What it installs", strong=True))
         chips = QWidget()
-        cl = FlowRow(chips)
+        cl = FlowLayout(chips, 6)
         for name in core.GAMING_APPS:
-            cl.add(label(name, chip=True, wrap=False))
+            cl.addWidget(label(name, chip=True, wrap=False))
         lay.addWidget(chips)
         lay.addWidget(label("Installed as ZeXOS's zexos-gaming-applications package, with zexos-gaming-meta underneath "
                             "(Wine and the libraries and fonts Windows games need). Graphics drivers come from the ZeXOS "
@@ -730,20 +772,61 @@ class Welcome(QMainWindow):
         d.exec()
 
 
-class FlowRow:
-    """Chips that wrap onto the next line (a tiny flow layout)."""
+class FlowLayout(QLayout):
+    """Chips side by side that wrap onto the next line when the page is
+    narrow (Qt's flow layout example, trimmed)."""
 
-    def __init__(self, parent):
-        self.parent = parent
+    def __init__(self, parent, spacing):
+        super().__init__(parent)
+        self.setContentsMargins(0, 0, 0, 0)
+        self.gap = spacing
         self.items = []
-        self.lay = QGridLayout(parent)
-        self.lay.setContentsMargins(0, 0, 0, 0)
-        self.lay.setSpacing(6)
 
-    def add(self, w):
-        n = len(self.items)
-        self.items.append(w)
-        self.lay.addWidget(w, n // 6, n % 6, Qt.AlignmentFlag.AlignLeft)
+    def addItem(self, item):
+        self.items.append(item)
+
+    def count(self):
+        return len(self.items)
+
+    def itemAt(self, i):
+        return self.items[i] if 0 <= i < len(self.items) else None
+
+    def takeAt(self, i):
+        return self.items.pop(i) if 0 <= i < len(self.items) else None
+
+    def expandingDirections(self):
+        return Qt.Orientation(0)
+
+    def hasHeightForWidth(self):
+        return True
+
+    def heightForWidth(self, width):
+        return self.place(QRect(0, 0, width, 0), move=False)
+
+    def setGeometry(self, rect):
+        super().setGeometry(rect)
+        self.place(rect, move=True)
+
+    def sizeHint(self):
+        return self.minimumSize()
+
+    def minimumSize(self):
+        size = QSize()
+        for item in self.items:
+            size = size.expandedTo(item.minimumSize())
+        return size
+
+    def place(self, rect, move):
+        x, y, line = rect.x(), rect.y(), 0
+        for item in self.items:
+            hint = item.sizeHint()
+            if x + hint.width() > rect.right() + 1 and line > 0:
+                x, y, line = rect.x(), y + line + self.gap, 0
+            if move:
+                item.setGeometry(QRect(QPoint(x, y), hint))
+            x += hint.width() + self.gap
+            line = max(line, hint.height())
+        return y + line - rect.y()
 
 
 def run():

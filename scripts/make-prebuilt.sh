@@ -92,7 +92,15 @@ podman run --rm \
             rm -rf /home/builder/b && mkdir /home/builder/b
             cp -r /src/$pkg/. /home/builder/b/
             chown -R builder: /home/builder/b
-            (cd /home/builder/b && runuser -u builder -- makepkg -s --noconfirm)
+            # Meta packages (the gaming ones) hold no files, only a list of
+            # other packages: pack them without installing that list first
+            # (it needs multilib and is gigabytes of Steam, Wine...). pacman
+            # still checks every dependency on the computer installing them.
+            case "$pkg" in
+                zexos-gaming-*) deps=-d ;;
+                *)              deps=-s ;;
+            esac
+            (cd /home/builder/b && runuser -u builder -- makepkg $deps --noconfirm)
             cp /home/builder/b/*.pkg.tar.zst /out/
         done
         # qt6ct-kde only works with the exact Qt it was built against.

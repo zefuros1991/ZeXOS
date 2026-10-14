@@ -315,6 +315,17 @@ class Toggle(QAbstractButton):
         p.end()
 
 
+def open_link(url):
+    """Open a web link in the user's browser through zexos-browser (the
+    same as Mod+B). Qt's own way asks the system for the web-link app, and
+    with no default browser set that is DankMaterialShell's "open with"
+    picker, which asks every time. zexos-browser skips that picker."""
+    url = url.toString() if isinstance(url, QUrl) else str(url)
+    browser = os.path.expanduser("~/.local/bin/zexos-browser")
+    if not (os.access(browser, os.X_OK) and QProcess.startDetached(browser, [url])[0]):
+        QDesktopServices.openUrl(QUrl(url))
+
+
 def run_detached(cmd):
     QProcess.startDetached("sh", ["-c", cmd])
 
@@ -653,12 +664,13 @@ class Welcome(QMainWindow):
         self.news_title = label("", h1=True)
         lay.addWidget(self.news_title)
         self.news_text = QTextBrowser()
-        self.news_text.setOpenExternalLinks(True)
+        self.news_text.setOpenLinks(False)
+        self.news_text.anchorClicked.connect(open_link)
         self.news_text.setMinimumHeight(330)
         self.news_text.setAccessibleName("What's new")
         lay.addWidget(self.news_text)
         self.news_foot = label("From the change notes on this computer. No internet needed.", muted=True)
-        self.news_foot.setOpenExternalLinks(True)
+        self.news_foot.linkActivated.connect(open_link)
         self.news_foot.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
         lay.addWidget(self.news_foot)
         return w
@@ -759,7 +771,7 @@ class Welcome(QMainWindow):
         s.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         lay.addWidget(s)
         link = label('<a href="https://github.com/zefuros1991/ZeXOS">github.com/zefuros1991/ZeXOS</a>')
-        link.setOpenExternalLinks(True)
+        link.linkActivated.connect(open_link)
         link.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
         link.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         lay.addWidget(link)

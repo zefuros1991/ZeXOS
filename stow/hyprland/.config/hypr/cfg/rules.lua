@@ -26,10 +26,8 @@ hl.config({
 -- means "every app that does NOT match".)
 hl.window_rule({ name = "zexos-no-blur", match = { class = [[negative:^(kitty|vlc|org\.kde\.dolphin)$]] }, no_blur = true })
 
--- ZeXOS - Welcome floats in the middle of the screen at 65% of its width
--- (niri and Mango give it a 65% column instead), so its pages fit.
-hl.window_rule({ name = "zexos-welcome", match = { class = [[^zexos-welcome$]] }, float = true,
-    size = { "monitor_w*0.65", "monitor_h*0.8" }, center = true })
+-- ZeXOS - Welcome tiles like any other window here: alone it fills the
+-- workspace, and a terminal it opens goes next to it, not hidden behind.
 
 -- Noctalia's settings window floats above the others.
 hl.window_rule({ name = "zexos-noctalia-settings", match = { class = [[^dev\.noctalia\.Noctalia$]] }, float = true })

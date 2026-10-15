@@ -104,7 +104,10 @@ podman run --rm \
             cp /home/builder/b/*.pkg.tar.zst /out/
         done
         # qt6ct-kde only works with the exact Qt it was built against.
-        pacman -Q qt6-base | cut -d" " -f2 > /out/qt6-base.version
+        # (Only there when a Qt package was built; --only can leave it out.)
+        if pacman -Q qt6-base >/dev/null 2>&1; then
+            pacman -Q qt6-base | cut -d" " -f2 > /out/qt6-base.version
+        fi
     '
 fi
 

@@ -1,0 +1,93 @@
+# zexos-drivers — table T of spec 001-hardware-drivers as data.
+# Each set: packages (Arch or the signed [zexos] source), settings it brings,
+# services to enable, and the alternatives the installer may offer.
+# Per-kernel packages: "@kernel:nvidia-open" expands per installed kernel
+# (linux → nvidia-open, linux-lts → nvidia-open-lts, other → nvidia-open-dkms + <kernel>-headers).
+
+[nvidia-newest]
+desc = "newest NVIDIA driver"
+packages = ["@kernel:nvidia-open", "nvidia-utils", "lib32-nvidia-utils", "egl-wayland", "nvidia-settings", "opencl-nvidia", "lib32-opencl-nvidia", "libva-nvidia-driver"]
+settings = ["nvidia-tweak", "early-nouveau-off"]
+alternatives = ["nvidia-open"]
+
+[nvidia-legacy]
+desc = "legacy NVIDIA driver"
+packages = ["nvidia-580xx-dkms", "nvidia-580xx-utils", "lib32-nvidia-580xx-utils", "nvidia-580xx-settings", "opencl-nvidia-580xx", "egl-wayland", "linux-headers", "linux-lts", "linux-lts-headers"]
+settings = ["nvidia-tweak", "early-nouveau-off"]
+alternatives = ["nvidia-open"]
+source = "zexos"
+
+[nvidia-open]
+desc = "open-source driver"
+packages = ["mesa", "lib32-mesa", "vulkan-nouveau", "lib32-vulkan-nouveau"]
+alternatives = []
+
+[amd]
+desc = "AMD driver"
+packages = ["mesa", "lib32-mesa", "vulkan-radeon", "lib32-vulkan-radeon", "gst-plugin-va"]
+alternatives = []
+
+[intel-old]
+desc = "Intel driver"
+packages = ["mesa", "lib32-mesa", "vulkan-intel", "lib32-vulkan-intel", "gst-plugin-va", "libva-intel-driver"]
+alternatives = []
+
+[intel-media]
+desc = "Intel driver"
+packages = ["mesa", "lib32-mesa", "vulkan-intel", "lib32-vulkan-intel", "gst-plugin-va", "intel-media-driver"]
+alternatives = []
+
+[intel-vpl]
+desc = "Intel driver"
+packages = ["mesa", "lib32-mesa", "vulkan-intel", "lib32-vulkan-intel", "gst-plugin-va", "intel-media-driver", "vpl-gpu-rt"]
+alternatives = []
+
+[hybrid]
+desc = "laptop battery saving + run on NVIDIA"
+packages = ["nvidia-prime", "switcheroo-control"]
+services = ["switcheroo-control.service"]
+
+[fallback]
+desc = "software graphics"
+packages = ["mesa", "lib32-mesa", "vulkan-swrast"]
+alternatives = []
+
+[vm-qemu]
+desc = "QEMU/KVM helper tools"
+packages = ["spice-vdagent", "qemu-guest-agent", "vulkan-virtio"]
+services = ["qemu-guest-agent.service"]
+
+[vm-virtualbox]
+desc = "VirtualBox helper tools"
+packages = ["virtualbox-guest-utils"]
+services = ["vboxservice.service"]
+
+[vm-vmware]
+desc = "VMware helper tools"
+packages = ["open-vm-tools", "xf86-input-vmmouse"]
+services = ["vmtoolsd.service"]
+
+[vm-hyperv]
+desc = "Hyper-V helper tools"
+packages = ["hyperv"]
+services = ["hv_fcopy_uio_daemon.service", "hv_kvp_daemon.service", "hv_vss_daemon.service"]
+
+[broadcom]
+desc = "Broadcom Wi-Fi driver"
+packages = ["broadcom-wl-dkms", "@headers"]
+settings = ["broadcom-block-others"]
+
+[marvell]
+desc = "Marvell Wi-Fi firmware"
+packages = ["linux-firmware-marvell"]
+
+[realtek]
+desc = "Realtek wired-network driver"
+packages = ["r8168-dkms", "@headers"]
+settings = ["realtek-block-r8169"]
+source = "zexos"
+
+[intel-lpmd]
+desc = "Intel battery saving"
+packages = ["intel-lpmd"]
+services = ["intel_lpmd.service"]

@@ -1,0 +1,3 @@
+# realtek-r8168.ids: 1 PCI device IDs. Source: Manjaro mhwd-db r8168 profile (vendor 10ec)
+# Generated 2026-10-15 by tools/gen-ids.py. One 4-hex ID per line.
+8168

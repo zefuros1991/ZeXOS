@@ -1,0 +1,20 @@
+# Maintainer: zefuros1991
+# ZeXOS's hardware scan and driver installer (spec 001-hardware-drivers).
+# Built from this folder as it is (scripts/make-prebuilt.sh copies it in whole).
+pkgname=zexos-drivers
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Finds which drivers this computer needs and installs them (ZeXOS)"
+arch=(any)
+url="https://github.com/zefuros1991/ZeXOS"
+license=(MIT)
+depends=(python hwdata systemd pacman)
+
+package() {
+    cd "$startdir"
+    install -Dm755 zexos-drivers "$pkgdir/usr/bin/zexos-drivers"
+    install -Dm644 sets.toml "$pkgdir/usr/share/zexos-drivers/sets.toml"
+    install -dm755 "$pkgdir/usr/share/zexos-drivers/ids"
+    install -m644 ids/* "$pkgdir/usr/share/zexos-drivers/ids/"
+    install -dm755 "$pkgdir/var/lib/zexos-drivers"
+}

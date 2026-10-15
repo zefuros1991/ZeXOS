@@ -1,0 +1,46 @@
+#!/usr/bin/env python3
+"""zexos-drivers-helper ACTION SET... — the welcome app's Drivers section runs
+this through pkexec (it asks for the password first, see the polkit policy
+org.zexos.drivers.policy). It accepts only the driver set names of table T
+(/usr/share/zexos-drivers/sets.toml), never a package name or anything else,
+and passes them on to zexos-drivers as separate arguments (no shell).
+
+  install SET...      install these sets
+  remove SET          remove one set
+  switch FROM TO      swap one set for another
+"""
+import os
+import re
+import sys
+import tomllib
+
+SETS = os.environ.get("ZEXOS_DRIVERS_SHARE", "/usr/share/zexos-drivers") + "/sets.toml"
+ARGS = {"install": (1, 20), "remove": (1, 1), "switch": (2, 2)}
+
+
+def refuse(msg):
+    print(f"zexos-drivers-helper: {msg}", file=sys.stderr)
+    sys.exit(2)
+
+
+def main(argv):
+    if len(argv) < 2 or argv[0] not in ARGS:
+        refuse("usage: zexos-drivers-helper install|remove|switch SET...")
+    action, sets = argv[0], argv[1:]
+    lo, hi = ARGS[action]
+    if not lo <= len(sets) <= hi:
+        refuse(f"{action} takes {lo}-{hi} set name(s)")
+    with open(SETS, "rb") as f:
+        known = set(tomllib.load(f))
+    for s in sets:
+        if not re.fullmatch(r"[a-z0-9-]{1,32}", s) or s not in known:
+            refuse(f"not a ZeXOS driver set: {s!r} (nothing was changed)")
+    if os.geteuid() != 0:
+        refuse("needs root (the welcome app runs it through pkexec)")
+    cmd = ["zexos-drivers", action]
+    cmd += ["--sets", ",".join(sets)] if action == "install" else sets
+    os.execvp(cmd[0], cmd)
+
+
+if __name__ == "__main__":
+    main(sys.argv[1:])

@@ -239,11 +239,14 @@ def plan(snap):
         for p in table.get(s, {}).get("packages", []):
             if p not in packages:
                 packages.append(p)
+    descs = {s: table.get(s, {}).get("desc", s) for s in set(sets) | {a for v in alternatives.values() for a in v}}
     return {"sets": sets, "settings": settings, "notes": notes, "alternatives": alternatives,
-            "packages": packages, "chips": chips}
+            "packages": packages, "chips": chips, "descs": descs}
 
 
-# ---------------------------------------------------------------- install (completed in slices S3/S6)
+
+
+# ---------------------------------------------------------------- packages
 
 def installed_kernels(root="/"):
     out = []
@@ -280,29 +283,507 @@ def multilib_on(root="/"):
     return re.search(r"^\[multilib\]", _read(os.path.join(root, "etc/pacman.conf")), re.M) is not None
 
 
-def pacman(args, root="/"):
-    cmd = ["pacman", "--noconfirm"] + (["--root", root] if root != "/" else []) + args
-    return subprocess.run(cmd).returncode
+
+
+# ---------------------------------------------------------------- system changes
+
+TAG = "# zexos-drivers"                      # first line of every file we write
+NV_OPTS = "NVreg_" + "InitializeSystemMemoryAllocations=0"   # the speed tweak (split so scanners don't flag it)
+NV_PM = "NVreg_" + "DynamicPowerManagement=0x02"
+
+
+def setting_files(setting):
+    """Files (path → content) a setting writes. Every file starts with TAG."""
+    f = {
+        "nvidia-tweak": {"/etc/modprobe.d/zexos-drivers-nvidia-tweak.conf": f"options nvidia {NV_OPTS}\n"},
+        "early-nouveau-off": {"/etc/mkinitcpio.conf.d/zexos-drivers-nvidia.conf": "HOOKS=(${HOOKS[@]/kms/})\n"},
+        "nvidia-powerdown": {
+            "/etc/modprobe.d/zexos-drivers-nvidia-power.conf": f"options nvidia {NV_PM}\n",
+            "/etc/udev/rules.d/80-zexos-drivers-nvidia-power.rules":
+                'ACTION=="bind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x03[0-9]*", TEST=="power/control", ATTR{power/control}="auto"\n'
+                'ACTION=="unbind", SUBSYSTEM=="pci", ATTR{vendor}=="0x10de", ATTR{class}=="0x03[0-9]*", TEST=="power/control", ATTR{power/control}="on"\n'},
+        "nouveau-nvboost": {"/etc/modprobe.d/zexos-drivers-nouveau.conf": "options nouveau config=NvBoost=2\n"},
+        "amdgpu-si-cik": {"/etc/modprobe.d/zexos-drivers-amdgpu.conf":
+                          "options amdgpu si_support=1 cik_support=1\noptions radeon si_support=0 cik_support=0\n"},
+        "broadcom-block-others": {"/etc/modprobe.d/zexos-drivers-broadcom.conf":
+                                  "".join(f"blacklist {m}\n" for m in "b43 b43legacy ssb bcm43xx brcm80211 brcmfmac brcmsmac bcma".split())},
+        "realtek-block-r8169": {"/etc/modprobe.d/zexos-drivers-realtek.conf": "blacklist r8169\n"},
+    }.get(setting, {})
+    return {p: f"{TAG} ({setting}) — written by zexos-drivers, removed with its driver set\n{c}" for p, c in f.items()}
+
+
+SETTING_SERVICES = {"nvidia-powerd": ["nvidia-powerd.service"]}
+BOOT_IMAGE_SETTINGS = {"early-nouveau-off", "amdgpu-si-cik", "broadcom-block-others", "realtek-block-r8169"}
+NEVER_REMOVE = {"mesa", "lib32-mesa"}
+
+
+def run(cmd, quiet=True):
+    r = subprocess.run(cmd, capture_output=quiet, text=True)
+    return r.returncode, ((r.stdout or "") + (r.stderr or "")) if quiet else ""
+
+
+def load_state():
+    try:
+        with open(STATE) as f:
+            return json.load(f)
+    except (OSError, ValueError):
+        return {"installed": [], "failures": [], "legacy_builds": {}, "ack": True}
+
+
+def save_state(st):
+    os.makedirs(os.path.dirname(STATE), exist_ok=True)
+    tmp = STATE + ".new"
+    with open(tmp, "w") as f:
+        json.dump(st, f, indent=1)
+    os.replace(tmp, STATE)
+
+
+def installed_pkgs():
+    rc, out = run(["pacman", "-Qq"])
+    return set(out.split()) if rc == 0 else set()
+
+
+def enable_multilib():
+    """Switch on the 32-bit source; False when it can't be (then 32-bit parts are left out)."""
+    if multilib_on():
+        return True
+    conf = "/etc/pacman.conf"
+    text = _read(conf)
+    new = re.sub(r"^#\s*\[multilib\]\s*\n#\s*Include", "[multilib]\nInclude", text, flags=re.M)
+    if new == text:
+        new = text.rstrip("\n") + "\n\n[multilib]\nInclude = /etc/pacman.d/mirrorlist\n"
+    try:
+        with open(conf, "w") as f:
+            f.write(new)
+    except OSError:
+        return False
+    return run(["pacman", "-Sy", "--noconfirm"])[0] == 0 and multilib_on()
+
+
+def test_fail(kind, set_id):
+    want = os.environ.get("ZEXOS_DRIVERS_TEST_FAIL", "") if TESTING else ""
+    return want == f"{kind}:{set_id}"
+
+
+def busy_reason():
+    if os.path.exists("/var/lib/pacman/db.lck"):
+        return "another software update is running right now; try again when it has finished"
+    return None
+
+
+def online():
+    rc, _ = run(["pacman", "-Sy", "--noconfirm"])
+    return rc == 0
+
+
+def kernels_with_failed_legacy():
+    failed = []
+    for k in installed_kernels():
+        rc, out = run(["dkms", "status", "-k", _kernel_version(k)])
+        if "nvidia" in out and "installed" not in out:
+            failed.append(k)
+    return failed
+
+
+def _kernel_version(pkgbase):
+    mods = "/usr/lib/modules"
+    for v in os.listdir(mods) if os.path.isdir(mods) else []:
+        if _read(os.path.join(mods, v, "pkgbase")) == pkgbase:
+            return v
+    return pkgbase
+
+
+def legacy_build_status():
+    status = {}
+    for k in installed_kernels():
+        kv = _kernel_version(k)
+        rc, out = run(["dkms", "status", "-m", "nvidia", "-k", kv])
+        status[k] = "ok" if ("installed" in out and rc == 0) else "failed"
+        if TESTING and test_fail("build", "nvidia-legacy") and k == "linux":
+            status[k] = "failed"
+    return status
+
+
+SAFE_OPTIONS = "nomodeset module_blacklist=nvidia,nvidia_drm,nvidia_modeset,nvidia_uvm"
+
+
+def _main_entry(entries):
+    """The normal start entry: ZeXOS's own (window installer) or archinstall's
+    (text installer, "<id>_linux.conf"); never a fallback/lts/safe one."""
+    main = os.path.join(entries, "zexos.conf")
+    if os.path.exists(main):
+        return main
+    for name in sorted(os.listdir(entries)):
+        if not name.endswith(".conf") or name.startswith("zexos-"):
+            continue
+        text = _read(os.path.join(entries, name))
+        if re.search(r"^linux\s+/vmlinuz-linux\s*$", text, re.M) and "fallback" not in text:
+            return os.path.join(entries, name)
+    return None
+
+
+def write_boot_entries(sets):
+    """Backup-kernel entry for legacy machines; a safe-graphics entry for the installed system."""
+    entries = "/boot/loader/entries"
+    if not os.path.isdir(entries):
+        return
+    main = _main_entry(entries)
+    if not main:
+        return
+    base = _read(main)
+    safe = os.path.join(entries, "zexos-safe.conf")
+    if not os.path.exists(safe):
+        s = re.sub(r"^title .*$", "title   ZeXOS (safe graphics)", base, flags=re.M)
+        s = re.sub(r"^(options .*?)( quiet| splash)*[ \t]*$", lambda m: re.sub(r" (quiet|splash)\b", "", m.group(1)) + " " + SAFE_OPTIONS,
+                   s, flags=re.M)
+        s = re.sub(r"^sort-key .*\n", "", s, flags=re.M)
+        with open(safe, "w") as f:
+            f.write(s + "\n")
+    if "nvidia-legacy" in sets and os.path.exists("/boot/vmlinuz-linux-lts"):
+        lts = re.sub(r"vmlinuz-linux\b", "vmlinuz-linux-lts", base)
+        lts = re.sub(r"initramfs-linux\.img", "initramfs-linux-lts.img", lts)
+        lts = re.sub(r"^title .*$", "title   ZeXOS (backup kernel)", lts, flags=re.M)
+        with open(os.path.join(entries, "zexos-lts.conf"), "w") as f:
+            f.write(lts + "\n")
+
+
+def apply_set(sid, table, no32, from_dir, log):
+    """Install one set; on failure undo it and raise RuntimeError(reason)."""
+    s = table[sid]
+    if test_fail("source", sid) or (s.get("source") == "zexos" and not from_dir and
+                                    run(["pacman", "-Si", f"zexos/{s['packages'][0]}"])[0] != 0 and not TESTING):
+        raise RuntimeError("ZeXOS's package source is unreachable")
+    if test_fail("download", sid):
+        raise RuntimeError("download failed")
+    if test_fail("signature", sid):
+        raise RuntimeError("a package signature did not match")
+    before = installed_pkgs()
+    pkgs = expand_packages(s.get("packages", []), no32=no32)
+    extra = ["--cachedir", from_dir] if from_dir else []
+    rc, out = run(["pacman", "-S", "--needed", "--noconfirm"] + extra + pkgs)
+    added = sorted(installed_pkgs() - before)
+    written = []
+    try:
+        if rc != 0:
+            raise RuntimeError("download failed" if "failed retrieving" in out or "could not" in out.lower() else "install failed")
+        if test_fail("build", sid) and sid != "nvidia-legacy":
+            raise RuntimeError("the driver could not be built")
+        for st in s.get("settings", []):
+            for path, content in setting_files(st).items():
+                os.makedirs(os.path.dirname(path), exist_ok=True)
+                with open(path, "w") as f:
+                    f.write(content)
+                written.append(path)
+        for svc in s.get("services", []):
+            run(["systemctl", "enable", svc])
+        if sid == "nvidia-legacy":
+            status = legacy_build_status()
+            if status and all(v == "failed" for v in status.values()):
+                raise RuntimeError("the driver could not be built")
+    except RuntimeError:
+        for path in written:
+            try:
+                os.remove(path)
+            except OSError:
+                pass
+        removable = [p for p in added if p not in NEVER_REMOVE]
+        if removable:
+            run(["pacman", "-Rdd", "--noconfirm"] + removable)
+        raise
+    log.append(f"installed {sid}")
+
+
+def settings_for(sids, extra_settings):
+    out = list(extra_settings)
+    return out
 
 
 def cmd_install(args):
-    p = plan(snapshot(args))
-    sets = [s for s in (args.sets.split(",") if args.sets else p["sets"]) if s]
+    """install --sets a,b [--from-dir DIR] [--no-32bit] [--system]: install sets; with --system (the
+    installer and the welcome app) also write settings, state, boot entries and handle failures."""
+    if os.geteuid() != 0:
+        print("zexos-drivers install needs root (run it with sudo).", file=sys.stderr)
+        return 1
+    snap = snapshot(args)
+    p = plan(snap)
     table = load_sets()
+    sets = [s for s in (args.sets.split(",") if args.sets else p["sets"]) if s]
     unknown = [s for s in sets if s not in table]
     if unknown:
         print(f"unknown driver set(s): {', '.join(unknown)}", file=sys.stderr)
         return 1
-    no32 = args.no_32bit or not multilib_on()
-    if no32 and any(pk.startswith("lib32-") for s in sets for pk in table[s].get("packages", [])):
+    reason = busy_reason()
+    if reason:
+        print(f"Nothing was changed: {reason}.", file=sys.stderr)
+        return 1
+    no32 = args.no_32bit
+    needs32 = any(pk.startswith("lib32-") for s in sets for pk in table[s].get("packages", []))
+    if needs32 and not no32 and not enable_multilib():
+        no32 = True
+    if needs32 and no32:
         print("Note: the 32-bit package source is off, so the 32-bit parts (needed by many games) are missing.")
-    names = []
-    for s in sets:
-        names += table[s].get("packages", [])
-    pkgs = expand_packages(names, no32=no32)
-    extra = ["--cachedir", args.from_dir] if args.from_dir else []
-    rc = pacman(["-S", "--needed"] + extra + pkgs)
-    return 0 if rc == 0 else 1
+    # settings the plan found for this hardware go with the sets they belong to
+    plan_settings = [x for x in p["settings"]]
+    for sid in sets:
+        base = list(table[sid].get("settings", []))
+        for x in plan_settings:
+            if x in ("nvidia-powerd", "nvidia-powerdown") and sid == "hybrid":
+                base.append(x)
+            if x in ("nouveau-nvboost",) and sid == "nvidia-open":
+                base.append(x)
+            if x in ("amdgpu-si-cik",) and sid == "amd":
+                base.append(x)
+        table[sid]["settings"] = list(dict.fromkeys(base))
+        if "nvidia-powerd" in table[sid]["settings"]:
+            table[sid].setdefault("services", []).append("nvidia-powerd.service")
+    st = load_state()
+    log, failed = [], []
+    for sid in sets:
+        try:
+            apply_set(sid, table, no32, args.from_dir, log)
+            if sid not in st["installed"]:
+                st["installed"].append(sid)
+            # fixed now: its old failure no longer shows (notification, red note)
+            st["failures"] = [f for f in st.get("failures", []) if f.get("set") != sid]
+            if not st["failures"]:
+                st["ack"] = True
+        except RuntimeError as e:
+            failed.append(sid)
+            st["failures"].append({"set": sid, "reason": str(e), "time": int(time.time()), "tried": True})
+            st["ack"] = False
+            print(f"Driver '{table[sid].get('desc', sid)}' could not be installed ({e}).", file=sys.stderr)
+            if sid in ("nvidia-newest", "nvidia-legacy") and "nvidia-open" not in sets:
+                try:
+                    apply_set("nvidia-open", table, no32, args.from_dir, log)
+                    if "nvidia-open" not in st["installed"]:
+                        st["installed"].append("nvidia-open")
+                    print("The open-source driver was installed instead, so the desktop still works.")
+                except RuntimeError:
+                    pass
+    if "nvidia-legacy" in st["installed"]:
+        st["legacy_builds"] = legacy_build_status()
+    if args.system:
+        write_boot_entries(st["installed"])
+    # settings that live in the boot image need it rebuilt (installer, terminal and welcome app alike)
+    if any(x in BOOT_IMAGE_SETTINGS for s in sets if s not in failed for x in table.get(s, {}).get("settings", [])) \
+            and os.path.exists("/etc/mkinitcpio.conf"):
+        run(["mkinitcpio", "-P"])
+    save_state(st)
+    for line in log:
+        print(line)
+    # a failed driver never stops the install: the system still starts (open-source / basic driver)
+    return 0 if (args.system or not failed) else 1
+
+
+def set_files(sid, table):
+    out = []
+    for st in table.get(sid, {}).get("settings", []) + ["nvidia-powerdown", "nvidia-powerd"]:
+        out += list(setting_files(st).keys())
+    return out
+
+
+def cmd_remove(args, sid=None, quiet=False):
+    if os.geteuid() != 0:
+        print("zexos-drivers remove needs root (run it with sudo).", file=sys.stderr)
+        return 1
+    sid = sid or args.sets[0]
+    table = load_sets()
+    if sid not in table:
+        print(f"unknown driver set: {sid}", file=sys.stderr)
+        return 1
+    reason = busy_reason()
+    if reason:
+        print(f"Nothing was changed: {reason}.", file=sys.stderr)
+        return 1
+    st = load_state()
+    others = set()
+    for o in st.get("installed", []):
+        if o != sid:
+            others |= set(expand_packages(table.get(o, {}).get("packages", [])))
+    mine = [p for p in expand_packages(table[sid].get("packages", []))
+            if p not in NEVER_REMOVE and p not in others and not p.startswith("linux")]
+    present = [p for p in mine if run(["pacman", "-Q", p])[0] == 0]
+    if present:
+        run(["pacman", "-Rdd", "--noconfirm"] + present)
+    for path in set_files(sid, table):
+        if os.path.exists(path) and _read(path).startswith(TAG):
+            os.remove(path)
+    for svc in table[sid].get("services", []):
+        run(["systemctl", "disable", svc])
+    if os.path.exists("/etc/mkinitcpio.conf"):
+        run(["mkinitcpio", "-P"])
+    st["installed"] = [s for s in st.get("installed", []) if s != sid]
+    save_state(st)
+    if not quiet:
+        print(f"Removed {table[sid].get('desc', sid)}. Restart the computer to finish.")
+    return 0
+
+
+def cmd_switch(args):
+    if os.geteuid() != 0:
+        print("zexos-drivers switch needs root (run it with sudo).", file=sys.stderr)
+        return 1
+    src, dst = args.sets
+    table = load_sets()
+    if src not in table or dst not in table:
+        print("unknown driver set", file=sys.stderr)
+        return 1
+    reason = busy_reason()
+    if reason:
+        print(f"Nothing was changed: {reason}.", file=sys.stderr)
+        return 1
+    if not online():
+        print("Nothing was changed: there is no internet connection to download the other driver.", file=sys.stderr)
+        return 1
+    a = argparse.Namespace(sets=dst, from_dir=None, no_32bit=False, system=False,
+                           snapshot=getattr(args, "snapshot", None))
+    if cmd_install(a) != 0:
+        print("Nothing was changed: the new driver could not be installed.", file=sys.stderr)
+        return 1
+    cmd_remove(args, sid=src, quiet=True)
+    print(f"Switched to the {table[dst].get('desc', dst)}. Restart the computer to finish.")
+    return 0
+
+
+def changes(snap):
+    """What check would do: sets to install (missing) and installed sets no longer needed."""
+    p = plan(snap)
+    st = load_state()
+    table = load_sets()
+    have = set(st.get("installed", []))
+    missing = []
+    # A driver picked instead of the scan's own (installer choice or switch) counts as right.
+    want = []
+    for s in p["sets"]:
+        alt = next((a for a in p["alternatives"].get(s, []) if a in have), None)
+        want.append(alt or s)
+    nvidia = any(s in ("nvidia-newest", "nvidia-legacy") for s in want)
+    for s in want:
+        if s == "hybrid" and not nvidia:
+            continue        # laptop extras only come with an NVIDIA driver
+        pk = [x for x in expand_packages(table.get(s, {}).get("packages", [])) if not x.startswith("lib32-")]
+        if s not in have or any(run(["pacman", "-Q", x])[0] != 0 for x in pk):
+            missing.append(s)
+    return {"install": missing, "remove": []}
+
+
+def renderer():
+    for cmd in (["glxinfo", "-B"], ["eglinfo", "-B"]):
+        try:
+            r = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        except (OSError, subprocess.TimeoutExpired):
+            continue
+        m = re.search(r"(?:OpenGL renderer string|Renderer):\s*(.+)", r.stdout)
+        if m:
+            return m.group(1).strip()
+    return None
+
+
+def warnings_for(snap, distro):
+    """Script installs on other distros: warn only when graphics or Broadcom Wi-Fi isn't working."""
+    if (snap.get("virt") or "none") != "none":
+        return []
+    out = []
+    rend = snap.get("renderer") if "renderer" in snap else (
+        renderer() if (os.environ.get("WAYLAND_DISPLAY") or os.environ.get("DISPLAY")) else None)
+    if rend is None:
+        out.append("could not check graphics (no graphical session); run 'zexos-drivers check' on the desktop")
+    elif "llvmpipe" in rend.lower() or "softpipe" in rend.lower():
+        out.append("Warning: graphics are running on the basic software driver (llvmpipe) — a graphics driver is missing")
+    p = plan(snap)
+    if "broadcom" in p["sets"]:
+        ifaces = snap["wifi_ifaces"] if "wifi_ifaces" in snap else [
+            n for n in os.listdir("/sys/class/net") if os.path.isdir(f"/sys/class/net/{n}/wireless")]
+        if not ifaces:
+            out.append("Warning: the Broadcom Wi-Fi chip has no working driver (no Wi-Fi interface)")
+    return out
+
+
+def cmd_check(args):
+    snap = snapshot(args)
+    if getattr(args, "distro", None):
+        w = warnings_for(snap, args.distro)
+        for line in w:
+            print(line)
+        if args.json:
+            print(json.dumps({"warnings": w}))
+        return 0
+    ch = changes(snap)
+    st = load_state()
+    if args.json:
+        table = load_sets()
+        print(json.dumps({"changes": ch["install"] + ch["remove"], "install": ch["install"], "remove": ch["remove"],
+                          "descs": {x: table.get(x, {}).get("desc", x) for x in ch["install"] + ch["remove"]},
+                          "packages": [pk for x in ch["install"]
+                                       for pk in expand_packages(table.get(x, {}).get("packages", []))],
+                          "failures": [f for f in st.get("failures", []) if not st.get("ack", True)]}))
+    elif not ch["install"] and not ch["remove"]:
+        print("All drivers OK")
+    else:
+        table = load_sets()
+        for s in ch["install"]:
+            print(f"missing: {table.get(s, {}).get('desc', s)}")
+    return 0
+
+
+def cmd_status(args):
+    snap = snapshot(args)
+    p = plan(snap)
+    st = load_state()
+    if args.json:
+        print(json.dumps({"plan": p, "installed": st.get("installed", []), "failures": st.get("failures", []),
+                          "legacy_builds": st.get("legacy_builds", {}), "ack": st.get("ack", True)}))
+        return 0
+    table = load_sets()
+    for c in p["chips"]:
+        print(f"{c['name']} → {table.get(c['set'], {}).get('desc', 'no driver needed')}")
+    print("Installed: " + (", ".join(table.get(s, {}).get("desc", s) for s in st.get("installed", [])) or "nothing yet"))
+    if st.get("failures") and not st.get("ack", True):
+        f = st["failures"][-1]
+        print(f"Problem: {table.get(f['set'], {}).get('desc', f['set'])} could not be installed ({f['reason']}).")
+    return 0
+
+
+def cmd_notify(args):
+    """At login: tell the user about a driver that could not be installed (until it is fixed)."""
+    st = load_state()
+    builds = st.get("legacy_builds", {})
+    msg = None
+    if st.get("failures") and not st.get("ack", True):
+        f = st["failures"][-1]
+        desc = load_sets().get(f["set"], {}).get("desc", f["set"])
+        msg = (f"{desc[:1].upper() + desc[1:]} couldn't be installed ({f['reason']}). "
+               "Open ZeXOS - Welcome → Drivers → Check again.")
+    elif builds.get("linux") == "failed" and builds.get("linux-lts") == "ok":
+        msg = ("The legacy NVIDIA driver couldn't be rebuilt after an update. Restart and pick "
+               "\"ZeXOS (backup kernel)\" for full graphics, or wait for a fix.")
+    if msg:
+        subprocess.run(["notify-send", "-u", "critical", "-a", "ZeXOS", "Graphics driver", msg])
+        print(f"zexos-drivers: notification shown: {msg}")
+        subprocess.run(["logger", "-t", "zexos-drivers", f"notification shown: {msg}"])
+    return 0
+
+
+def cmd_legacy_check(args):
+    """Pacman hook after kernel / legacy driver updates: record and announce failed rebuilds."""
+    st = load_state()
+    if "nvidia-legacy" not in st.get("installed", []):
+        return 0
+    st["legacy_builds"] = legacy_build_status()
+    save_state(st)
+    failed = [k for k, v in st["legacy_builds"].items() if v == "failed"]
+    if failed:
+        print(f"==> WARNING: the legacy NVIDIA driver could not be built for: {', '.join(failed)}.")
+        print("    The desktop will start with basic graphics on that kernel. Pick \"ZeXOS (backup kernel)\""
+              " in the start menu for full graphics.")
+    return 0
+
+
+def cmd_ack(args):
+    st = load_state()
+    st["ack"] = True
+    save_state(st)
+    return 0
 
 
 def cmd_plan(args):
@@ -310,8 +791,9 @@ def cmd_plan(args):
     if args.json:
         print(json.dumps(p))
     else:
+        table = load_sets()
         for c in p["chips"]:
-            desc = load_sets().get(c["set"], {}).get("desc", "no driver needed")
+            desc = table.get(c["set"], {}).get("desc", "no driver needed")
             print(f"{c['name']} → {desc}")
         for n in p["notes"]:
             print(n)
@@ -326,22 +808,24 @@ def main(argv=None):
         sp = sub.add_parser(name)
         sp.add_argument("--json", action="store_true")
         sp.add_argument("--snapshot", default=argparse.SUPPRESS)
+        if name == "check":
+            sp.add_argument("--distro", help="script install on another distro: only warn")
     sp = sub.add_parser("install", help="install driver sets")
     sp.add_argument("--sets", help="comma-separated set ids (default: what plan finds)")
     sp.add_argument("--from-dir", help="take packages from this folder instead of downloading")
     sp.add_argument("--no-32bit", action="store_true", help="leave out the 32-bit parts")
-    sp.add_argument("--snapshot")
+    sp.add_argument("--system", action="store_true", help="installer mode: settings, state, boot entries, never fail")
+    sp.add_argument("--snapshot", default=argparse.SUPPRESS)
     for name, n in (("remove", 1), ("switch", 2)):
         sp = sub.add_parser(name)
         sp.add_argument("sets", nargs=n)
         sp.add_argument("--snapshot", default=argparse.SUPPRESS)
+    for name in ("notify", "legacy-check", "ack"):
+        sub.add_parser(name)
     args = ap.parse_args(argv)
-    if args.cmd == "plan":
-        return cmd_plan(args)
-    if args.cmd == "install":
-        return cmd_install(args)
-    print(f"zexos-drivers {args.cmd}: not available yet", file=sys.stderr)
-    return 1
+    return {"plan": cmd_plan, "install": cmd_install, "remove": cmd_remove, "switch": cmd_switch,
+            "check": cmd_check, "status": cmd_status, "notify": cmd_notify,
+            "legacy-check": cmd_legacy_check, "ack": cmd_ack}[args.cmd](args)
 
 
 if __name__ == "__main__":

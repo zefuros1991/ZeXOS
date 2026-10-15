@@ -5,6 +5,8 @@
 // press Mod+Shift+D to change it.
 spawn-at-startup "zshell" "start"
 spawn-at-startup "zexos-vm-cursor"
+// A driver that could not be installed or rebuilt: tell the user (zexos-drivers).
+spawn-sh-at-startup "command -v zexos-drivers >/dev/null && zexos-drivers notify"
 
 // The small window that asks for your password when an app needs admin rights.
 spawn-at-startup "/usr/lib/polkit-kde-authentication-agent-1"

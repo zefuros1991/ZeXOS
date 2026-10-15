@@ -1,0 +1,26 @@
+#!/usr/bin/env bash
+# zexos-install-drivers ROOT [--sets a,b]
+# The one driver step both ZeXOS installers run (from zexos-install-into),
+# after ZeXOS itself is installed in ROOT. Installs the driver sets the
+# installer showed (--sets, the user's pick) or, without --sets, what the
+# scan finds. A failed driver never stops the install: the system still
+# starts on the open-source driver and tells the user after the first login.
+# A recorded snapshot (ZEXOS_DRIVERS_SNAPSHOT) replaces the real hardware.
+set -u
+ROOT="${1:?usage: zexos-install-drivers ROOT [--sets a,b]}"; shift
+if [ "$ROOT" != / ]; then
+    # Run the same step inside the new system, where its pacman and boot files live.
+    env_args=()
+    for v in ZEXOS_DRIVERS_TESTING ZEXOS_DRIVERS_TEST_FAIL ZEXOS_DRIVERS_TEST_VIRT; do
+        [ -n "${!v:-}" ] && env_args+=("$v=${!v}")
+    done
+    if [ -n "${ZEXOS_DRIVERS_SNAPSHOT:-}" ]; then
+        install -Dm644 "$ZEXOS_DRIVERS_SNAPSHOT" "$ROOT/var/tmp/zexos-drivers-snapshot.json"
+        env_args+=("ZEXOS_DRIVERS_SNAPSHOT=/var/tmp/zexos-drivers-snapshot.json")
+    fi
+    arch-chroot "$ROOT" pacman -S --needed --noconfirm zexos-drivers >/dev/null 2>&1 ||
+        { echo "zexos-install-drivers: could not install zexos-drivers in $ROOT" >&2; exit 0; }
+    exec arch-chroot "$ROOT" env "${env_args[@]}" zexos-install-drivers / "$@"
+fi
+zexos-drivers install --system "$@"
+exit 0

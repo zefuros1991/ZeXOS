@@ -126,7 +126,7 @@ if [ "$build" = 0 ]; then
     { grep -v '^zexos\.db ' "$LIST"; echo "$db_line"; } > "$LIST.new"
     mv "$LIST.new" "$LIST"
 else
-    qt="$(cat "$OUT/qt6-base.version")"
+    qt="$(cat "$OUT/qt6-base.version" 2>/dev/null || true)"   # empty when no Qt package was built
     {
         echo "# Written by scripts/make-prebuilt.sh -- don't edit by hand."
         echo "# Files: https://github.com/$GH_REPO/releases/tag/$TAG"

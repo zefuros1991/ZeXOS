@@ -64,6 +64,26 @@ New work is tested on the `beta` branch first and is listed under
   Both change with the wallpaper and shell. Your own prompt (starship,
   oh-my-posh, powerlevel10k, oh-my-zsh themes, a custom fish prompt) is left
   alone; `~/.config/zexos/no-prompt` turns ours off.
+- Drivers, found and installed for you (`zexos-drivers`): the scan looks at
+  the graphics, Wi-Fi and network chips and picks the driver each needs, the
+  same choices CachyOS, EndeavourOS and Manjaro make (newest NVIDIA, legacy
+  NVIDIA 580 for GTX 750–1080 with a backup kernel, open-source for older
+  cards, AMD, Intel by generation, laptop battery saving on NVIDIA laptops,
+  VM helper tools, Broadcom and Realtek). Both installers show what was found
+  ("chip → driver") and let you pick another driver where one fits. If a
+  driver can't be installed, the install still finishes on the open-source
+  driver and tells you at login.
+  - **Welcome → Drivers**: shows the chips and their drivers; Check again
+    needs no password and asks for it only when something has to change.
+  - **Terminal**: `zexos-drivers status | check | install | remove | switch`.
+  - **Script installs**: real Arch gets the drivers it needs; CachyOS,
+    EndeavourOS and other distros are left alone, with a warning only when
+    graphics or Broadcom Wi-Fi isn't working.
+- **"ZeXOS (safe graphics)"** in every start menu of the USB sticks and of
+  installed systems: basic graphics for cards that show a black screen.
+- Broadcom Wi-Fi works on the USB stick itself, before installing.
+- Every ZeXOS package is now signed with the ZeXOS key (`zexos-keyring`), and
+  computers refuse unsigned or changed ZeXOS packages.
 
 ### Fixed
 

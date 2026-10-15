@@ -506,6 +506,9 @@ install_local "Login screen theme (Pixie)" pixie-sddm-zexos
 # they stay bright white. This patched build can (see packaging/qt6ct-kde).
 # It replaces plain qt6ct if something installed that.
 install_local "Qt settings for KDE apps (qt6ct-kde)" qt6ct-kde
+# Finds which graphics, Wi-Fi and network drivers this computer needs (see
+# "Drivers" further down).
+install_local "Hardware drivers (zexos-drivers)" zexos-drivers
 
 # -----------------------------
 # WELCOME APP (ZeXOS ISO installs only)
@@ -958,6 +961,26 @@ echo -e "${GREEN}✔ ~/.local/bin is on PATH for every login${RESET}"
 # to, or that screen stays a solid colour. See system/profile.d/.
 sudo install -Dm644 "$REPO_ROOT/system/profile.d/zexos-gpu-order.sh" /etc/profile.d/zexos-gpu-order.sh
 echo -e "${GREEN}✔ Mango uses the right GPU on two-GPU laptops${RESET}"
+
+# Graphics, Wi-Fi and network drivers. Real Arch installs none by itself,
+# so it gets what this computer needs. Every other system (CachyOS,
+# EndeavourOS, ZeXOS itself…) looks after its own drivers and is left
+# alone: only a warning when graphics or Broadcom Wi-Fi isn't working.
+echo -e "\n${YELLOW}[DRIVERS] Graphics, Wi-Fi and network drivers${RESET}"
+if ! command -v zexos-drivers >/dev/null 2>&1; then
+    echo -e "${YELLOW}⚠ zexos-drivers didn't install, so drivers weren't checked${RESET}"
+elif zexos_is_real_arch; then
+    zexos-drivers status 2>/dev/null | sed 's/^/  /'
+    if sudo zexos-drivers install; then
+        echo -e "${GREEN}✔ Drivers ready (they work after a restart)${RESET}"
+    else
+        echo -e "${RED}✖ Some drivers couldn't be installed (see above). The desktop still starts with the open-source driver.${RESET}"
+        echo "  Try again later with: sudo zexos-drivers install"
+    fi
+else
+    zexos-drivers check --distro "${ZEXOS_DISTRO_ID:-unknown}" 2>/dev/null | sed 's/^/  /'
+    echo -e "${GREEN}✔ Drivers left as ${ZEXOS_DISTRO_NAME:-this system} set them up${RESET}"
+fi
 
 # =========================================================
 # 3. FLATPAK / FLATHUB

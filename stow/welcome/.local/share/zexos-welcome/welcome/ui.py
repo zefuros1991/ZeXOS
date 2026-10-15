@@ -6,8 +6,10 @@ sidebar with the pages, content on the right, a bottom bar with About and
 sets from the wallpaper through qt6ct; when the wallpaper changes, Qt sends
 a palette change and the window restyles itself while open.
 """
+import json
 import os
 import shutil
+import subprocess
 import sys
 
 from PySide6.QtCore import (QEasingCurve, QEvent, QPoint, QPointF, QProcess, QPropertyAnimation, QRect, QRectF, QSize, Qt, QTimer, QUrl,
@@ -29,10 +31,11 @@ ICONS = {  # stroke icons from the design, drawn in the text colour
     "Welcome": '<path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/>',
     "Keys": '<rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M7 14h10"/>',
     "System care": '<path d="M12 3l8 3v6c0 4.5-3.4 8.3-8 9-4.6-.7-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+    "Drivers": '<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>',
     "Gaming": '<path d="M6 8h12a4 4 0 0 1 4 4v1a4 4 0 0 1-7 2.6L14 14h-4l-1 1.6A4 4 0 0 1 2 13v-1a4 4 0 0 1 4-4z"/><path d="M7 11v3M5.5 12.5h3M16 12h.01M18 13.5h.01"/>',
     "What's new": '<path d="M12 3l2.6 5.6 6.1.7-4.5 4.2 1.2 6L12 16.6 6.6 19.5l1.2-6L3.3 9.3l6.1-.7z"/>',
 }
-PAGES = ["Welcome", "Keys", "System care", "Gaming", "What's new"]
+PAGES = ["Welcome", "Keys", "System care", "Drivers", "Gaming", "What's new"]
 
 CARE = [  # job, title, one line, visible button text
     ("update", "Update", "Updates the system and your Flathub apps.", "Update"),
@@ -87,6 +90,8 @@ def colours(pal):
         "waitBg": mix(bg, QColor("#ffd166"), 0.2),
         "bad": mix(QColor("#ff6b6b"), text, 0.15) if dark else QColor("#b42318"),
         "badBg": mix(bg, QColor("#ff6b6b"), 0.18),
+        "attention": mix(QColor("#ff9f43"), text, 0.15) if dark else QColor("#a8460a"),
+        "attentionBg": mix(bg, QColor("#ff9f43"), 0.2),
         "knob": QColor("white") if dark else mix(bg, QColor("white"), 0.9),
         "dark": dark,
     }
@@ -108,6 +113,8 @@ QLabel[wait="true"] {{ background: {h['waitBg']}; color: {h['wait']}; border-rad
                        font-size: 12px; font-weight: 600; }}
 QLabel[bad="true"] {{ background: {h['badBg']}; color: {h['bad']}; border-radius: 10px; padding: 3px 10px;
                       font-size: 12px; font-weight: 600; }}
+QLabel[attention="true"] {{ background: {h['attentionBg']}; color: {h['attention']}; border-radius: 10px; padding: 3px 10px;
+                            font-size: 12px; font-weight: 600; }}
 QLabel[cap="true"] {{ font-family: 'JetBrains Mono'; font-size: 12px; padding: 2px 5px; border-radius: 6px;
                       background: {h['cap']}; border: 1px solid {h['capLine']}; border-bottom-width: 2px; }}
 QLabel[chip="true"] {{ padding: 4px 11px; border-radius: 13px; background: {h['surface']};
@@ -188,7 +195,9 @@ def status_label():
 #   wait (yellow)  still going, e.g. "Updating…"
 #   ok   (green)   done, or nothing was needed ("Nothing to clean")
 #   bad  (red)     failed, cancelled, or could not start
-TONES = ("ok", "wait", "bad")
+#   attention (orange)  a check found something nobody has tried to fix yet
+#                  (Drivers: "Missing: newest NVIDIA driver")
+TONES = ("ok", "wait", "bad", "attention")
 
 
 def show_status(st, text, tone="ok"):
@@ -381,7 +390,8 @@ class Welcome(QMainWindow):
         sl.addStretch(1)
         body.addWidget(side)
 
-        self.pages = [self.page_welcome(), self.page_keys(), self.page_care(), self.page_gaming(), self.page_news()]
+        self.pages = [self.page_welcome(), self.page_keys(), self.page_care(), self.page_drivers(), self.page_gaming(),
+                      self.page_news()]
         for p in self.pages:
             sc = QScrollArea()
             sc.setWidgetResizable(True)
@@ -486,6 +496,8 @@ class Welcome(QMainWindow):
             self.nav[name].setChecked(i == j)
         if PAGES[i] == "What's new":
             self.fill_news()
+        if PAGES[i] == "Drivers" and not self.drivers_filled:
+            self.fill_drivers()
 
     def heading(self, lay, title, sub):
         lay.addWidget(label(title, h1=True))
@@ -513,9 +525,9 @@ class Welcome(QMainWindow):
         lay.addWidget(label("Your desktop is ready. Here are a few things to help you get started.", muted=True))
         grid = QGridLayout()
         grid.setSpacing(14)
-        cards = [("Learn the basic keys", "12 keys to find your way around, with a Try it button for each.", lambda: self.show_page(1)),
-                 ("Keep your system healthy", "Update, faster download servers and tidying up.", lambda: self.show_page(2)),
-                 ("Set up for gaming", "Steam, Lutris, Wine and the tools games need, in one click.", lambda: self.show_page(3)),
+        cards = [("Learn the basic keys", "12 keys to find your way around, with a Try it button for each.", lambda: self.show_page(PAGES.index("Keys"))),
+                 ("Keep your system healthy", "Update, faster download servers and tidying up.", lambda: self.show_page(PAGES.index("System care"))),
+                 ("Set up for gaming", "Steam, Lutris, Wine and the tools games need, in one click.", lambda: self.show_page(PAGES.index("Gaming"))),
                  ("Get apps", "Open the app store to find and install more apps.", self.get_apps)]
         for n, (t, d, fn) in enumerate(cards):
             b = QPushButton()
@@ -615,6 +627,46 @@ class Welcome(QMainWindow):
             lay.addWidget(row)
         return w
 
+    def page_drivers(self):
+        w = QWidget()
+        lay = QVBoxLayout(w)
+        lay.setContentsMargins(0, 0, 0, 0)
+        lay.setSpacing(10)
+        self.heading(lay, "Drivers", "The drivers ZeXOS picked for this computer's graphics, Wi-Fi and network chips. "
+                                     "Checking needs no password; it is asked for only when something has to change.")
+        self.chip_rows = QVBoxLayout()
+        self.chip_rows.setSpacing(10)
+        lay.addLayout(self.chip_rows)
+        row = QFrame()
+        row.setProperty("row", True)
+        rl = QHBoxLayout(row)
+        rl.setContentsMargins(18, 14, 18, 14)
+        rl.setSpacing(16)
+        tl = QVBoxLayout()
+        tl.setSpacing(3)
+        tl.addWidget(label("Check drivers", strong=True))
+        tl.addWidget(label("Scans the chips again and compares them with what is installed. If something is missing, "
+                           "it shows exactly what it will install, then asks for your password.", muted=True))
+        self.drivers_status = status_label()
+        tl.addWidget(self.drivers_status, 0, Qt.AlignmentFlag.AlignLeft)
+        self.drivers_detail = label("", muted=True)
+        self.drivers_detail.hide()
+        tl.addWidget(self.drivers_detail)
+        rl.addLayout(tl, 1)
+        b = QPushButton("Check again")
+        b.setAccessibleName("Check again")
+        b.setProperty("primary", True)
+        b.clicked.connect(self.drivers_action)
+        self.care_buttons.append(b)      # same size as the System care buttons
+        rl.addWidget(b)
+        self.drivers_button = b
+        lay.addWidget(row)
+        lay.addWidget(label("The same from a terminal: zexos-drivers status, zexos-drivers check.", muted=True))
+        self.drivers_filled = False
+        self.drivers_fix = []            # sets "Fix" will install
+        self.drivers_proc = None
+        return w
+
     def page_gaming(self):
         w = QWidget()
         lay = QVBoxLayout(w)
@@ -687,6 +739,122 @@ class Welcome(QMainWindow):
         self.news_title.setText(f"What's new in ZeXOS {v}" + (f"   ·   {date}" if date else ""))
         self.news_text.setMarkdown(notes)
         self.news_foot.setText("From the change notes on this computer. No internet needed.")
+
+    # ------------------------------------------------------------ drivers
+
+    def drivers_note(self, text, tone, detail=""):
+        show_status(self.drivers_status, text, tone)
+        self.drivers_detail.setText(detail)
+        self.drivers_detail.setVisible(bool(detail))
+
+    def fill_drivers(self):
+        """The chips and their drivers (zexos-drivers status, no password)."""
+        self.drivers_filled = True
+        while self.chip_rows.count():
+            it = self.chip_rows.takeAt(0)
+            if it.widget():
+                it.widget().deleteLater()
+        try:
+            r = subprocess.run(["zexos-drivers", "status", "--json"], capture_output=True, text=True, timeout=20)
+            st = json.loads(r.stdout)
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            self.drivers_note("Couldn't read the drivers", "bad", "The zexos-drivers command is missing or failed.")
+            return
+        p, have = st["plan"], set(st.get("installed", []))
+        descs = p.get("descs", {})
+        rows = []
+        for c in p["chips"]:
+            s = next((a for a in p["alternatives"].get(c["set"], []) if a in have), c["set"])
+            rows.append((c["name"], descs.get(s, s), s in have))
+        chip_sets = [c["set"] for c in p["chips"]]
+        for s in p["sets"]:
+            if s not in chip_sets and s in have:
+                rows.append(("Also", descs.get(s, s), True))
+        if not rows:
+            rows.append(("No extra drivers are needed on this computer.", "", True))
+        for name, desc, on in rows:
+            row = QFrame()
+            row.setProperty("row", True)
+            rl = QVBoxLayout(row)
+            rl.setContentsMargins(18, 12, 18, 12)
+            rl.setSpacing(2)
+            rl.addWidget(label(name, strong=True))
+            if desc:
+                rl.addWidget(label(desc + ("" if on else "  ·  not installed"), muted=True))
+            self.chip_rows.addWidget(row)
+        fails = [f for f in st.get("failures", []) if not st.get("ack", True)]
+        if fails:   # red until it is fixed or Check again shows where things stand now
+            f = fails[-1]
+            d = descs.get(f["set"], f["set"])
+            self.drivers_note("Driver install failed", "bad", f"The {d} couldn't be installed ({f['reason']}). "
+                              "Press Check again to see what is needed now.")
+
+    def drivers_action(self):
+        if self.drivers_proc is not None:
+            return
+        if self.drivers_fix:
+            self.drivers_install(self.drivers_fix)
+        else:
+            self.drivers_check()
+
+    def drivers_run(self, prog, args, done):
+        proc = QProcess(self)
+        self.drivers_proc = proc
+        proc.finished.connect(lambda code, _st: self.drivers_done(proc, code, done))
+        proc.errorOccurred.connect(lambda err: err == QProcess.ProcessError.FailedToStart and self.drivers_done(proc, -1, done))
+        proc.start(prog, args)
+
+    def drivers_done(self, proc, code, done):
+        if self.drivers_proc is not proc:
+            return
+        self.drivers_proc = None
+        out = bytes(proc.readAllStandardOutput()).decode(errors="replace")
+        err = bytes(proc.readAllStandardError()).decode(errors="replace")
+        done(code, out, err)
+
+    def drivers_check(self):
+        self.drivers_note("Checking…", "wait")
+        self.drivers_run("zexos-drivers", ["check", "--json"], self.drivers_checked)
+
+    def drivers_checked(self, code, out, err):
+        try:
+            ch = json.loads(out)
+        except ValueError:
+            self.drivers_note("Couldn't check the drivers", "bad", (err.strip().splitlines() or [""])[-1])
+            return
+        self.fill_drivers()
+        missing = ch.get("install", [])
+        if not missing:
+            self.drivers_fix = []
+            self.drivers_button.setText("Check again")
+            self.drivers_note("All drivers OK", "ok")
+            return
+        names = [ch.get("descs", {}).get(s, s) for s in missing]
+        one = len(names) == 1 and len(names[0]) <= 24
+        self.drivers_note(f"Missing: {names[0]}" if one else f"{len(names)} drivers missing" if len(names) > 1
+                          else "1 driver missing", "attention",
+                          f"Fix installs: {', '.join(names)}  ({', '.join(ch.get('packages', []))}). "
+                          "Your password is asked next.")
+        self.drivers_fix = missing
+        self.drivers_button.setText("Fix")
+        self.drivers_button.setAccessibleName("Fix drivers")
+
+    def drivers_install(self, sets):
+        self.drivers_note("Installing drivers…", "wait", self.drivers_detail.text())
+        self.drivers_run("pkexec", ["/usr/bin/zexos-drivers-helper", "install", *sets], self.drivers_installed)
+
+    def drivers_installed(self, code, out, err):
+        self.drivers_fix = []
+        self.drivers_button.setText("Check again")
+        self.drivers_button.setAccessibleName("Check again")
+        if code == 0:
+            self.fill_drivers()
+            self.drivers_note("Drivers installed, restart to use them", "ok")
+        elif code in (126, 127):   # pkexec: password window closed / not allowed
+            self.drivers_note("Cancelled, nothing changed", "bad")
+        else:
+            self.fill_drivers()
+            self.drivers_note("Driver install failed", "bad", (err.strip().splitlines() or ["See zexos-drivers status."])[-1])
 
     # ------------------------------------------------------------ actions
 

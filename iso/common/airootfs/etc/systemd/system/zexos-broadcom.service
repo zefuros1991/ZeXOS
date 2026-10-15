@@ -1,0 +1,12 @@
+[Unit]
+Description=ZeXOS: Broadcom Wi-Fi driver for listed chips (live stick)
+After=systemd-udev-trigger.service systemd-modules-load.service
+Before=network-pre.target NetworkManager.service iwd.service
+Wants=network-pre.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/zexos-broadcom
+
+[Install]
+WantedBy=multi-user.target

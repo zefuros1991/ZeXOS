@@ -1,0 +1,4 @@
+# Both sticks. Broadcom Wi-Fi on the stick itself: Arch's broadcom-wl-dkms,
+# built for the stick's kernel during the ISO build (needs its headers).
+broadcom-wl-dkms
+linux-headers

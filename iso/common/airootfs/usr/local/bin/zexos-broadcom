@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+# Live stick, at start-up: when zexos-drivers finds a Broadcom Wi-Fi chip on
+# its list (the chips that need Broadcom's own "wl" driver), block the
+# competing open-source drivers and load wl, before the network starts.
+# Every other computer is left alone. Works without internet: the driver is
+# already built on the stick.
+set -u
+listed=$(zexos-drivers plan --json 2>/dev/null |
+    python3 -c 'import json, sys; print("yes" if "broadcom" in json.load(sys.stdin)["sets"] else "no")' 2>/dev/null)
+[ "$listed" = yes ] || exit 0
+echo "Listed Broadcom Wi-Fi chip found: turning on the wl driver."
+mkdir -p /run/modprobe.d
+printf 'blacklist %s\n' b43 b43legacy ssb bcma brcmsmac brcmfmac > /run/modprobe.d/zexos-broadcom.conf
+modprobe -r b43 b43legacy brcmsmac brcmfmac bcma ssb 2>/dev/null
+modprobe wl

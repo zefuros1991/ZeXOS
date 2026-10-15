@@ -10,7 +10,8 @@
 # Testing, or installing the same way on many machines:
 #   zexos-tui --answers FILE [--dry-run]
 # FILE sets KEYMAP USERNAME PASSWORD HOSTNAME TIMEZONE DISK ENCRYPT
-# COMPOSITORS SHELLS as shell variables; the questions are skipped. With
+# COMPOSITORS SHELLS (and optionally DRIVERS, the driver sets as
+# "a,b"; unset = what the scan picks) as shell variables; the questions are skipped. With
 # --dry-run it only writes the archinstall files to /tmp/zexos and stops.
 
 TITLE="ZeXOS installer"
@@ -31,6 +32,9 @@ COMPOSITORS="niri hyprland mango"
 SHELLS="noctalia dms"
 WIFI_SSID=
 WIFI_PASS=
+DRIVERS=        # chosen driver sets ("a,b"); empty = what the scan picks
+DRIVER_PICKS=() # chip slot=set, for chips with a choice
+DRIVER_LINES=   # the picks in words, for the review screen
 
 msg() { whiptail --title "$TITLE" --msgbox "$1" 0 0; }
 # whiptail draws on the terminal and answers on stderr: swap them.
@@ -229,6 +233,75 @@ ask_desktop() {
     return 0
 }
 
+# What zexos-drivers found on this computer, saved once per run.
+plan_drivers() {
+    mkdir -p "$WORK"
+    [ -s "$WORK/drivers-plan.json" ] && return
+    zexos-drivers plan --json > "$WORK/drivers-plan.json" 2>/dev/null ||
+        echo '{"chips": [], "sets": [], "alternatives": {}, "descs": {}, "notes": []}' > "$WORK/drivers-plan.json"
+}
+
+# Reads the saved plan. "chips": one line per chip (slot, name, picked set,
+# other sets that can work). "desc SET": the set in words. "resolve
+# slot=set...": the chosen sets on the first line, then the picks in words
+# (laptop extras only come with an NVIDIA driver, like the window installer).
+drivers_plan() {
+    python3 -c '
+import json, sys
+d = json.load(open(sys.argv[1])); mode = sys.argv[2]; desc = lambda s: d["descs"].get(s, s)
+if mode == "chips":
+    for c in d["chips"]:
+        print("\t".join([c["slot"], c["name"], c["set"], ",".join(d["alternatives"].get(c["set"], []))]))
+elif mode == "desc":
+    print(desc(sys.argv[3]))
+else:
+    picks = dict(a.split("=", 1) for a in sys.argv[3:])
+    out = []
+    for c in d["chips"]:
+        s = picks.get(c["slot"], c["set"])
+        if s not in out: out.append(s)
+    chip_sets = [c["set"] for c in d["chips"]]
+    extras = [s for s in d["sets"] if s not in chip_sets and s not in out]
+    nvidia = any(s in out for s in ("nvidia-newest", "nvidia-legacy"))
+    extras = [s for s in extras if s != "hybrid" or nvidia]
+    print(",".join(out + extras))
+    for c in d["chips"]:
+        print(c["name"] + " → " + desc(picks.get(c["slot"], c["set"])))
+    for s in extras: print("Also: " + desc(s))
+    for n in d.get("notes", []): print("Note: " + n)
+' "$WORK/drivers-plan.json" "$@"
+}
+
+# The driver question: the driver picked for each chip, and a choice where
+# another one can work. Changing drivers later: Welcome → Drivers.
+ask_drivers() {
+    plan_drivers
+    local chips=() line slot name set alts cur r s items picks=() out
+    mapfile -t chips < <(drivers_plan chips)
+    for line in "${chips[@]}"; do
+        IFS=$'\t' read -r slot name set alts <<< "$line"
+        [ -n "$alts" ] || continue
+        cur=$set
+        for s in "${DRIVER_PICKS[@]}"; do [ "${s%%=*}" = "$slot" ] && cur=${s#*=}; done
+        items=()
+        for s in "$set" ${alts//,/ }; do
+            items+=("$s" "$(drivers_plan desc "$s")" "$([ "$s" = "$cur" ] && echo ON || echo OFF)")
+        done
+        r=$(ask --cancel-button Back --radiolist "$name → $(drivers_plan desc "$set")\\n\\nAnother driver can also work on this chip. Pick one (space picks, Enter confirms):" 0 0 0 "${items[@]}") || return 1
+        picks+=("$slot=$r")
+    done
+    out=$(drivers_plan resolve "${picks[@]}")
+    DRIVER_PICKS=("${picks[@]}")
+    DRIVERS=$(head -n1 <<< "$out")
+    DRIVER_LINES=$(tail -n +2 <<< "$out")
+    if [ ${#chips[@]} -eq 0 ]; then
+        DRIVER_LINES="No extra drivers are needed on this computer."
+    fi
+    whiptail --title "$TITLE" --yes-button "OK" --no-button "Back" --yesno \
+        "Drivers\\n\\nZeXOS looked at this computer's graphics, Wi-Fi and network chips:\\n\\n$DRIVER_LINES\\n\\nDrivers can be changed later in ZeXOS - Welcome → Drivers, or with the zexos-drivers command." 0 0 || return 1
+    return 0
+}
+
 on() { [[ " $2 " == *" $1 "* ]] && echo ON || echo OFF; }
 
 # Everything on one screen; pick a line to change it.
@@ -242,7 +315,8 @@ review() {
             timezone "Time zone:      $TIMEZONE" \
             disk     "Disk:           $DISK  $(lsblk -dno SIZE "$DISK")  -- WILL BE ERASED" \
             encrypt  "Encryption:     $ENCRYPT" \
-            desktop  "Desktop:        $COMPOSITORS + $SHELLS") || return 1
+            desktop  "Desktop:        $COMPOSITORS + $SHELLS" \
+            drivers  "Drivers:        $(head -n1 <<< "$DRIVER_LINES")$([ "$(wc -l <<< "$DRIVER_LINES")" -gt 1 ] && echo " (+ more)")") || return 1
         case $c in
             install) return 0 ;;
             *) "ask_$c" ;;
@@ -341,6 +415,15 @@ carry_wifi() {
       } > "$f" )
 }
 
+# zexos-install-into installs these sets; without the file it uses the scan's pick.
+write_drivers_choice() {
+    if [[ "$DRIVERS" =~ ^[a-z0-9,-]+$ ]]; then
+        printf '%s' "$DRIVERS" > /tmp/zexos-drivers-choice
+    else
+        rm -f /tmp/zexos-drivers-choice
+    fi
+}
+
 run_install() {
     clear
     echo "Installing ZeXOS on $DISK. This takes a while; you can leave it alone."
@@ -360,6 +443,7 @@ run_install() {
     cp -f "$LOG" "$ROOT/var/log/zexos-install-arch.log" 2>/dev/null
 
     export ZEXOS_COMPOSITORS="$COMPOSITORS" ZEXOS_SHELLS="$SHELLS"
+    write_drivers_choice
     echo
     echo "Arch is set up. Now ZeXOS itself for $USERNAME."
     echo
@@ -384,7 +468,7 @@ install_zexos() {
 
     msg "Welcome! A few questions, then ZeXOS installs by itself.\n\nBack (or Esc) always goes one step back. Nothing is changed on your disks until you pick Install on the last screen."
 
-    local steps=(keyboard account timezone disk encrypt desktop) i=0
+    local steps=(keyboard account timezone disk encrypt desktop drivers) i=0
     while [ $i -lt ${#steps[@]} ]; do
         if "ask_${steps[i]}"; then
             i=$((i + 1))
@@ -426,8 +510,10 @@ install_manual() {
             ;;
     esac
     ask_desktop || return
+    ask_drivers || return
 
     export ZEXOS_COMPOSITORS="$COMPOSITORS" ZEXOS_SHELLS="$SHELLS"
+    write_drivers_choice
     clear
     echo "Step 2 of 2: installing ZeXOS for $USERNAME. This takes a few minutes."
     echo

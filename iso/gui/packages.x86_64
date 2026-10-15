@@ -38,3 +38,4 @@ mesa
 vulkan-swrast
 git
 zexos-keyring
+zexos-drivers

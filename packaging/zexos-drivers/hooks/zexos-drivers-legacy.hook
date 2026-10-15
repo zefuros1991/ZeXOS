@@ -1,0 +1,14 @@
+# After a kernel or the legacy NVIDIA driver changes, check that the driver
+# was built for every kernel; warn and remember it when it wasn't.
+[Trigger]
+Operation = Install
+Operation = Upgrade
+Type = Package
+Target = linux
+Target = linux-lts
+Target = nvidia-580xx-dkms
+
+[Action]
+Description = Checking the legacy NVIDIA driver for every kernel...
+When = PostTransaction
+Exec = /usr/bin/zexos-drivers legacy-check

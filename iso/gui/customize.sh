@@ -25,6 +25,7 @@ mkdir -p "$air/etc/zexos"
 sed -e '/^# ZEXOS-LIVE-ONLY/,$d' \
     -e 's|^Include = .*/mirrorlist$|Include = /etc/pacman.d/mirrorlist|' \
     -e '/^CacheDir = /d' \
+    -e '/^GPGDir = /d' \
     "$profile/pacman.conf" > "$air/etc/zexos/pacman-arch.conf"
 
 # Wallpaper for the live desktop, and backdrops for the install slideshow.

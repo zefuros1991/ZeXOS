@@ -32,11 +32,12 @@ zexos_detect_distro() {
         )
     fi
     ZEXOS_DISTRO_NAME="${name:-${id:-unknown Linux}}"
+    ZEXOS_DISTRO_ID="$id"
     ZEXOS_DISTRO_WHY=""
 
     # A choice made by hand wins.
     case "${ZEXOS_DISTRO:-}" in
-        cachyos|arch) export ZEXOS_DISTRO ZEXOS_DISTRO_NAME ZEXOS_DISTRO_WHY; return 0 ;;
+        cachyos|arch) export ZEXOS_DISTRO ZEXOS_DISTRO_ID ZEXOS_DISTRO_NAME ZEXOS_DISTRO_WHY; return 0 ;;
     esac
 
     if ! command -v pacman >/dev/null 2>&1; then
@@ -80,7 +81,14 @@ zexos_detect_distro() {
         esac
     fi
 
-    export ZEXOS_DISTRO ZEXOS_DISTRO_NAME ZEXOS_DISTRO_WHY
+    export ZEXOS_DISTRO ZEXOS_DISTRO_ID ZEXOS_DISTRO_NAME ZEXOS_DISTRO_WHY
+}
+
+# Real Arch Linux (ID=arch in /etc/os-release), as opposed to a distro built
+# on it (CachyOS, EndeavourOS, Garuda, ZeXOS itself…). Only real Arch gets
+# drivers installed by the script: the others look after their own.
+zexos_is_real_arch() {
+    [ "${ZEXOS_DISTRO_ID:-}" = arch ]
 }
 
 # Stops the install on a distro ZeXOS can't support, with the reason.

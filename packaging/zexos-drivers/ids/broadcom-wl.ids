@@ -1,0 +1,22 @@
+# broadcom-wl.ids: 20 PCI device IDs. Source: chwd network_drivers profile (devices supported by Broadcom's wl driver); vendors 14e4/14a4
+# Generated 2026-10-15 by tools/gen-ids.py. One 4-hex ID per line.
+0576
+4311
+4312
+4315
+4328
+4329
+432a
+432b
+432c
+432d
+4331
+4353
+4357
+4358
+4359
+4360
+4365
+43a0
+43b1
+4727

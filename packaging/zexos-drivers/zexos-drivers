@@ -1,0 +1,348 @@
+#!/usr/bin/env python3
+"""zexos-drivers — finds which drivers this computer needs and installs them.
+
+Reads the PCI devices, the chassis type, the processor and the VM type from the
+system (or from a recorded snapshot: --snapshot FILE or ZEXOS_DRIVERS_SNAPSHOT),
+and matches them against ZeXOS's driver sets (sets.toml) and ID lists (ids/).
+It never uses the network: everything it needs is on the computer.
+
+  zexos-drivers plan [--json]          what this computer needs (no root)
+  zexos-drivers status [--json]        what is installed and what isn't (no root)
+  zexos-drivers check [--json]         re-scan; list the changes that would be made
+  zexos-drivers install [--sets a,b] [--from-dir DIR] [--no-32bit]
+  zexos-drivers remove SET
+  zexos-drivers switch FROM TO
+
+The interface is fixed by specs/001-hardware-drivers/contracts/cli.md.
+"""
+import argparse, json, os, re, subprocess, sys, time, tomllib
+
+HERE = os.path.dirname(os.path.realpath(__file__))
+SHARE = HERE if os.path.exists(os.path.join(HERE, "sets.toml")) else "/usr/share/zexos-drivers"
+STATE = os.environ.get("ZEXOS_DRIVERS_STATE", "/var/lib/zexos-drivers/state.json")
+PCI_IDS = "/usr/share/hwdata/pci.ids"
+LAPTOP_CHASSIS = {8, 9, 10, 11, 31}
+VM_SETS = {"kvm": "vm-qemu", "qemu": "vm-qemu", "oracle": "vm-virtualbox", "vmware": "vm-vmware", "microsoft": "vm-hyperv"}
+GPU_VENDORS = {"10de": "nvidia", "1002": "amd", "8086": "intel"}
+TESTING = os.environ.get("ZEXOS_DRIVERS_TESTING") == "1"
+
+
+# ---------------------------------------------------------------- data
+
+def load_sets():
+    with open(os.path.join(SHARE, "sets.toml"), "rb") as f:
+        return tomllib.load(f)
+
+
+def load_ids(name):
+    try:
+        with open(os.path.join(SHARE, "ids", name)) as f:
+            return {l.strip().lower() for l in f if l.strip() and not l.startswith("#")}
+    except FileNotFoundError:
+        return set()
+
+
+def lpmd_models():
+    return {int(x) for x in load_ids("intel-lpmd.cpus")}
+
+
+# ---------------------------------------------------------------- hardware
+
+def read_snapshot(path):
+    """A recorded snapshot replaces all live detection, including VM detection."""
+    if os.path.getsize(path) == 0:            # an empty file = a machine with nothing to detect
+        return {"pci": [], "chassis_type": 0, "cpu": {}, "virt": "none"}
+    with open(path) as f:
+        return json.load(f)
+
+
+def _read(path, default=""):
+    try:
+        with open(path) as f:
+            return f.read().strip()
+    except OSError:
+        return default
+
+
+def live_snapshot():
+    pci = []
+    base = "/sys/bus/pci/devices"
+    for slot in sorted(os.listdir(base)) if os.path.isdir(base) else []:
+        d = os.path.join(base, slot)
+        cls = _read(os.path.join(d, "class"))[2:8]
+        boot = _read(os.path.join(d, "boot_vga"), None)
+        pci.append({"slot": slot, "class": cls, "vendor": _read(os.path.join(d, "vendor"))[2:],
+                    "device": _read(os.path.join(d, "device"))[2:], "boot_vga": int(boot) if boot else None})
+    cpu = {}
+    for line in _read("/proc/cpuinfo").splitlines():
+        k, _, v = line.partition(":")
+        k = k.strip()
+        if k == "vendor_id": cpu["vendor"] = v.strip()
+        elif k == "cpu family": cpu["family"] = int(v)
+        elif k == "model" and "model" not in cpu: cpu["model"] = int(v)
+        if len(cpu) == 3: break
+    virt = os.environ.get("ZEXOS_DRIVERS_TEST_VIRT") if TESTING else None
+    if not virt:
+        try:
+            virt = subprocess.run(["systemd-detect-virt", "--vm"], capture_output=True, text=True).stdout.strip() or "none"
+        except OSError:
+            virt = "none"
+    try:
+        chassis = int(_read("/sys/class/dmi/id/chassis_type", "0") or 0)
+    except ValueError:
+        chassis = 0
+    return {"source": "live", "pci": pci, "chassis_type": chassis, "cpu": cpu, "virt": virt}
+
+
+def snapshot(args):
+    path = getattr(args, "snapshot", None) or os.environ.get("ZEXOS_DRIVERS_SNAPSHOT")
+    snap = read_snapshot(path) if path else live_snapshot()
+    if TESTING and os.environ.get("ZEXOS_DRIVERS_TEST_VIRT"):
+        snap["virt"] = os.environ["ZEXOS_DRIVERS_TEST_VIRT"]
+    return snap
+
+
+_NAMES = None
+
+
+def chip_name(vendor, device):
+    """'NVIDIA GeForce RTX 4070' from the PCI ID database, or vendor:device."""
+    global _NAMES
+    if _NAMES is None:
+        _NAMES, cur, want = {}, None, set(GPU_VENDORS) | {"14e4", "14a4", "11ab", "10ec", "1af4", "80ee", "15ad", "1414", "1a03"}
+        try:
+            for line in open(PCI_IDS, encoding="utf-8", errors="replace"):
+                if line.startswith("#") or not line.strip():
+                    continue
+                if not line.startswith("\t"):
+                    cur = line[:4].lower()
+                elif cur in want and not line.startswith("\t\t"):
+                    _NAMES[(cur, line[1:5].lower())] = line[7:].strip()
+        except OSError:
+            pass
+    raw = _NAMES.get((vendor, device))
+    if not raw:
+        return f"{vendor}:{device}"
+    if vendor not in GPU_VENDORS:
+        return raw                      # e.g. "88W8897 [AVASTAR] 802.11ac Wireless": keep it whole
+    m = re.search(r"\[(.+)\]", raw)
+    short = m.group(1) if m else raw
+    prefix = {"10de": "NVIDIA ", "1002": "AMD ", "8086": "Intel "}.get(vendor, "")
+    return (prefix + short) if not short.startswith(prefix.strip()) else short
+
+
+# ---------------------------------------------------------------- matching
+
+def is_gpu(dev):
+    return dev["class"].startswith("03")
+
+
+def nvidia_set(device):
+    if device in load_ids("nvidia-open.ids"):
+        return "nvidia-open"          # Kepler and older (most specific list first)
+    if device in load_ids("nvidia-legacy.ids"):
+        return "nvidia-legacy"        # Maxwell, Pascal, Volta
+    return "nvidia-newest"            # Turing and newer, and cards too new for the lists
+
+
+def intel_set(device):
+    if device in load_ids("intel-old.ids"):
+        return "intel-old"
+    if device in load_ids("intel-media.ids"):
+        return "intel-media"
+    return "intel-vpl"
+
+
+def plan(snap):
+    sets, settings, notes, chips = [], [], [], []
+
+    def add(s):
+        if s not in sets:
+            sets.append(s)
+
+    def setting(s):
+        if s not in settings:
+            settings.append(s)
+
+    virt = (snap.get("virt") or "none").lower()
+    gpus = [d for d in snap.get("pci", []) if is_gpu(d)]
+
+    if virt != "none":
+        # Inside a VM: that VM program's helper tools and no graphics driver set.
+        vm = VM_SETS.get(virt)
+        if vm:
+            add(vm)
+        for d in gpus:
+            chips.append({"slot": d["slot"], "name": chip_name(d["vendor"], d["device"]), "set": vm or ""})
+    else:
+        nvidia = [d for d in gpus if d["vendor"] == "10de"]
+        if nvidia:
+            main = next((d for d in nvidia if d.get("boot_vga") == 1), nvidia[0])
+            main_set = nvidia_set(main["device"])
+            add(main_set)
+            for d in nvidia:
+                s = nvidia_set(d["device"])
+                chips.append({"slot": d["slot"], "name": chip_name("10de", d["device"]), "set": main_set})
+                if s != main_set:
+                    notes.append(f"not covered: {chip_name('10de', d['device'])}")
+            if main_set in ("nvidia-newest", "nvidia-legacy"):
+                setting("nvidia-tweak")
+                setting("early-nouveau-off")
+            if main_set == "nvidia-open" and any(d["device"] in load_ids("nvidia-fermi.ids") for d in nvidia):
+                setting("nouveau-nvboost")
+        for d in gpus:
+            if d["vendor"] == "1002":
+                add("amd")
+                chips.append({"slot": d["slot"], "name": chip_name("1002", d["device"]), "set": "amd"})
+                if d["device"] in load_ids("amd-gcn12.ids"):
+                    setting("amdgpu-si-cik")
+            elif d["vendor"] == "8086":
+                s = intel_set(d["device"])
+                add(s)
+                chips.append({"slot": d["slot"], "name": chip_name("8086", d["device"]), "set": s})
+            elif d["vendor"] != "10de":
+                add("fallback")
+                chips.append({"slot": d["slot"], "name": chip_name(d["vendor"], d["device"]), "set": "fallback"})
+        # Any laptop with an NVIDIA chip, even when only the NVIDIA chip is visible
+        # (a gaming laptop switched to "NVIDIA only") — amendment A1.
+        if nvidia and snap.get("chassis_type") in LAPTOP_CHASSIS:
+            add("hybrid")
+            main_set = nvidia_set(next((d for d in nvidia if d.get("boot_vga") == 1), nvidia[0])["device"])
+            if main_set == "nvidia-newest":
+                turing = load_ids("nvidia-turing.ids")
+                if any(d["device"] in turing for d in nvidia):
+                    setting("nvidia-powerdown")
+                else:
+                    setting("nvidia-powerd")
+        cpu = snap.get("cpu") or {}
+        if cpu.get("vendor") == "GenuineIntel" and cpu.get("family") == 6 and cpu.get("model") in lpmd_models():
+            add("intel-lpmd")
+
+    # Networking (in VMs too: a passed-through Wi-Fi card still needs its driver).
+    for d in snap.get("pci", []):
+        if not d["class"].startswith("02"):
+            continue
+        if d["vendor"] in ("14e4", "14a4") and d["device"] in load_ids("broadcom-wl.ids"):
+            add("broadcom"); setting("broadcom-block-others")
+            chips.append({"slot": d["slot"], "name": chip_name(d["vendor"], d["device"]), "set": "broadcom"})
+        elif d["vendor"] == "11ab":
+            add("marvell")
+            chips.append({"slot": d["slot"], "name": chip_name("11ab", d["device"]), "set": "marvell"})
+        elif d["vendor"] == "10ec" and d["device"] in load_ids("realtek-r8168.ids") and d["class"].startswith("0200"):
+            add("realtek"); setting("realtek-block-r8169")
+            chips.append({"slot": d["slot"], "name": chip_name("10ec", d["device"]), "set": "realtek"})
+
+    table = load_sets()
+    alternatives = {s: list(table.get(s, {}).get("alternatives", [])) for s in sets}
+    packages = []
+    for s in sets:
+        for p in table.get(s, {}).get("packages", []):
+            if p not in packages:
+                packages.append(p)
+    return {"sets": sets, "settings": settings, "notes": notes, "alternatives": alternatives,
+            "packages": packages, "chips": chips}
+
+
+# ---------------------------------------------------------------- install (completed in slices S3/S6)
+
+def installed_kernels(root="/"):
+    out = []
+    mods = os.path.join(root, "usr/lib/modules")
+    for v in sorted(os.listdir(mods)) if os.path.isdir(mods) else []:
+        base = _read(os.path.join(mods, v, "pkgbase"))
+        if base and base not in out:
+            out.append(base)
+    return out or ["linux"]
+
+
+def expand_packages(names, root="/", no32=False):
+    out = []
+    kernels = installed_kernels(root)
+    for p in names:
+        if p == "@kernel:nvidia-open":
+            for k in kernels:
+                if k == "linux":
+                    out.append("nvidia-open")
+                elif k == "linux-lts":
+                    out.append("nvidia-open-lts")
+                else:
+                    out += ["nvidia-open-dkms", f"{k}-headers"]
+        elif p == "@headers":
+            out += [f"{k}-headers" for k in kernels]
+        elif no32 and p.startswith("lib32-"):
+            continue
+        else:
+            out.append(p)
+    return list(dict.fromkeys(out))
+
+
+def multilib_on(root="/"):
+    return re.search(r"^\[multilib\]", _read(os.path.join(root, "etc/pacman.conf")), re.M) is not None
+
+
+def pacman(args, root="/"):
+    cmd = ["pacman", "--noconfirm"] + (["--root", root] if root != "/" else []) + args
+    return subprocess.run(cmd).returncode
+
+
+def cmd_install(args):
+    p = plan(snapshot(args))
+    sets = [s for s in (args.sets.split(",") if args.sets else p["sets"]) if s]
+    table = load_sets()
+    unknown = [s for s in sets if s not in table]
+    if unknown:
+        print(f"unknown driver set(s): {', '.join(unknown)}", file=sys.stderr)
+        return 1
+    no32 = args.no_32bit or not multilib_on()
+    if no32 and any(pk.startswith("lib32-") for s in sets for pk in table[s].get("packages", [])):
+        print("Note: the 32-bit package source is off, so the 32-bit parts (needed by many games) are missing.")
+    names = []
+    for s in sets:
+        names += table[s].get("packages", [])
+    pkgs = expand_packages(names, no32=no32)
+    extra = ["--cachedir", args.from_dir] if args.from_dir else []
+    rc = pacman(["-S", "--needed"] + extra + pkgs)
+    return 0 if rc == 0 else 1
+
+
+def cmd_plan(args):
+    p = plan(snapshot(args))
+    if args.json:
+        print(json.dumps(p))
+    else:
+        for c in p["chips"]:
+            desc = load_sets().get(c["set"], {}).get("desc", "no driver needed")
+            print(f"{c['name']} → {desc}")
+        for n in p["notes"]:
+            print(n)
+    return 0
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(prog="zexos-drivers", description="Find and install the drivers this computer needs.")
+    ap.add_argument("--snapshot", help="use a recorded hardware snapshot instead of this computer")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    for name in ("plan", "status", "check"):
+        sp = sub.add_parser(name)
+        sp.add_argument("--json", action="store_true")
+        sp.add_argument("--snapshot", default=argparse.SUPPRESS)
+    sp = sub.add_parser("install", help="install driver sets")
+    sp.add_argument("--sets", help="comma-separated set ids (default: what plan finds)")
+    sp.add_argument("--from-dir", help="take packages from this folder instead of downloading")
+    sp.add_argument("--no-32bit", action="store_true", help="leave out the 32-bit parts")
+    sp.add_argument("--snapshot")
+    for name, n in (("remove", 1), ("switch", 2)):
+        sp = sub.add_parser(name)
+        sp.add_argument("sets", nargs=n)
+        sp.add_argument("--snapshot", default=argparse.SUPPRESS)
+    args = ap.parse_args(argv)
+    if args.cmd == "plan":
+        return cmd_plan(args)
+    if args.cmd == "install":
+        return cmd_install(args)
+    print(f"zexos-drivers {args.cmd}: not available yet", file=sys.stderr)
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

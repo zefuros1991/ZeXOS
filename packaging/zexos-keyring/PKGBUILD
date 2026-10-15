@@ -1,0 +1,20 @@
+# Maintainer: zefuros1991
+# The public key(s) ZeXOS signs its own packages with, for pacman's keyring.
+# Same layout as Arch's archlinux-keyring: zexos.gpg (public keys),
+# zexos-trusted (fully trusted master keys), zexos-revoked (revoked keys).
+# Key changes: see ROTATION.md.
+pkgname=zexos-keyring
+pkgver=20261015
+pkgrel=1
+pkgdesc="ZeXOS package signing keys"
+arch=(any)
+url="https://github.com/zefuros1991/ZeXOS"
+license=(MIT)
+install=zexos-keyring.install
+
+package() {
+    cd "$startdir"
+    install -Dm644 zexos.gpg "$pkgdir/usr/share/pacman/keyrings/zexos.gpg"
+    install -Dm644 zexos-trusted "$pkgdir/usr/share/pacman/keyrings/zexos-trusted"
+    install -Dm644 zexos-revoked "$pkgdir/usr/share/pacman/keyrings/zexos-revoked"
+}

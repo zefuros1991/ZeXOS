@@ -6,8 +6,9 @@ SigLevel = Optional TrustAll
 Server = file://@LOCALREPO@
 
 # Prebuilt ZeXOS packages (noctalia-zexos, bibata-cursor-zexos, qt6ct-kde,
-# mpvpaper) for the live
-# desktop. The installed system adds this repo itself.
+# mpvpaper) for the live desktop, signed with the ZeXOS key (build.sh puts
+# that key in the build's own keyring). The installed system adds this repo
+# itself.
 [zexos]
-SigLevel = Optional TrustAll
+SigLevel = Required
 Server = https://github.com/zefuros1991/ZeXOS/releases/download/prebuilt

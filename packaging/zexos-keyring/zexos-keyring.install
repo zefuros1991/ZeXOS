@@ -1,0 +1,9 @@
+# Load the ZeXOS keys into pacman's keyring (only once pacman's keyring exists;
+# a brand-new system populates it during setup with `pacman-key --populate`).
+_populate() {
+    if [ -d /etc/pacman.d/gnupg ] && [ -f /etc/pacman.d/gnupg/pubring.gpg -o -f /etc/pacman.d/gnupg/pubring.kbx ]; then
+        pacman-key --populate zexos >/dev/null 2>&1 || echo "zexos-keyring: run 'pacman-key --populate zexos' as root"
+    fi
+}
+post_install() { _populate; }
+post_upgrade() { _populate; }

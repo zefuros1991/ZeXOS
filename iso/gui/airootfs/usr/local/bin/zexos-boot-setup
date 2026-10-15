@@ -37,6 +37,14 @@ linux   /vmlinuz-linux
 initrd  /initramfs-linux-fallback.img
 options $options
 CONF
+# For a graphics card that shows a black screen: basic graphics, NVIDIA's
+# driver kept off.
+cat > "$ROOT/boot/loader/entries/zexos-safe.conf" <<CONF
+title   ZeXOS (safe graphics)
+linux   /vmlinuz-linux
+initrd  /initramfs-linux.img
+options $options nomodeset module_blacklist=nvidia,nvidia_drm,nvidia_modeset,nvidia_uvm
+CONF
 
 arch-chroot "$ROOT" mkinitcpio -P
 arch-chroot "$ROOT" systemctl enable systemd-boot-update.service

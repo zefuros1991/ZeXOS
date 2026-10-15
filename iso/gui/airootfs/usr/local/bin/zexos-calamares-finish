@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Calamares step: installs the ZeXOS desktop into the new system.
-#   zexos-calamares-finish <root> <user> "<compositors>" "<shells>"
-# The last two are the ticked boxes from the picker pages, space separated.
+#   zexos-calamares-finish <root> <user> "<compositors>" "<shells>" "<driver sets>"
+# Then the ticked boxes from the picker pages (space separated) and the
+# Drivers page's chosen sets (comma separated).
 set -euo pipefail
 ROOT="${1:?}" USERNAME="${2:?}"
 
@@ -17,4 +18,6 @@ ZEXOS_COMPOSITORS="$(only_known "niri hyprland mango" "${3:-}")"
 ZEXOS_SHELLS="$(only_known "noctalia dms" "${4:-}")"
 export ZEXOS_COMPOSITORS ZEXOS_SHELLS
 echo "Compositors: $ZEXOS_COMPOSITORS / shells: $ZEXOS_SHELLS"
+# The Drivers page's pick, for zexos-install-into (only known-looking set ids).
+if [[ "${5:-}" =~ ^[a-z0-9,-]+$ ]]; then printf '%s' "$5" > /tmp/zexos-drivers-choice; fi
 exec /usr/local/bin/zexos-install-into "$ROOT" "$USERNAME"

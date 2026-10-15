@@ -1,2 +1,3 @@
 ["/usr/local/bin/zexos-install-into"]="0:0:755"
 ["/usr/local/share/zexos/branding/zexos-branding"]="0:0:755"
+["/usr/local/bin/zexos-broadcom"]="0:0:755"

@@ -55,4 +55,12 @@ for f in pathlib.Path(sys.argv[2]).glob("*"):
     f.write_text(text)
 PY
 
+# The Drivers page reads this computer's scan from a file (QML can't run
+# programs). A recorded snapshot
+# (ZEXOS_DRIVERS_SNAPSHOT, used by tests) replaces the real hardware.
+rm -f /tmp/zexos-drivers-choice
+zexos-drivers plan --json > /tmp/zexos-drivers-plan.json 2>/dev/null ||
+    echo '{"chips": [], "sets": [], "alternatives": {}, "descs": {}, "notes": []}' > /tmp/zexos-drivers-plan.json
+export QML_XHR_ALLOW_FILE_READ=1
+
 exec calamares -d

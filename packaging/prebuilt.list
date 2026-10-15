@@ -10,4 +10,14 @@ mpvpaper 1.9-1 mpvpaper-1.9-1-x86_64.pkg.tar.zst b94417769b261f4b2689a306146be17
 mango-overview 0.1.2-1 mango-overview-0.1.2-1-x86_64.pkg.tar.zst d930bc5c0953cd217dd345c75ca380e4ef9870c5e296728f40128603f908ba7e qt=6.11.2-3
 zexos-gaming-meta 1.0-1 zexos-gaming-meta-1.0-1-any.pkg.tar.zst 8755ffe6dfd1cb28b929695cc9aff1e4a6e275aa56f739233a233562da75b041
 zexos-gaming-applications 1.0-1 zexos-gaming-applications-1.0-1-any.pkg.tar.zst 0dc365360c28675ac92f5935e7a2557827c6d6392e26c4b20ee47e774b003ff2
-zexos.db repo zexos.db 9e09b6eb13366d7103a5860d538988301ef273544877e359447555613ecb9fe3
+zexos-keyring 20261015-1 zexos-keyring-20261015-1-any.pkg.tar.zst 87c378d5db0d9ee918cf42e40060fe0f2de529965655cf53df2040e57fa8af9e
+zexos-drivers 0.1.0-1 zexos-drivers-0.1.0-1-any.pkg.tar.zst 2cdfc78eead6009c1a7ff4d3c9819801be75a52ebe910175987453d22d00dc3d
+nvidia-580xx-dkms 580.178.04-4 nvidia-580xx-dkms-580.178.04-4-x86_64.pkg.tar.zst 51d119f026b25199541b3cb96f8960045b0364a22b0a428e6621debe735ba89b from=nvidia-580xx-utils
+nvidia-580xx-utils 580.178.04-4 nvidia-580xx-utils-580.178.04-4-x86_64.pkg.tar.zst 3fadfb4b4e081eacba4e117a99d76c041bf44137ac5eb3126a03edd4c67cdcea
+opencl-nvidia-580xx 580.178.04-4 opencl-nvidia-580xx-580.178.04-4-x86_64.pkg.tar.zst 542eb9c291fd1a74df1530444a7fcbd49bc8f105e39a7037dc9583714b854346 from=nvidia-580xx-utils
+libxnvctrl-580xx 580.178.04-1 libxnvctrl-580xx-580.178.04-1-x86_64.pkg.tar.zst 6bfad2d63e95df7a6d21e23d2ac3b4a4b3bd4614414dbc827df47d083234dc6f from=nvidia-580xx-settings
+nvidia-580xx-settings 580.178.04-1 nvidia-580xx-settings-580.178.04-1-x86_64.pkg.tar.zst 21d1096ec8863587e2a6a938bfe5ff106fb698eb874106252cded64b6aaf60bf
+lib32-nvidia-580xx-utils 580.178.04-1 lib32-nvidia-580xx-utils-580.178.04-1-x86_64.pkg.tar.zst ebc532020eef0ff1e6f190f9c490c04379ba69f69196e7ef77fe309f1ac1b493
+lib32-opencl-nvidia-580xx 580.178.04-1 lib32-opencl-nvidia-580xx-580.178.04-1-x86_64.pkg.tar.zst 33ec2c61963dbd6009d4337b33197514cf95ef3205645443698ed4e72c8370d8 from=lib32-nvidia-580xx-utils
+r8168-dkms 8.057.00-2 r8168-dkms-8.057.00-2-x86_64.pkg.tar.zst 3739e70207b947a3f6ee14a449f2e1e85df6c5d5556d37269703f460051db14e
+zexos.db repo zexos.db dcf8fbcd61e4da93fa162822768063ed71da0791c6810bd330b2c3a0363273ec

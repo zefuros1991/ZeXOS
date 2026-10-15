@@ -1,11 +1,13 @@
 # Written by scripts/make-prebuilt.sh -- don't edit by hand.
 # Files: https://github.com/zefuros1991/ZeXOS/releases/tag/prebuilt
 # name version file sha256 [built against Qt]
-noctalia-zexos 5.1.0-2 noctalia-zexos-5.1.0-2-x86_64.pkg.tar.zst 8f347829137a708c3b0d2218449247e8bdfbbc0a965e400cb3c0a5f7259fc9e4
+noctalia-zexos 5.1.0-3 noctalia-zexos-5.1.0-3-x86_64.pkg.tar.zst d64d9d01800764b844c78df4faffa7bee4e59e730ade1d3f16a13938b2584815
 pixie-sddm-zexos 3.0-3 pixie-sddm-zexos-3.0-3-any.pkg.tar.zst 1d5a4e274ade63c5e9e09bb5dd25d2661f347557d60f2bcee3d015fc4e966488
 bibata-cursor-zexos 2.0.7-1 bibata-cursor-zexos-2.0.7-1-any.pkg.tar.zst 77ab31fc78eb1518cad4c962d8e92131013f6debb6a3fcfdd18dde0d5f7cd34b
 qt6ct-kde 0.11-11 qt6ct-kde-0.11-11-x86_64.pkg.tar.zst f0c944ed9a5202c54348e4689142bc1b0fab06b4178314810de75e187dea5c09 qt=6.11.2-3
 roller 0.1.0.r4.g184debe-5 roller-0.1.0.r4.g184debe-5-x86_64.pkg.tar.zst bf067d138b887d290733c487bdca815a4a394bb5fb8b051b102f58ca5768373a
 mpvpaper 1.9-1 mpvpaper-1.9-1-x86_64.pkg.tar.zst b94417769b261f4b2689a306146be17a1bd1b595f32294cb8dd5d63051d5f070
 mango-overview 0.1.2-1 mango-overview-0.1.2-1-x86_64.pkg.tar.zst d930bc5c0953cd217dd345c75ca380e4ef9870c5e296728f40128603f908ba7e qt=6.11.2-3
-zexos.db repo zexos.db dbac18821dd69ec139b56fb196b3ee65988128d5845730c8a8271786a8cea4e9
+zexos-gaming-meta 1.0-1 zexos-gaming-meta-1.0-1-any.pkg.tar.zst 8755ffe6dfd1cb28b929695cc9aff1e4a6e275aa56f739233a233562da75b041
+zexos-gaming-applications 1.0-1 zexos-gaming-applications-1.0-1-any.pkg.tar.zst 0dc365360c28675ac92f5935e7a2557827c6d6392e26c4b20ee47e774b003ff2
+zexos.db repo zexos.db 9e09b6eb13366d7103a5860d538988301ef273544877e359447555613ecb9fe3

@@ -51,8 +51,20 @@ Server = https://geo.mirror.pkgbuild.com/$repo/os/$arch
 Server = https://fastly.mirror.pkgbuild.com/$repo/os/$arch
 EOF
 mkdir -p "$WORK/pkg-cache"
+# Signatures are checked against a keyring of the build's own: Arch's keys
+# plus the ZeXOS key (packaging/zexos-keyring), never the build computer's
+# keyring, which may trust other distros' keys.
+GPGDIR="$WORK/gnupg"
+rm -rf "$GPGDIR"
+pacman-key --gpgdir "$GPGDIR" --init >/dev/null 2>&1
+pacman-key --gpgdir "$GPGDIR" --populate archlinux >/dev/null 2>&1
+pacman-key --gpgdir "$GPGDIR" --add "$here/../packaging/zexos-keyring/zexos.gpg" >/dev/null 2>&1
+while IFS=: read -r fpr _; do
+    [ -n "$fpr" ] && pacman-key --gpgdir "$GPGDIR" --lsign-key "$fpr" >/dev/null 2>&1
+done < "$here/../packaging/zexos-keyring/zexos-trusted"
 sed -i -e "s|^Include = /etc/pacman.d/mirrorlist|Include = $WORK/mirrorlist|" \
-    -e "s|^#CacheDir .*|CacheDir = $WORK/pkg-cache/|" "$profile/pacman.conf"
+    -e "s|^#CacheDir .*|CacheDir = $WORK/pkg-cache/|" \
+    -e "s|^#GPGDir .*|GPGDir = $GPGDIR/|" "$profile/pacman.conf"
 
 # Files: common ones first, then the variant's own.
 for part in common "$variant"; do

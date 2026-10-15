@@ -134,6 +134,8 @@ drop_replaced() {
 }
 PREBUILT_LIST="$REPO_ROOT/packaging/prebuilt.list"
 PREBUILT_URL="https://github.com/zefuros1991/ZeXOS/releases/download/prebuilt"
+# ZeXOS signs every one of its packages with this key (packaging/zexos-keyring).
+ZEXOS_KEY_FPR="A7806D3AD3119C44D4C1D4228DCA6BDAF6F88F95"
 
 install_prebuilt() {
     local pkg=$1 old=${2:-} want name ver file sum extra helper dl
@@ -581,8 +583,10 @@ one_by_one() {
 # (zexos.db). With that added to /etc/pacman.conf, pacman fetches them in
 # the same run as everything else, and updates them with the rest of the
 # system later (pacman -Syu), like any repo.
-# Trust: zexos.db must match the checksum in packaging/prebuilt.list, and
-# zexos.db holds each package's checksum, which pacman checks in turn. If
+# Trust: every ZeXOS package and the list itself are signed with the ZeXOS
+# key, and pacman refuses anything unsigned or tampered with (SigLevel =
+# Required). The key comes in the zexos-keyring package, whose checksum is in
+# packaging/prebuilt.list and whose key must have the fingerprint above. If
 # anything's off, the repo is taken out again and install_prebuilt (above)
 # fetches the files one by one instead.
 remove_zexos_repo() {
@@ -591,10 +595,45 @@ remove_zexos_repo() {
     sudo rm -f /var/lib/pacman/sync/zexos.db /var/lib/pacman/sync/zexos.files
 }
 
+# Make pacman trust the ZeXOS key: install zexos-keyring from the release,
+# checked against prebuilt.list, after making sure its key is the right one.
+zexos_key_trusted() {
+    sudo pacman-key --list-keys "$ZEXOS_KEY_FPR" >/dev/null 2>&1 &&
+        sudo pacman-key --list-sigs "$ZEXOS_KEY_FPR" 2>/dev/null | grep -q 'Pacman Keyring Master Key'
+}
+setup_zexos_key() {
+    zexos_key_trusted && return 0
+    local name ver file sum extra tmp fpr
+    read -r name ver file sum extra < <(grep '^zexos-keyring ' "$PREBUILT_LIST" 2>/dev/null) || return 1
+    tmp=$(mktemp -d) || return 1
+    curl -fsSL --retry 3 -o "$tmp/$file" "$PREBUILT_URL/$file" &&
+        echo "$sum  $tmp/$file" | sha256sum -c --quiet - || { rm -rf "$tmp"; return 1; }
+    bsdtar -xf "$tmp/$file" -C "$tmp" usr/share/pacman/keyrings/zexos.gpg 2>/dev/null || { rm -rf "$tmp"; return 1; }
+    fpr=$(gpg --homedir "$tmp" --show-keys --with-colons "$tmp/usr/share/pacman/keyrings/zexos.gpg" 2>/dev/null |
+          awk -F: '/^fpr/ {print $10; exit}')
+    [ "$fpr" = "$ZEXOS_KEY_FPR" ] || { echo -e "${RED}✖ ZeXOS keyring has an unexpected key${RESET}"; rm -rf "$tmp"; return 1; }
+    sudo pacman -U --noconfirm "$tmp/$file" >/dev/null 2>&1 && sudo pacman-key --populate zexos >/dev/null 2>&1
+    rm -rf "$tmp"
+    zexos_key_trusted
+}
+
 if [ "$ZEXOS_PACKAGES" = prebuilt ]; then
-    if ! grep -q '^\[zexos\]' /etc/pacman.conf; then
-        printf '\n# ZeXOS ready-made packages (added by ZeXOS install.sh)\n[zexos]\nSigLevel = Optional TrustAll\nServer = %s\n' \
-            "$PREBUILT_URL" | sudo tee -a /etc/pacman.conf >/dev/null
+    if setup_zexos_key; then
+        echo -e "${GREEN}✔ ZeXOS's signing key is trusted (${ZEXOS_KEY_FPR: -16})${RESET}"
+        # An older ZeXOS added the repo without signature checks: replace it.
+        grep -A1 '^\[zexos\]' /etc/pacman.conf | grep -q 'Optional TrustAll' && remove_zexos_repo
+        if ! grep -q '^\[zexos\]' /etc/pacman.conf; then
+            sudo tee -a /etc/pacman.conf >/dev/null <<ZEXOSREPO
+
+# ZeXOS ready-made packages (added by ZeXOS install.sh)
+[zexos]
+SigLevel = Required
+Server = $PREBUILT_URL
+ZEXOSREPO
+        fi
+    else
+        echo -e "${YELLOW}⚠ Couldn't set up ZeXOS's signing key, using the slower way${RESET}"
+        remove_zexos_repo
     fi
 else
     remove_zexos_repo

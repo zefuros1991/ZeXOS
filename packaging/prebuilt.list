@@ -19,5 +19,5 @@ nvidia-580xx-settings 580.178.04-1 nvidia-580xx-settings-580.178.04-1-x86_64.pkg
 lib32-nvidia-580xx-utils 580.178.04-1 lib32-nvidia-580xx-utils-580.178.04-1-x86_64.pkg.tar.zst ebc532020eef0ff1e6f190f9c490c04379ba69f69196e7ef77fe309f1ac1b493
 lib32-opencl-nvidia-580xx 580.178.04-1 lib32-opencl-nvidia-580xx-580.178.04-1-x86_64.pkg.tar.zst 33ec2c61963dbd6009d4337b33197514cf95ef3205645443698ed4e72c8370d8 from=lib32-nvidia-580xx-utils
 r8168-dkms 8.057.00-2 r8168-dkms-8.057.00-2-x86_64.pkg.tar.zst 3739e70207b947a3f6ee14a449f2e1e85df6c5d5556d37269703f460051db14e
-zexos-drivers 0.3.0-1 zexos-drivers-0.3.0-1-any.pkg.tar.zst 11fc62206749a1cc0c7f339a10b626896cdd8ddabc349df48bd8228383832388
-zexos.db repo zexos.db 056708c4ed1ac03cf7a9144d1e776360b0a7f57e9f04394dc1e6206fcc6a06bd
+zexos-drivers 0.3.1-1 zexos-drivers-0.3.1-1-any.pkg.tar.zst 773bc845881c4388973df29fe820c6b64edcf236e39fc7d3f04efdc56082781a
+zexos.db repo zexos.db f0c96bbf24d7443148ac3951a665ced28a90a1c56f93eafc8f56b8cd394d780c

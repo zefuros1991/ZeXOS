@@ -470,8 +470,11 @@ class Welcome(QMainWindow):
         for b in self.care_buttons:
             b.setMinimumWidth(0)
         w = max(b.sizeHint().width() for b in self.care_buttons)
+        h = max(b.sizeHint().height() for b in self.care_buttons)
         for b in self.care_buttons:
-            b.setFixedWidth(w)
+            # height too: a page that hasn't been shown yet isn't laid out, so its buttons would
+            # otherwise have no real size until it is (Drivers' button must match System care's)
+            b.setFixedSize(w, h)
 
     def restyle(self):
         pal = QApplication.palette()

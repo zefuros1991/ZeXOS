@@ -462,6 +462,12 @@ echo -e "\n${YELLOW}==> [1/4] BOOTSTRAP${RESET}"
 
 bash "$TARGET/scripts/bootstrap.sh"
 
+# Bootstrap removes a leftover ~/ZeXOS clone. Started from inside one ("git
+# clone … && cd ZeXOS && ./install.sh"), this shell would keep standing in a
+# folder that no longer exists, and stow then fails for every package. Work
+# from the real copy instead.
+cd "$TARGET" 2>/dev/null || cd "$HOME"
+
 # -----------------------------
 
 # PACKAGES

@@ -971,7 +971,13 @@ if ! command -v zexos-drivers >/dev/null 2>&1; then
     echo -e "${YELLOW}⚠ zexos-drivers didn't install, so drivers weren't checked${RESET}"
 elif zexos_is_real_arch; then
     zexos-drivers status 2>/dev/null | sed 's/^/  /'
-    if sudo zexos-drivers install; then
+    # sudo drops the environment; pass on the test settings (recorded hardware, forced
+    # failures) only when they are set, so a normal install is unchanged.
+    drv_env=()
+    for v in ZEXOS_DRIVERS_SNAPSHOT ZEXOS_DRIVERS_TESTING ZEXOS_DRIVERS_TEST_FAIL ZEXOS_DRIVERS_TEST_VIRT; do
+        [ -n "${!v:-}" ] && drv_env+=("$v=${!v}")
+    done
+    if sudo env "${drv_env[@]}" zexos-drivers install; then
         echo -e "${GREEN}✔ Drivers ready (they work after a restart)${RESET}"
     else
         echo -e "${RED}✖ Some drivers couldn't be installed (see above). The desktop still starts with the open-source driver.${RESET}"

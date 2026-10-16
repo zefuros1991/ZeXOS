@@ -2,7 +2,7 @@
 # ZeXOS's hardware scan and driver installer (spec 001-hardware-drivers).
 # Built from this folder as it is (scripts/make-prebuilt.sh copies it in whole).
 pkgname=zexos-drivers
-pkgver=0.3.0
+pkgver=0.3.1
 pkgrel=1
 pkgdesc="Finds which drivers this computer needs and installs them (ZeXOS)"
 arch=(any)

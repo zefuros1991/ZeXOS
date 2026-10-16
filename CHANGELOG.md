@@ -83,7 +83,10 @@ New work is tested on the `beta` branch first and is listed under
   installed systems: basic graphics for cards that show a black screen.
 - Broadcom Wi-Fi works on the USB stick itself, before installing.
 - Every ZeXOS package is now signed with the ZeXOS key (`zexos-keyring`), and
-  computers refuse unsigned or changed ZeXOS packages.
+  computers refuse unsigned or changed ZeXOS packages. **Installed before
+  this?** If `pacman -Syu` stops with "key A7806D3A… is unknown", run ZeXOS's
+  `install.sh` once more: it adds the key and switches the ZeXOS source to
+  signed packages.
 
 ### Fixed
 

@@ -357,7 +357,8 @@ def enable_multilib():
             f.write(new)
     except OSError:
         return False
-    return run(["pacman", "-Sy", "--noconfirm"])[0] == 0 and multilib_on()
+    # the new source's list has to be fetched; a full upgrade with it, never a bare -Sy (see online())
+    return run(["pacman", "-Syu", "--noconfirm"])[0] == 0 and multilib_on()
 
 
 def test_fail(kind, set_id):
@@ -372,8 +373,15 @@ def busy_reason():
 
 
 def online():
-    rc, _ = run(["pacman", "-Sy", "--noconfirm"])
-    return rc == 0
+    """Can the package source be reached? Asked without refreshing pacman's package lists: a
+    refresh with no full upgrade after it leaves a half-updated system (Arch calls that a partial
+    upgrade and doesn't support it)."""
+    for line in _read("/etc/pacman.d/mirrorlist").splitlines():
+        m = re.match(r"\s*Server\s*=\s*(\S+)", line)
+        if m:
+            url = m.group(1).replace("$repo", "core").replace("$arch", "x86_64") + "/core.db"
+            return run(["curl", "-fsI", "--max-time", "10", url])[0] == 0
+    return True     # no mirror list to ask: let pacman try and say what went wrong
 
 
 def kernels_with_failed_legacy():
@@ -432,19 +440,23 @@ def write_boot_entries(sets):
         return
     base = _read(main)
     safe = os.path.join(entries, "zexos-safe.conf")
-    if not os.path.exists(safe):
-        s = re.sub(r"^title .*$", "title   ZeXOS (safe graphics)", base, flags=re.M)
-        s = re.sub(r"^(options .*?)( quiet| splash)*[ \t]*$", lambda m: re.sub(r" (quiet|splash)\b", "", m.group(1)) + " " + SAFE_OPTIONS,
+    # archinstall writes its entries with tabs ("title\tArch Linux (linux)"): match any space.
+    # An entry from zexos-drivers 0.3.0 missed that and copied the normal entry: rewrite it.
+    if not os.path.exists(safe) or "safe graphics" not in _read(safe):
+        s = re.sub(r"^#.*\n?", "", base, flags=re.M)
+        s = re.sub(r"^title\s.*$", "title   ZeXOS (safe graphics)", s, flags=re.M)
+        s = re.sub(r"^(options\s.*?)[ \t]*$", lambda m: re.sub(r"\s(quiet|splash)\b", "", m.group(1)) + " " + SAFE_OPTIONS,
                    s, flags=re.M)
-        s = re.sub(r"^sort-key .*\n", "", s, flags=re.M)
+        s = re.sub(r"^sort-key\s.*\n?", "", s, flags=re.M)
         with open(safe, "w") as f:
-            f.write(s + "\n")
+            f.write(s.strip() + "\n")
     if "nvidia-legacy" in sets and os.path.exists("/boot/vmlinuz-linux-lts"):
-        lts = re.sub(r"vmlinuz-linux\b", "vmlinuz-linux-lts", base)
+        lts = re.sub(r"^#.*\n?", "", base, flags=re.M)
+        lts = re.sub(r"vmlinuz-linux\b", "vmlinuz-linux-lts", lts)
         lts = re.sub(r"initramfs-linux\.img", "initramfs-linux-lts.img", lts)
-        lts = re.sub(r"^title .*$", "title   ZeXOS (backup kernel)", lts, flags=re.M)
+        lts = re.sub(r"^title\s.*$", "title   ZeXOS (backup kernel)", lts, flags=re.M)
         with open(os.path.join(entries, "zexos-lts.conf"), "w") as f:
-            f.write(lts + "\n")
+            f.write(lts.strip() + "\n")
 
 
 def apply_set(sid, table, no32, from_dir, log):
@@ -477,8 +489,11 @@ def apply_set(sid, table, no32, from_dir, log):
         for svc in s.get("services", []):
             run(["systemctl", "enable", svc])
         if sid == "nvidia-legacy":
+            # At install time the main kernel must have the driver, or the normal start entry would
+            # come up without it: undo and fall back to the open-source driver. (A later kernel
+            # update that breaks only one kernel is handled by legacy-check + the backup entry.)
             status = legacy_build_status()
-            if status and all(v == "failed" for v in status.values()):
+            if status.get("linux") == "failed" or (status and all(v == "failed" for v in status.values())):
                 raise RuntimeError("the driver could not be built")
     except RuntimeError:
         for path in written:

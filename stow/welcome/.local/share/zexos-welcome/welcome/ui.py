@@ -783,7 +783,13 @@ class Welcome(QMainWindow):
                 rl.addWidget(label(desc + ("" if on else "  ·  not installed"), muted=True))
             self.chip_rows.addWidget(row)
         fails = [f for f in st.get("failures", []) if not st.get("ack", True)]
-        if fails:   # red until it is fixed or Check again shows where things stand now
+        builds = st.get("legacy_builds", {})
+        if builds.get("linux") == "failed":   # a kernel update the legacy driver couldn't be rebuilt for
+            backup = ' Pick "ZeXOS (backup kernel)" in the start menu for full graphics.' \
+                if builds.get("linux-lts") == "ok" else ""
+            self.drivers_note("Driver rebuild failed", "bad", "The legacy NVIDIA driver couldn't be rebuilt after "
+                              "the last kernel update, so this kernel uses basic graphics." + backup)
+        elif fails:   # red until it is fixed or Check again shows where things stand now
             f = fails[-1]
             d = descs.get(f["set"], f["set"])
             self.drivers_note("Driver install failed", "bad", f"The {d} couldn't be installed ({f['reason']}). "

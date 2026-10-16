@@ -1,8 +1,13 @@
 # Changing the ZeXOS signing key (rotation)
 
-The current key's fingerprint is in `zexos-trusted`. Systems trust it fully
-(`pacman-key --populate zexos` locally signs it). A new key is trusted because
-the old, trusted key signs it — the same web of trust Arch uses for packagers.
+The current key's fingerprint is in `zexos-trusted`. Systems trust a key
+because it is listed there: `pacman-key --populate zexos` signs every listed key
+locally. So a new key is trusted once a `zexos-keyring` update lists it — and
+that update can only be installed because it is signed with the old key, which
+is what carries the trust over. (The old key also signs the new one, step 2, so
+anyone can check by hand that it really comes from ZeXOS. On its own that
+signature is not enough for pacman: `:4:` in `zexos-trusted` means "marginal"
+trust, and pacman wants three marginal signers, like Arch's packager keys.)
 
 1. Create the new key on the maintainer's computer (passphrase, offline backup
    on the Ventoy USB, as the first key).

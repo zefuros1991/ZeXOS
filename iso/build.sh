@@ -100,6 +100,20 @@ sed -i \
 grep -rl "Arch Linux install medium" "$profile/efiboot" "$profile/syslinux" "$profile/grub" 2>/dev/null \
     | xargs -r sed -i "s/Arch Linux install medium/ZeXOS installer ($variant)/g"
 
+# Packing the live system is most of the build time. Test ISOs (any branch
+# but main) use zstd: several times faster to make, a somewhat bigger file.
+# Release ISOs keep Arch's xz, the smallest download. ZEXOS_ISO_COMPRESS=
+# fast|small picks one by hand.
+COMPRESS="${ZEXOS_ISO_COMPRESS:-}"
+[ -n "$COMPRESS" ] || { [ "$BRANCH" = main ] && COMPRESS=small || COMPRESS=fast; }
+if [ "$COMPRESS" = fast ]; then
+    sed -i "s|^airootfs_image_tool_options=.*|airootfs_image_tool_options=('-comp' 'zstd' '-Xcompression-level' '6' '-b' '1M')|" \
+        "$profile/profiledef.sh"
+    sed -i -e 's|^COMPRESSION=.*|COMPRESSION="zstd"|' -e 's|^COMPRESSION_OPTIONS=.*|COMPRESSION_OPTIONS=(-T0 -6)|' \
+        "$profile/airootfs/etc/mkinitcpio.conf.d/archiso.conf"
+fi
+echo "Packing: $COMPRESS ($( [ "$COMPRESS" = fast ] && echo zstd || echo xz ))"
+
 mkarchiso -v -r -w "$WORK/work-$variant" -o "$OUT" "$profile"
 chown "$owner" "$OUT"/zexos-"$variant"-*.iso
 ls -lh "$OUT"/zexos-"$variant"-*.iso

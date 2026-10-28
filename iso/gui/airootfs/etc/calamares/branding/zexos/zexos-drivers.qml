@@ -19,6 +19,11 @@ Rectangle {
     height: parent.height
     color: "#0f0f14"
 
+    // Enter goes on to the next page, like Calamares' own Next.
+    focus: true
+    Keys.onReturnPressed: if (ViewManager.nextEnabled) ViewManager.next()
+    Keys.onEnterPressed: if (ViewManager.nextEnabled) ViewManager.next()
+
     property var plan: ({ chips: [], sets: [], alternatives: {}, descs: {}, notes: [] })
     property var picks: ({})          // chip slot -> chosen set
     property bool loaded: false
@@ -79,15 +84,23 @@ Rectangle {
     Component.onCompleted: load()
     function onActivate() { if (!loaded) load() }
 
-    ColumnLayout {
+    // Like the Partitions page: one block of easy-to-read width in the
+    // middle of the page, with the "change it later" line under it.
+    Item {
         anchors.fill: parent
         anchors.margins: 28
-        spacing: 12
+
+    ColumnLayout {
+        width: Math.min(820, parent.width)
+        anchors.horizontalCenter: parent.horizontalCenter
+        anchors.verticalCenter: parent.verticalCenter
+        anchors.verticalCenterOffset: -footer.height / 2
+        spacing: 14
 
         Text {
             text: "Drivers"
             color: "#ffffff"
-            font.pixelSize: 26
+            font.pixelSize: 30
             font.weight: Font.DemiBold
         }
         Text {
@@ -95,7 +108,7 @@ Rectangle {
             wrapMode: Text.WordWrap
             text: "ZeXOS looked at this computer's graphics, Wi-Fi and network chips and picked a driver for each. Where another driver can work, you can choose it."
             color: "#9a9ab0"
-            font.pixelSize: 14
+            font.pixelSize: 16
         }
 
         Repeater {
@@ -125,7 +138,7 @@ Rectangle {
                         elide: Text.ElideRight
                         text: modelData.name + "  →  " + page.desc(page.picks[modelData.slot])
                         color: "#e6e6ef"
-                        font.pixelSize: 17
+                        font.pixelSize: 19
                         font.weight: Font.DemiBold
                     }
                     Flow {
@@ -138,7 +151,7 @@ Rectangle {
                                 required property var modelData
                                 property bool on: page.picks[card.slot] === modelData
                                 width: label.implicitWidth + 28
-                                height: 32
+                                height: 36
                                 radius: 8
                                 color: on ? "#7C5CFF" : (ma.containsMouse ? "#20202c" : "transparent")
                                 border.width: 2
@@ -148,7 +161,7 @@ Rectangle {
                                     anchors.centerIn: parent
                                     text: page.desc(modelData)
                                     color: "#ffffff"
-                                    font.pixelSize: 13
+                                    font.pixelSize: 15
                                 }
                                 MouseArea {
                                     id: ma
@@ -168,7 +181,7 @@ Rectangle {
             visible: page.loaded && page.plan.chips.length === 0
             text: "No extra drivers are needed on this computer."
             color: "#e6e6ef"
-            font.pixelSize: 15
+            font.pixelSize: 17
         }
         Repeater {
             // Follows the picks: the laptop extras go away with the open-source driver.
@@ -177,7 +190,7 @@ Rectangle {
                 required property var modelData
                 text: "Also: " + page.desc(modelData)
                 color: "#a78bfa"
-                font.pixelSize: 13
+                font.pixelSize: 15
             }
         }
         Repeater {
@@ -188,16 +201,20 @@ Rectangle {
                 wrapMode: Text.WordWrap
                 text: modelData
                 color: "#f5a97f"
-                font.pixelSize: 12
+                font.pixelSize: 14
             }
         }
-        Item { Layout.fillHeight: true }
+    }
         Text {
-            Layout.fillWidth: true
+            id: footer
+            width: Math.min(820, parent.width)
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.bottom: parent.bottom
             wrapMode: Text.WordWrap
+            horizontalAlignment: Text.AlignHCenter
             text: "Drivers can be changed later in ZeXOS - Welcome → Drivers, or with the zexos-drivers command."
             color: "#6a6a80"
-            font.pixelSize: 12
+            font.pixelSize: 13
         }
     }
 }

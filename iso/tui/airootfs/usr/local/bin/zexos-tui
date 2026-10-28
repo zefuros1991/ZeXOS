@@ -1,172 +1,569 @@
 #!/usr/bin/env bash
-# The ZeXOS text installer: the menu on the first screen of the TUI ISO.
+# The ZeXOS text installer: what the ISO shows when "ZeXOS (text installer)"
+# is picked in the boot menu.
 #
-# "Install ZeXOS" asks a few plain questions (keyboard, account, time zone,
-# disk, encryption, desktop), shows them all on one screen to check, then
-# does the rest by itself: archinstall sets up Arch from a config written
-# here (it never shows its own menus), and zexos-install-into puts ZeXOS
-# on it before the first boot.
+# Modelled on Omarchy's installer: the ZeXOS logo on every screen, one short
+# question per screen with a grey hint under the box, a summary to check,
+# then a calm install screen (logo, progress bar, what it is doing, tips;
+# V shows the live output). The look follows the design agreed on
+# claude.ai/artifact/TCaN8n7TQJNqWiDCLK53UV.
+#
+# Under the screens it does what it always did: archinstall sets up Arch from
+# a config written here (it never shows its own menus), then
+# zexos-install-into puts ZeXOS on it before the first boot.
 #
 # Testing, or installing the same way on many machines:
 #   zexos-tui --answers FILE [--dry-run]
 # FILE sets KEYMAP USERNAME PASSWORD HOSTNAME TIMEZONE DISK ENCRYPT
-# COMPOSITORS SHELLS (and optionally DRIVERS, the driver sets as
-# "a,b"; unset = what the scan picks) as shell variables; the questions are skipped. With
-# --dry-run it only writes the archinstall files to /tmp/zexos and stops.
+# COMPOSITORS SHELLS (and optionally FULLNAME, and DRIVERS, the driver sets
+# as "a,b"; unset = what the scan picks) as shell variables; the questions
+# are skipped. With --dry-run it only writes the archinstall files to
+# /tmp/zexos and stops.
+#   zexos-tui --demo   the screens without touching any disk (for testing)
 
-TITLE="ZeXOS installer"
-PRESET=/etc/zexos/archinstall.json
+export LC_ALL=C.UTF-8
 ROOT=/mnt
 WORK=/tmp/zexos
 LOG=/var/log/zexos-install.log
+AILOG=/var/log/archinstall/install.log
 
 # The answers, with their defaults.
 KEYMAP=us
+FULLNAME=
 USERNAME=
 PASSWORD=
-HOSTNAME=zexos
+HOSTNAME=
 TIMEZONE=
 DISK=
-ENCRYPT=yes
+ENCRYPT=no      # like the window installer: no disk password at every start
 COMPOSITORS="niri hyprland mango"
 SHELLS="noctalia dms"
 WIFI_SSID=
 WIFI_PASS=
+WIFI_DONE=      # Wi-Fi step passed (or not needed: online by cable)
 DRIVERS=        # chosen driver sets ("a,b"); empty = what the scan picks
 DRIVER_PICKS=() # chip slot=set, for chips with a choice
-DRIVER_LINES=   # the picks in words, for the review screen
+DRIVER_LINES=   # the picks in words, for the summary
+DEMO=
 
-msg() { whiptail --title "$TITLE" --msgbox "$1" 0 0; }
-# whiptail draws on the terminal and answers on stderr: swap them.
-ask() { whiptail --title "$TITLE" "$@" 3>&1 1>&2 2>&3; }
+# ---------------------------------------------------------------- the look
 
-online() { curl -fsI --max-time 8 https://github.com >/dev/null 2>&1; }
+# The console's 16 colours, set at start like Omarchy sets its own theme:
+# the interface colours (0-8, 13, 15) and the logo's seven shades from
+# violet to green (5, 9, 12, 11, 14, 10, 2), none of them pink. Only 0-7
+# can be backgrounds on the Linux console, so the selected row (4) and the
+# plain button (6) live there.
+PALETTE=(0f0f14 ff6b81 3ddc97 f5a97f 2a2540 7c5cff 2a2a38 e6e6ef
+         6a6a80 6d6cf6 3fc4ae 4d97d9 5d80ea a78bfa 43aec4 ffffff)
+SHADES=(5 9 12 11 14 10 2)
+set_palette() {
+    local i
+    for i in "${!PALETTE[@]}"; do
+        if [ "$TERM" = linux ]; then printf '\e]P%X%s' "$i" "${PALETTE[i]}"
+        else printf '\e]4;%d;#%s\a' "$i" "${PALETTE[i]}"; fi
+    done
+    [ "$TERM" = linux ] && printf '\e[37;40m\e[8]'   # make the new colours the default
+}
+reset_palette() { [ "$TERM" = linux ] && printf '\e]R'; printf '\e[0m'; }
 
-# Wi-Fi: pick a network from a list, type its password.
-wifi() {
-    local dev nets=() line ssid
-    dev=$(iwctl device list 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | awk '$0 ~ /station/ { print $1; exit }')
-    if [ -z "$dev" ]; then
-        msg "No Wi-Fi card found. Plug in a network cable instead (it works by itself)."
-        return 1
+fg() { local n=$1; [ "$n" -lt 8 ] && printf '\e[3%dm' "$n" || printf '\e[9%dm' $((n - 8)); }
+bg() { printf '\e[4%dm' "$1"; }
+R=$'\e[0m'; B=$'\e[1m'
+C_RED=$(fg 1) C_GREEN=$(fg 2) C_AMBER=$(fg 3) C_VIOLET=$(fg 5) C_FG=$(fg 7)
+C_DIM=$(fg 8) C_LIGHT=$(fg 13) C_WHITE=$(fg 15)
+BTN_ON="$(bg 5)$(fg 15)$B" BTN_OFF="$(bg 6)$(fg 7)" SEL="$(bg 4)$(fg 15)"
+CURSOR="$(bg 7)$(fg 0) $R"
+
+# The logo, made from docs/logo/zexos-logo-dark.svg: the mark as the Z, then
+# e, X, O, S, all with the same stroke. 9 rows of block characters.
+LOGO=(
+'▄████████████████▄                      ████▄     ▄████      ▄▄██████▄▄        ▄▄▄▄███▄▄▄▄'
+'▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀                       ████▄   ▄████     ▄████████████▄    ▄█████████████▄'
+'            ▄▄▄▄▄▄       ▄▄██████▄▄       ▀████▄████▀     ▄███▀      ▀███▄   ████▀     ▀████▄'
+'            ▀▀▀▀▀▀      ████▀▀▀▀████       ▀███████▀      ████        ████   █████▄▄▄▄▄▄▄'
+'      ██████           ████      ████        █████        ████        ████    ▀████████████▄▄'
+'▄▄▄▄▄▄                 ██████████████      ▄███████▄      ████        ████        ▀▀▀▀▀▀█████'
+'▀▀▀▀▀▀                 ████               ▄████▀████▄     ▀███▄      ▄███▀   ████▄▄     ▄████'
+'▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄▄      ████▄▄▄▄████     ████▀   ▀████     ▀████████████▀     ██████████████'
+'▀████████████████▀       ▀▀██████▀▀     ████▀     ▀████      ▀▀██████▀▀         ▀▀▀████▀▀▀'
+)
+LOGO_W=0
+for _l in "${LOGO[@]}"; do [ ${#_l} -gt $LOGO_W ] && LOGO_W=${#_l}; done
+# One logo row in its colours; SHIFT moves the shades (the finish shimmer).
+SHIFT=0
+logo_row() {
+    local r=$1 row=${LOGO[$1]} out="" last=-1 i ch s n=${#SHADES[@]}
+    for (( i = 0; i < ${#row}; i++ )); do
+        ch=${row:i:1}
+        if [ "$ch" = " " ]; then out+=" "; continue; fi
+        s=$(( (i * 10 + r * 24) * n / (LOGO_W * 10 + 9 * 24) ))
+        s=$(( (s + SHIFT) % (2 * n - 2) )); [ $s -ge $n ] && s=$(( 2 * n - 2 - s ))
+        [ $s -ne $last ] && { out+=$(fg "${SHADES[s]}"); last=$s; }
+        out+=$ch
+    done
+    REPLY="$out$R"
+}
+
+# Screen size, read at every redraw (a VM's console can grow after boot).
+size() { COLS=$(tput cols 2>/dev/null || echo 100); ROWS=$(tput lines 2>/dev/null || echo 32);
+         BIG=1; [ "$COLS" -lt $((LOGO_W + 4)) ] || [ "$ROWS" -lt 28 ] && BIG=;
+         PAD=$(( BIG ? (COLS - LOGO_W) / 2 : 2 )); [ $PAD -lt 2 ] && PAD=2; }
+# Waits until the console stops changing size (it settles late in VMs).
+wait_for_screen() {
+    local a b n=0
+    a=$(tput cols)x$(tput lines)
+    while [ $n -lt 20 ]; do sleep 0.25; b=$(tput cols)x$(tput lines); [ "$a" = "$b" ] && break; a=$b; n=$((n + 1)); done
+}
+
+# Visible length of a line that holds colour codes.
+vlen() { local s; s=$(sed 's/\x1b\[[0-9;]*m//g' <<<"$1"); printf '%d' "${#s}"; }
+
+# A screen is built in FRAME and drawn at once (no flicker).
+FRAME=""
+frame() { FRAME=$'\e[H'; FRAME_ROWS=0; }
+put() { FRAME+="$1"$'\e[K\n'; FRAME_ROWS=$((FRAME_ROWS + 1)); }        # a line as it is
+say() { put "$(printf '%*s' "$PAD" '')$1"; }                          # lined up with the logo
+center() { local l; l=$(vlen "$1"); put "$(printf '%*s' $(( (COLS - l) / 2 > 0 ? (COLS - l) / 2 : 0 )) '')$1"; }
+blank() { put ""; }
+show() { printf '%s\e[J' "$FRAME"; }
+
+draw_logo() {
+    local r
+    if [ -n "$BIG" ]; then
+        for r in "${!LOGO[@]}"; do logo_row "$r"; say "$REPLY"; done
+    else
+        say "$(fg 5)$B▀▀▀ $(fg 12)Ze$(fg 14)X$(fg 10)O$(fg 2)S$R"
     fi
+}
+
+# The steps, as the strip under the logo shows them.
+STEPS=(Wi-Fi Keyboard You Password Computer "Time zone" Disk Desktop Drivers Check)
+strip() {
+    local i out="" cur=$1
+    for i in "${!STEPS[@]}"; do
+        [ $i -gt 0 ] && out+="${C_DIM} · "
+        if [ $i -eq "$cur" ]; then out+="$C_WHITE$B${STEPS[i]}$R"
+        elif [ $i -lt "$cur" ]; then out+="$C_GREEN${STEPS[i]}$R"
+        else out+="$C_DIM${STEPS[i]}$R"; fi
+    done
+    center "$out$R"
+}
+# Top of every question: logo, step strip, a blank line.
+head() { size; frame; blank; draw_logo; blank; strip "$1"; blank; }
+title() { say "$C_WHITE$B$1$R"; }
+hint() { say "$C_DIM$1$R"; }
+keys() { blank; say "$C_DIM$1$R"; }
+err_line() { [ -n "$ERR" ] && say "$C_RED✖ $ERR$R"; }
+
+# ---------------------------------------------------------------- keys
+
+# Reads one key into KEY: up down left right enter esc tab space backspace,
+# or char (KCH holds it).
+# A key that came right after Esc is kept for the next read, so Esc
+# followed quickly by another key still counts as both.
+PENDING=
+read_key() {
+    local k c1 c2
+    if [ -n "$PENDING" ]; then k=$PENDING; PENDING=; else IFS= read -rsn1 k; fi
+    case $k in
+        $'\e')
+            if IFS= read -rsn1 -t 0.03 c1; then
+                if [ "$c1" = "[" ] || [ "$c1" = O ]; then
+                    IFS= read -rsn1 -t 0.05 c2
+                    case $c2 in
+                        A) KEY=up ;; B) KEY=down ;; C) KEY=right ;; D) KEY=left ;;
+                        5|6) IFS= read -rsn1 -t 0.05 _; [ "$c2" = 5 ] && KEY=pgup || KEY=pgdn ;;
+                        *) KEY=other ;;
+                    esac
+                else
+                    KEY=esc; PENDING=${c1:-$'\n'}; [ -z "$c1" ] && PENDING=$'\r'
+                fi
+            else
+                KEY=esc
+            fi ;;
+        $'\r'|$'\n') KEY=enter ;;
+        '') KEY=enter ;;
+        $'\t') KEY=tab ;;
+        ' ') KEY=space ;;
+        $'\x7f'|$'\b') KEY=backspace ;;
+        *) KEY=char; KCH=$k ;;
+    esac
+}
+
+# ---------------------------------------------------------------- widgets
+
+# A row of buttons, centred. buttons_draw SEL LABEL... adds it to FRAME.
+buttons_draw() {
+    local sel=$1 i out=""; shift
+    for i in $(seq 0 $(($# - 1))); do
+        [ $i -gt 0 ] && out+="   "
+        if [ $i -eq "$sel" ]; then out+="$BTN_ON ${*:i+1:1} $R"; else out+="$BTN_OFF ${*:i+1:1} $R"; fi
+    done
+    if [ "${BTN_LEFT:-}" ]; then say "$out"; else center "$out"; fi
+}
+
+# Shows a screen with buttons: SCREEN is a function that builds the screen
+# up to the buttons (it is called again at every key). Sets PICK (0-based);
+# returns 1 on Esc.
+choose_buttons() {
+    local screen=$1 sel=$2; shift 2
     while :; do
-        iwctl station "$dev" scan >/dev/null 2>&1
-        sleep 3
-        nets=()
-        # get-networks: a header, then one line per network; the strongest
-        # first. The name is everything before the security column.
-        while IFS= read -r line; do
+        "$screen"; buttons_draw "$sel" "$@"; [ -n "${AFTER:-}" ] && "$AFTER"; show
+        read_key
+        case $KEY in
+            left) [ "$sel" -gt 0 ] && sel=$((sel - 1)) ;;
+            right|tab) [ "$sel" -lt $(($# - 1)) ] && sel=$((sel + 1)) ;;
+            enter) PICK=$sel; return 0 ;;
+            esc) return 1 ;;
+        esac
+    done
+}
+
+# A list: up/down, PgUp/PgDn, type to search. LIST_ITEMS (labels),
+# LIST_OFF (1 = shown greyed, can't be picked). Sets PICK (index into
+# LIST_ITEMS); returns 1 on Esc. SCREEN builds what is above the list.
+LIST_ITEMS=() LIST_OFF=()
+choose_list() {
+    local screen=$1 sel=${2:-0} height=${3:-10} q="" top=0 vis=() i n label k
+    while :; do
+        vis=()
+        for i in "${!LIST_ITEMS[@]}"; do
+            if [ -z "$q" ] || [[ ${LIST_ITEMS[i],,} == *"${q,,}"* ]]; then vis+=("$i"); fi
+        done
+        n=${#vis[@]}
+        [ "$sel" -ge "$n" ] && sel=$((n > 0 ? n - 1 : 0))
+        [ "$sel" -lt "$top" ] && top=$sel
+        [ "$sel" -ge $((top + height)) ] && top=$((sel - height + 1))
+        "$screen"
+        [ "$n" -eq 0 ] && { say "   ${C_DIM}Nothing matches \"$q\". Backspace to change it, Esc to clear it.$R"; top=-1; }
+        for (( k = top < 0 ? 0 : top; k < top + height && k < n; k++ )); do
+            i=${vis[k]}; label=${LIST_ITEMS[i]}
+            if [ "${LIST_OFF[i]:-0}" = 1 ]; then say "   $C_DIM$label$R"
+            elif [ $k -eq "$sel" ]; then say "$C_VIOLET› $R$SEL $label $R"
+            else say "   $label"; fi
+        done
+        for (( ; k < top + height; k++ )); do blank; done
+        blank
+        if [ -n "$q" ]; then say "${C_VIOLET}Search> $R$q$CURSOR"
+        else hint "${LIST_HINT:-Type to search}"; fi
+        keys "${LIST_KEYS:-↑/↓ choose · type to search · Enter next · Esc back}"
+        show
+        read_key
+        case $KEY in
+            up) i=$((sel - 1)); while [ $i -ge 0 ] && [ "${LIST_OFF[${vis[i]}]:-0}" = 1 ]; do i=$((i - 1)); done
+                [ $i -ge 0 ] && sel=$i ;;
+            down) i=$((sel + 1)); while [ $i -lt "$n" ] && [ "${LIST_OFF[${vis[i]}]:-0}" = 1 ]; do i=$((i + 1)); done
+                [ $i -lt "$n" ] && sel=$i ;;
+            pgup) sel=$((sel - height)); [ $sel -lt 0 ] && sel=0 ;;
+            pgdn) sel=$((sel + height)) ;;
+            backspace) q=${q%?}; sel=0; top=0 ;;
+            char|space) [ "$KEY" = space ] && KCH=" "; q+=$KCH; sel=0; top=0 ;;
+            enter)
+                [ "$n" -gt 0 ] || continue
+                i=${vis[sel]}
+                [ "${LIST_OFF[i]:-0}" = 1 ] && continue
+                PICK=$i; return 0 ;;
+            esc) if [ -n "$q" ]; then q=""; sel=0; top=0; else return 1; fi ;;
+        esac
+    done
+}
+
+# A text box: PROMPT> text, a grey hint under it. ask_text VAR PROMPT HINT
+# [masked] [toggle]. Tab shows / hides a masked one when toggle is set.
+# Enter keeps the text in VAR (returns 0); Esc returns 1. SCREEN builds the
+# screen above it; INPUT_BELOW (optional) adds lines under it.
+ask_text() {
+    local var=$1 prompt=$2 hintt=$3 masked=${4:-} toggle=${5:-} text=${!1} shown="" shownow chip
+    while :; do
+        "$SCREEN"
+        if [ -n "$masked" ] && [ -z "$shown" ]; then shownow=$(printf '%*s' "${#text}" '' | sed 's/ /•/g'); else shownow=$text; fi
+        chip=""
+        if [ -n "$toggle" ]; then
+            [ -n "$shown" ] && chip="          $BTN_OFF Hide $R" || chip="          $BTN_OFF Show $R"
+        fi
+        say "$C_VIOLET$prompt> $R$shownow$CURSOR$chip"
+        hint "  $hintt"
+        [ -n "${INPUT_BELOW:-}" ] && "$INPUT_BELOW"
+        show
+        read_key
+        case $KEY in
+            enter) printf -v "$var" '%s' "$text"; return 0 ;;
+            esc) return 1 ;;
+            backspace) text=${text%?} ;;
+            tab) [ -n "$toggle" ] && { [ -n "$shown" ] && shown="" || shown=1; } ;;
+            space) text+=" " ;;
+            char) text+=$KCH ;;
+        esac
+    done
+}
+
+# Ticks: TICK_ITEMS labels ("" = a heading line from TICK_HEAD), TICK_ON
+# 1/0, TICK_DESC. Space ticks, Enter confirms. Returns 1 on Esc.
+choose_ticks() {
+    local screen=$1 sel=0 i n=${#TICK_ITEMS[@]} box line
+    while [ -z "${TICK_ITEMS[sel]}" ]; do sel=$((sel + 1)); done
+    while :; do
+        "$screen"
+        for (( i = 0; i < n; i++ )); do
+            if [ -z "${TICK_ITEMS[i]}" ]; then blank; say "${TICK_HEAD[i]}"; blank; continue; fi
+            [ "${TICK_ON[i]}" = 1 ] && box="[✔]" || box="[ ]"
+            line=$(printf '%-20s' "$box ${TICK_ITEMS[i]}")
+            if [ $i -eq $sel ]; then say "$C_VIOLET› $R$SEL$line$R  $C_DIM${TICK_DESC[i]}$R"
+            else say "  $line  $C_DIM${TICK_DESC[i]}$R"; fi
+        done
+        blank; err_line
+        keys "↑/↓ move · Space tick · Enter next · Esc back"
+        show
+        read_key
+        case $KEY in
+            up) i=$((sel - 1)); while [ $i -ge 0 ] && [ -z "${TICK_ITEMS[i]}" ]; do i=$((i - 1)); done; [ $i -ge 0 ] && sel=$i ;;
+            down) i=$((sel + 1)); while [ $i -lt $n ] && [ -z "${TICK_ITEMS[i]}" ]; do i=$((i + 1)); done; [ $i -lt $n ] && sel=$i ;;
+            space) [ "${TICK_ON[sel]}" = 1 ] && TICK_ON[sel]=0 || TICK_ON[sel]=1 ;;
+            enter) return 0 ;;
+            esc) return 1 ;;
+        esac
+    done
+}
+
+# ---------------------------------------------------------------- network
+
+online() { [ -n "$DEMO" ] && return 0; curl -fsI --max-time 8 https://github.com >/dev/null 2>&1; }
+
+wifi_device() { iwctl device list 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | awk '$0 ~ /station/ { print $1; exit }'; }
+
+# The networks, strongest first: "name<TAB>bars<TAB>security".
+wifi_scan() {
+    if [ -n "$DEMO" ]; then printf 'ZeroWiFi-5G\t▂▄▆█\tsecured\nZeroWiFi\t▂▄▆_\tsecured\nCafe Guest\t▂___\topen\n'; return; fi
+    local dev=$1 line ssid sec stars bars
+    iwctl station "$dev" scan >/dev/null 2>&1
+    sleep 3
+    iwctl station "$dev" get-networks 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' |
+        grep -E ' (psk|open|8021x|wep) +\*+ *$' | while IFS= read -r line; do
             ssid=$(sed -E 's/^[ >]*//; s/ +(psk|open|8021x|wep) +\*+ *$//' <<<"$line")
-            [ -n "$ssid" ] && nets+=("$ssid" "")
-        done < <(iwctl station "$dev" get-networks 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' \
-                  | grep -E ' (psk|open|8021x|wep) +\*+ *$')
-        nets+=("(scan again)" "")
-        ssid=$(ask --cancel-button Back --menu "Pick your Wi-Fi network" 0 0 0 "${nets[@]}") || return 1
-        [ "$ssid" = "(scan again)" ] && continue
+            sec=$(grep -oE '(psk|open|8021x|wep) +\*+ *$' <<<"$line" | awk '{print $1}')
+            stars=$(grep -oE '\*+ *$' <<<"$line" | tr -d ' '); stars=${#stars}
+            bars="▂___"; [ "$stars" -ge 2 ] && bars="▂▄__"; [ "$stars" -ge 3 ] && bars="▂▄▆_"; [ "$stars" -ge 4 ] && bars="▂▄▆█"
+            [ "$sec" = open ] && sec=open || sec=secured
+            printf '%s\t%s\t%s\n' "$ssid" "$bars" "$sec"
+        done
+}
 
-        WIFI_PASS=$(ask --cancel-button Back --passwordbox "Password for $ssid\n(leave empty for an open network)" 0 0) || continue
-        infobox "Connecting to $ssid..."
-        if [ -n "$WIFI_PASS" ]; then
-            iwctl --passphrase "$WIFI_PASS" station "$dev" connect "$ssid" >/dev/null 2>&1
-        else
-            iwctl station "$dev" connect "$ssid" >/dev/null 2>&1
+WIFI_STATUS=
+wifi_screen() { head 0; title "Pick your Wi-Fi network"; blank; }
+wifi_pw_screen() { head 0; title "Pick your Wi-Fi network"; blank; say "$SEL $(printf '%-24s' "$WIFI_PICK") $R"; blank; }
+wifi_below() { blank; [ -n "$WIFI_STATUS" ] && say "$WIFI_STATUS"; keys "Tab show/hide password · Enter connect · Esc back"; }
+# Returns 0 when online through Wi-Fi.
+ask_wifi() {
+    local dev nets=() line ssid bars sec
+    ERR=""
+    if [ -z "$DEMO" ]; then
+        dev=$(wifi_device)
+        if [ -z "$dev" ]; then
+            head 0; title "No Wi-Fi card found"; blank
+            say "Plug in a network cable instead; it works by itself."; blank
+            choose_buttons true 0 "Back"; return 1
         fi
-        for _ in 1 2 3 4 5 6 7 8 9 10; do online && break; sleep 2; done
-        if online; then
-            WIFI_SSID=$ssid
-            return 0
-        fi
-        msg "Could not get online through $ssid. Check the password and try again."
+    fi
+    while :; do
+        head 0; title "Pick your Wi-Fi network"; blank; hint "Looking for networks..."; show
+        mapfile -t nets < <(wifi_scan "$dev")
+        LIST_ITEMS=() LIST_OFF=()
+        for line in "${nets[@]}"; do
+            IFS=$'\t' read -r ssid bars sec <<<"$line"
+            LIST_ITEMS+=("$(printf '%-24s %s  %s' "$ssid" "$bars" "$sec")")
+        done
+        LIST_ITEMS+=("(look again)")
+        LIST_HINT="Type to search" LIST_KEYS="↑/↓ choose · Enter pick · Esc back"
+        choose_list wifi_screen 0 6 || return 1
+        [ "$PICK" -eq ${#nets[@]} ] && continue
+        IFS=$'\t' read -r WIFI_PICK bars sec <<<"${nets[PICK]}"
+        WIFI_PASS="" WIFI_STATUS=""
+        while :; do
+            if [ "$sec" != open ]; then
+                SCREEN=wifi_pw_screen INPUT_BELOW=wifi_below
+                ask_text WIFI_PASS Password "The Wi-Fi password, as on the router sticker" masked toggle || { INPUT_BELOW=; break; }
+                INPUT_BELOW=
+            fi
+            WIFI_STATUS="${C_DIM}Connecting to $WIFI_PICK...$R"
+            wifi_pw_screen; wifi_below; show
+            if [ -z "$DEMO" ]; then
+                if [ -n "$WIFI_PASS" ]; then iwctl --passphrase "$WIFI_PASS" station "$dev" connect "$WIFI_PICK" >/dev/null 2>&1
+                else iwctl station "$dev" connect "$WIFI_PICK" >/dev/null 2>&1; fi
+                for _ in 1 2 3 4 5 6 7 8 9 10; do online && break; sleep 2; done
+            fi
+            if online; then
+                WIFI_SSID=$WIFI_PICK
+                WIFI_STATUS="$C_GREEN✔ Connected to $WIFI_PICK$R"
+                wifi_pw_screen; wifi_below; show; sleep 1
+                return 0
+            fi
+            WIFI_STATUS="$C_RED✖ Could not get online through $WIFI_PICK. Check the password and try again.$R"
+            [ "$sec" = open ] && break
+        done
     done
 }
 
-infobox() { TERM=ansi whiptail --title "$TITLE" --infobox "$1" 0 0; }
+# ---------------------------------------------------------------- questions
 
+# Keyboard layouts as people know them (English (UK), German, ...), from
+# systemd's console <-> X11 table and X11's names. "keymap<TAB>name".
+keyboard_list() {
+    local map=/usr/share/systemd/kbd-model-map lst=/usr/share/X11/xkb/rules/base.lst
+    python3 - "$map" "$lst" <<'PY' 2>/dev/null || localectl list-keymaps | awk '{ print $1 "\t" $1 }'
+import sys, re, subprocess
+mp, lst = sys.argv[1], sys.argv[2]
+names, variants, sec = {}, {}, None
+for line in open(lst):
+    if line.startswith("!"):
+        sec = line.split()[1]; continue
+    m = re.match(r"\s+(\S+)\s+(.*)", line.rstrip())
+    if not m: continue
+    if sec == "layout": names[m.group(1)] = m.group(2)
+    elif sec == "variant":
+        v = re.match(r"(\S+): (.*)", m.group(2))
+        if v: variants[(v.group(1), m.group(1))] = v.group(2)
+have = set(subprocess.run(["localectl", "list-keymaps"], capture_output=True, text=True).stdout.split())
+out, seen = [], set()
+for line in open(mp):
+    if line.startswith("#") or not line.strip(): continue
+    f = line.split()
+    km, xl, xv = f[0], f[1].split(",")[0], f[3].split(",")[0]
+    if have and km not in have: continue
+    name = variants.get((xl, xv)) if xv != "-" else names.get(xl)
+    if not name or name in seen: continue
+    seen.add(name); out.append((km, name))
+first = ["English (US)", "English (UK)", "English (US, intl., with dead keys)"]
+out.sort(key=lambda p: (first.index(p[1]) if p[1] in first else 9, p[1].lower()))
+for km, name in out: print(km + "\t" + name)
+PY
+}
+KEYB_MAPS=() KEYB_NAMES=()
+kb_screen() { head 1; title "Pick your keyboard layout"; blank; }
 ask_keyboard() {
-    local k
-    k=$(ask --cancel-button Back --default-item "$KEYMAP" --menu "Keyboard layout" 0 0 0 \
-        us "English (US)" \
-        uk "English (UK)" \
-        de-latin1 "German" \
-        fr-latin1 "French" \
-        es "Spanish" \
-        it "Italian" \
-        gr "Greek" \
-        pl "Polish" \
-        pt-latin1 "Portuguese" \
-        br-abnt2 "Portuguese (Brazil)" \
-        ru "Russian" \
-        sv-latin1 "Swedish" \
-        no-latin1 "Norwegian" \
-        dk-latin1 "Danish" \
-        fi "Finnish" \
-        trq "Turkish" \
-        other "Something else...") || return 1
-    if [ "$k" = other ]; then
-        local items=()
-        while read -r m; do items+=("$m" ""); done < <(localectl list-keymaps)
-        k=$(ask --cancel-button Back --menu "Keyboard layout (all of them)" 0 0 20 "${items[@]}") || return 1
+    local line i sel=0
+    if [ ${#KEYB_MAPS[@]} -eq 0 ]; then
+        while IFS=$'\t' read -r k n; do KEYB_MAPS+=("$k"); KEYB_NAMES+=("$n"); done < <(keyboard_list)
     fi
-    KEYMAP=$k
-    loadkeys "$KEYMAP" 2>/dev/null
+    for i in "${!KEYB_MAPS[@]}"; do [ "${KEYB_MAPS[i]}" = "$KEYMAP" ] && { sel=$i; break; }; done
+    LIST_ITEMS=("${KEYB_NAMES[@]}") LIST_OFF=()
+    LIST_HINT='Type to search, like "greek"' LIST_KEYS="↑/↓ choose · type to search · Enter next · Esc back"
+    choose_list kb_screen "$sel" 10 || return 1
+    KEYMAP=${KEYB_MAPS[PICK]}
+    [ -z "$DEMO" ] && loadkeys "$KEYMAP" 2>/dev/null
     return 0
 }
 
-ask_account() {
-    local u p p2 h
+# "Alex Kim" -> "alex", like the window installer.
+username_from() { local u; u=$(tr 'A-Z' 'a-z' <<<"${1%% *}" | tr -cd 'a-z0-9_-'); [[ $u =~ ^[a-z_] ]] || u="user$u"; printf '%s' "${u:0:32}"; }
+you_screen() {
+    head 2; title "Who's using this computer?"; blank
+    if [ "$YOU_FIELD" = user ]; then
+        say "${C_VIOLET}Name> $R$FULLNAME"; hint "  Your full name, shown on the login screen"; blank
+    fi
+}
+you_below() { blank; err_line; keys "Enter next · Esc back"; }
+ask_you() {
+    local name=$FULLNAME user
+    ERR=""
     while :; do
-        u=$(ask --cancel-button Back --inputbox "Your username (small letters, numbers, - and _)" 0 0 "$USERNAME") || return 1
-        if [[ ! $u =~ ^[a-z_][a-z0-9_-]{0,31}$ ]]; then
-            msg "\"$u\" can't be a username. Start with a small letter, then use small letters, numbers, - or _."
-        elif getent passwd "$u" >/dev/null; then
-            msg "\"$u\" is a name the system already uses. Pick another one."
+        YOU_FIELD=name SCREEN=you_screen INPUT_BELOW=you_below
+        ask_text name Name "Your full name, shown on the login screen" || { INPUT_BELOW=; return 1; }
+        name=$(sed 's/^ *//; s/ *$//' <<<"$name")
+        if [ -z "$name" ]; then ERR="Type your name (it can be just a first name)"; continue; fi
+        FULLNAME=$name; ERR=""
+        break
+    done
+    user=${USERNAME:-$(username_from "$FULLNAME")}
+    while :; do
+        YOU_FIELD=user SCREEN=you_screen
+        ask_text user Username "Small letters and numbers, no spaces (made from your name)" || { INPUT_BELOW=; ERR=""; ask_you; return; }
+        if [[ ! $user =~ ^[a-z_][a-z0-9_-]{0,31}$ ]]; then
+            ERR="\"$user\" can't be a username: use small letters, numbers, - or _"
+        elif getent passwd "$user" >/dev/null || [ "$user" = root ]; then
+            ERR="\"$user\" is a name the system already uses. Pick another one"
         else
             break
         fi
     done
+    INPUT_BELOW= ERR=""
+    [ "$user" != "$USERNAME" ] && [ -n "$USERNAME" ] && [ "$HOSTNAME" = "$USERNAME-zexos" ] && HOSTNAME=
+    USERNAME=$user
+    return 0
+}
+
+pw_screen() {
+    head 3; title "Choose a password"; blank
+    if [ "$PW_FIELD" = 2 ]; then
+        say "${C_VIOLET}Password> $R$(printf '%*s' "${#P1}" '' | sed 's/ /•/g')"; hint "  To log in and for sudo, and for the disk if you encrypt it"; blank
+    fi
+}
+pw_below() { blank; [ -n "$PW_OK" ] && say "$C_GREEN✔ The passwords match$R"; err_line; keys "Enter next · Esc back"; }
+ask_password() {
+    local p2=""
+    P1=$PASSWORD PW_OK="" ERR=""
     while :; do
-        p=$(ask --cancel-button Back --passwordbox "Password for $u\n(it is also the sudo password, and the disk password if you encrypt)" 0 0) || return 1
-        p2=$(ask --cancel-button Back --passwordbox "The same password again" 0 0) || continue
-        if [ -z "$p" ]; then
-            msg "The password can't be empty."
-        elif [ "$p" != "$p2" ]; then
-            msg "The two passwords are different. Try again."
-        else
-            break
-        fi
+        PW_FIELD=1 SCREEN=pw_screen INPUT_BELOW=pw_below
+        ask_text P1 Password "To log in and for sudo, and for the disk if you encrypt it" masked || { INPUT_BELOW=; return 1; }
+        if [ -z "$P1" ]; then ERR="The password can't be empty"; continue; fi
+        ERR="" p2=""
+        PW_FIELD=2
+        ask_text p2 Confirm "The same password again" masked || { ERR=""; continue; }
+        if [ "$P1" != "$p2" ]; then ERR="The passwords are different, type them again"; P1=""; continue; fi
+        PW_OK=1; ERR=""
+        pw_screen; say "${C_VIOLET}Confirm> $R$(printf '%*s' "${#p2}" '' | sed 's/ /•/g')"; hint "  The same password again"; pw_below; show; sleep 0.6
+        break
     done
+    INPUT_BELOW=
+    PASSWORD=$P1
+    return 0
+}
+
+computer_screen() { head 4; title "Name this computer"; blank; }
+computer_below() { blank; err_line; keys "Enter next · Esc back"; }
+ask_computer() {
+    local h=${HOSTNAME:-$USERNAME-zexos}
+    ERR=""
     while :; do
-        h=$(ask --cancel-button Back --inputbox "Computer name (how it shows up on your network)" 0 0 "$HOSTNAME") || return 1
+        SCREEN=computer_screen INPUT_BELOW=computer_below
+        ask_text h Computer "How it shows up on your network. Press Enter to keep ${HOSTNAME:-$USERNAME-zexos}" || { INPUT_BELOW=; return 1; }
+        [ -z "$h" ] && h=${HOSTNAME:-$USERNAME-zexos}
         [[ $h =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?$ ]] && break
-        msg "\"$h\" can't be a computer name. Use letters, numbers and -, and don't start or end with -."
+        ERR="\"$h\" can't be a computer name: use letters, numbers and -, not at the start or end"
     done
-    USERNAME=$u PASSWORD=$p HOSTNAME=$h
+    INPUT_BELOW= ERR=""
+    HOSTNAME=$h
     return 0
 }
 
+tz_screen() {
+    head 5; title "Your time zone"; blank
+    say "We think it's $C_WHITE$B$TZ_GUESS$R (from your internet connection)."; blank
+}
+tz_list_screen() { head 5; title "Your time zone"; blank; }
+tz_after() { blank; hint 'Pick another opens a searchable list: type "lis" for Lisbon'; keys "←/→ choose · Enter next · Esc back"; }
 ask_timezone() {
-    local guess region city items=()
-    if [ -z "$TIMEZONE" ]; then
-        guess=$(curl -fsS --max-time 5 https://ipapi.co/timezone 2>/dev/null)
-        [ -n "$guess" ] && [ -f "/usr/share/zoneinfo/$guess" ] && TIMEZONE=$guess
+    local i sel=0
+    if [ -z "${TZ_GUESS:-}" ]; then
+        TZ_GUESS=$TIMEZONE
+        if [ -z "$TZ_GUESS" ] && [ -z "$DEMO" ]; then
+            TZ_GUESS=$(curl -fsS --max-time 5 https://ipapi.co/timezone 2>/dev/null)
+            [ -f "/usr/share/zoneinfo/$TZ_GUESS" ] || TZ_GUESS=
+        fi
+        [ -n "$DEMO" ] && TZ_GUESS=${TZ_GUESS:-Europe/Athens}
     fi
-    if [ -n "$TIMEZONE" ]; then
-        whiptail --title "$TITLE" --yes-button "Yes" --no-button "Pick another" \
-            --yesno "Your time zone looks like:\n\n    $TIMEZONE\n\nUse it?" 0 0 && return 0
+    if [ -n "$TZ_GUESS" ]; then
+        AFTER=tz_after
+        choose_buttons tz_screen 0 "Yes, that's right" "Pick another" || { AFTER=; return 1; }
+        AFTER=
+        [ "$PICK" -eq 0 ] && { TIMEZONE=$TZ_GUESS; return 0; }
     fi
-    while :; do
-        items=()
-        while read -r region; do items+=("$region" ""); done < <(timedatectl list-timezones | awk -F/ 'NF > 1 { print $1 }' | uniq)
-        items+=(UTC "")
-        region=$(ask --cancel-button Back --menu "Time zone: your region" 0 0 0 "${items[@]}") || return 1
-        if [ "$region" = UTC ]; then TIMEZONE=UTC; return 0; fi
-        items=()
-        while read -r city; do items+=("$city" ""); done < <(timedatectl list-timezones | grep "^$region/" | cut -d/ -f2-)
-        city=$(ask --cancel-button Back --menu "Time zone: the city nearest you" 0 0 20 "${items[@]}") || continue
-        TIMEZONE=$region/$city
-        return 0
-    done
+    mapfile -t LIST_ITEMS < <(timedatectl list-timezones 2>/dev/null || (cd /usr/share/zoneinfo && find . -type f | sed 's|^\./||' | sort))
+    LIST_OFF=()
+    for i in "${!LIST_ITEMS[@]}"; do [ "${LIST_ITEMS[i]}" = "${TIMEZONE:-$TZ_GUESS}" ] && sel=$i; done
+    LIST_HINT='Type to search, like "lis" for Lisbon' LIST_KEYS="↑/↓ choose · type to search · Enter next · Esc back"
+    choose_list tz_list_screen "$sel" 10 || return 1
+    TIMEZONE=${LIST_ITEMS[PICK]}
+    return 0
 }
 
 # The disk the ISO itself runs from, so it is never offered.
@@ -177,66 +574,103 @@ live_disk() {
     # mount source can be the whole disk, which has no parent.
     lsblk -no PKNAME "$src" 2>/dev/null | head -n1 | grep . || basename "$src"
 }
-
+disk_screen() { head 6; title "Where should ZeXOS go?"; blank; }
+erase_screen() {
+    head 6; title "Where should ZeXOS go?"; blank
+    say "$SEL $(printf '%-62s' "${DISK_LABEL}") $R"; blank
+    say "$C_RED${B}Everything on ${DISK#/dev/} will be erased.$R"; blank
+}
+erase_after() { keys "←/→ choose · Enter"; }
 ask_disk() {
-    local live items=() name size model d
-    live=$(live_disk)
-    while read -r name type size model; do
-        [ "$type" = disk ] || continue
-        case ${name##*/} in "$live" | zram* | loop*) continue ;; esac
-        items+=("$name" "$size  ${model:-disk}")
-    done < <(lsblk -dpno NAME,TYPE,SIZE,MODEL)
-    if [ ${#items[@]} -eq 0 ]; then
-        msg "No disk to install on was found."
-        return 1
-    fi
+    local live name type size model names=() i sel=0 big
+    ERR=""
     while :; do
-        d=$(ask --cancel-button Back --default-item "${DISK:-${items[0]}}" --menu "Which disk should ZeXOS go on?" 0 0 0 "${items[@]}") || return 1
-        if [ "$(lsblk -bdno SIZE "$d")" -lt $((20 * 1024 ** 3)) ]; then
-            msg "$d is too small. ZeXOS needs at least 20 GB."
-            continue
+        live=$(live_disk)
+        LIST_ITEMS=() LIST_OFF=() names=()
+        if [ -n "$DEMO" ]; then
+            names=(/dev/nvme0n1 /dev/sda)
+            LIST_ITEMS=("nvme0n1   238 GB   UMIS RPJTJ256MKP1MDQ" "sda        64 GB   SanDisk Ultra (the USB stick, can't use)")
+            LIST_OFF=(0 1)
+        else
+            while read -r name type size model; do
+                [ "$type" = disk ] || continue
+                case ${name##*/} in zram* | loop* | sr*) continue ;; esac
+                names+=("$name")
+                big=$(lsblk -bdno SIZE "$name")
+                if [ "${name##*/}" = "$live" ]; then
+                    LIST_ITEMS+=("$(printf '%-9s %7s   %s' "${name##*/}" "$size" "${model:-disk} (the USB stick, can't use)")"); LIST_OFF+=(1)
+                elif [ "$big" -lt $((20 * 1024 ** 3)) ]; then
+                    LIST_ITEMS+=("$(printf '%-9s %7s   %s' "${name##*/}" "$size" "${model:-disk} (too small, ZeXOS needs 20 GB)")"); LIST_OFF+=(1)
+                else
+                    LIST_ITEMS+=("$(printf '%-9s %7s   %s' "${name##*/}" "$size" "${model:-disk}")"); LIST_OFF+=(0)
+                fi
+            done < <(lsblk -dpno NAME,TYPE,SIZE,MODEL)
         fi
-        whiptail --title "$TITLE" --defaultno --yes-button "Erase it" --no-button "Back" --yesno \
-            "EVERYTHING on $d will be erased:\n\n$(lsblk -no NAME,SIZE,FSTYPE,LABEL "$d")\n\nZeXOS gets the whole disk. Erase it?" 0 0 || continue
-        DISK=$d
+        if ! printf '%s\n' "${LIST_OFF[@]}" | grep -qx 0; then
+            head 6; title "Where should ZeXOS go?"; blank
+            say "${C_RED}No disk to install on was found (it needs 20 GB or more).$R"; blank
+            choose_buttons true 0 "Back"; return 1
+        fi
+        sel=0
+        for i in "${!names[@]}"; do
+            if [ "${names[i]}" = "$DISK" ] || { [ -z "$DISK" ] && [ "${LIST_OFF[i]}" = 0 ] && [ $sel -eq 0 ] && [ "${LIST_OFF[0]}" = 1 ]; }; then sel=$i; fi
+        done
+        LIST_HINT="The stick you started from is greyed out, so it can't be picked"
+        LIST_KEYS="↑/↓ choose disk · Enter · Esc back"
+        choose_list disk_screen "$sel" 6 || return 1
+        DISK=${names[PICK]} DISK_LABEL=${LIST_ITEMS[PICK]}
+        AFTER=erase_after
+        choose_buttons erase_screen 0 "Erase it and continue" "Back" || { AFTER=; continue; }
+        AFTER=
+        [ "$PICK" -eq 0 ] && return 0
+    done
+}
+
+enc_screen() {
+    head 6; title "Lock the disk with your password?"; blank
+    say "Then nobody can read your files without the password, even with the disk"
+    say "taken out. Good for laptops. You type the password once at every start."; blank
+}
+enc_after() { blank; keys "←/→ choose · Enter next · Esc back"; }
+ask_encrypt() {
+    AFTER=enc_after
+    choose_buttons enc_screen "$([ "$ENCRYPT" = yes ] && echo 1 || echo 0)" "No" "Yes, encrypt" || { AFTER=; return 1; }
+    AFTER=
+    [ "$PICK" -eq 1 ] && ENCRYPT=yes || ENCRYPT=no
+    return 0
+}
+
+on() { [[ " $2 " == *" $1 "* ]] && echo 1 || echo 0; }
+desk_screen() { head 7; }
+ask_desktop() {
+    TICK_ITEMS=("" niri Hyprland Mango "" Noctalia DankMaterialShell)
+    TICK_HEAD=("$C_WHITE${B}Which compositors?$R$C_DIM  You can switch between them at login.$R" "" "" ""
+               "$C_WHITE${B}Which desktop shells?$R$C_DIM  With both, a button on the bar switches.$R" "" "")
+    TICK_DESC=("" "Scrolling tiling" "Smooth animations, lots of eye candy" "Tags instead of workspaces, light and fast"
+               "" "Calm and minimal" "Material, full of widgets")
+    TICK_ON=(0 "$(on niri "$COMPOSITORS")" "$(on hyprland "$COMPOSITORS")" "$(on mango "$COMPOSITORS")"
+             0 "$(on noctalia "$SHELLS")" "$(on dms "$SHELLS")")
+    ERR=""
+    while :; do
+        choose_ticks desk_screen || { ERR=""; return 1; }
+        local c="" s=""
+        [ "${TICK_ON[1]}" = 1 ] && c+=" niri"; [ "${TICK_ON[2]}" = 1 ] && c+=" hyprland"; [ "${TICK_ON[3]}" = 1 ] && c+=" mango"
+        [ "${TICK_ON[5]}" = 1 ] && s+=" noctalia"; [ "${TICK_ON[6]}" = 1 ] && s+=" dms"
+        if [ -z "$c" ]; then ERR="Pick at least one compositor"; continue; fi
+        if [ -z "$s" ]; then ERR="Pick at least one desktop shell"; continue; fi
+        COMPOSITORS=${c# } SHELLS=${s# } ERR=""
         return 0
     done
-}
-
-ask_encrypt() {
-    local r
-    r=$(ask --cancel-button Back --default-item "$ENCRYPT" --menu "Encrypt the disk?\n\nThen nobody can read your files without the password, even with the disk taken out (good for laptops). You type the password once at every start." 0 0 0 \
-        yes "Encrypt (uses your account password)" \
-        no  "Don't encrypt") || return 1
-    ENCRYPT=$r
-    return 0
-}
-
-ask_desktop() {
-    local c s
-    while :; do
-        c=$(ask --cancel-button Back --separate-output --checklist "Which compositors? (space ticks, Enter confirms)\nYou can switch between them at login." 0 0 0 \
-            niri     "Scrolling tiling" "$(on niri "$COMPOSITORS")" \
-            hyprland "Dynamic tiling, lots of eye candy" "$(on hyprland "$COMPOSITORS")" \
-            mango    "dwl-style tags, light and fast" "$(on mango "$COMPOSITORS")") || return 1
-        [ -n "$c" ] && break
-        msg "Pick at least one compositor."
-    done
-    while :; do
-        s=$(ask --cancel-button Back --separate-output --checklist "Which desktop shells? (with both, a button on the bar switches between them)" 0 0 0 \
-            noctalia "Noctalia" "$(on noctalia "$SHELLS")" \
-            dms      "DankMaterialShell" "$(on dms "$SHELLS")") || return 1
-        [ -n "$s" ] && break
-        msg "Pick at least one shell."
-    done
-    COMPOSITORS=${c//$'\n'/ } SHELLS=${s//$'\n'/ }
-    return 0
 }
 
 # What zexos-drivers found on this computer, saved once per run.
 plan_drivers() {
     mkdir -p "$WORK"
     [ -s "$WORK/drivers-plan.json" ] && return
+    if [ -n "$DEMO" ]; then
+        echo '{"chips":[{"slot":"gpu0","name":"Intel Iris Xe Graphics","set":"intel"}],"sets":["intel","intel-power"],"alternatives":{},"descs":{"intel":"Intel driver","intel-power":"Intel battery saving"},"notes":[]}' > "$WORK/drivers-plan.json"
+        return
+    fi
     zexos-drivers plan --json > "$WORK/drivers-plan.json" 2>/dev/null ||
         echo '{"chips": [], "sets": [], "alternatives": {}, "descs": {}, "notes": []}' > "$WORK/drivers-plan.json"
 }
@@ -266,63 +700,102 @@ else:
     extras = [s for s in extras if s != "hybrid" or nvidia]
     print(",".join(out + extras))
     for c in d["chips"]:
-        print(c["name"] + " → " + desc(picks.get(c["slot"], c["set"])))
-    for s in extras: print("Also: " + desc(s))
-    for n in d.get("notes", []): print("Note: " + n)
+        print(c["name"] + "\t" + desc(picks.get(c["slot"], c["set"])))
+    for s in extras: print("Also:\t" + desc(s))
+    for n in d.get("notes", []): print("Note:\t" + n)
 ' "$WORK/drivers-plan.json" "$@"
 }
-
-# The driver question: the driver picked for each chip, and a choice where
-# another one can work. Changing drivers later: Welcome → Drivers.
+drv_screen() {
+    local a b
+    head 8; title "Drivers for this computer"; blank
+    if [ -z "$DRIVER_LINES" ]; then say "No extra drivers are needed on this computer."
+    else
+        while IFS=$'\t' read -r a b; do
+            case $a in
+                Also:) say "${C_LIGHT}Also: $b$R" ;;
+                Note:) say "$C_AMBER$b$R" ;;
+                *) say "$C_WHITE$a$R$C_DIM  →  $R$C_GREEN$b$R" ;;
+            esac
+        done <<<"$DRIVER_LINES"
+    fi
+    blank
+}
+drv_after() { blank; hint "Change it later in ZeXOS - Welcome → Drivers, or with zexos-drivers"; keys "←/→ choose · Enter next · Esc back"; }
+drv_pick_screen() { head 8; title "$DRV_CHIP"; blank; }
 ask_drivers() {
     plan_drivers
-    local chips=() line slot name set alts cur r s items picks=() out
+    local chips=() line slot name set alts cur s out choosable=0 i
     mapfile -t chips < <(drivers_plan chips)
-    for line in "${chips[@]}"; do
-        IFS=$'\t' read -r slot name set alts <<< "$line"
-        [ -n "$alts" ] || continue
-        cur=$set
-        for s in "${DRIVER_PICKS[@]}"; do [ "${s%%=*}" = "$slot" ] && cur=${s#*=}; done
-        items=()
-        for s in "$set" ${alts//,/ }; do
-            items+=("$s" "$(drivers_plan desc "$s")" "$([ "$s" = "$cur" ] && echo ON || echo OFF)")
+    for line in "${chips[@]}"; do IFS=$'\t' read -r slot name set alts <<<"$line"; [ -n "$alts" ] && choosable=1; done
+    while :; do
+        out=$(drivers_plan resolve "${DRIVER_PICKS[@]}")
+        DRIVERS=$(head -n1 <<<"$out")
+        DRIVER_LINES=$(tail -n +2 <<<"$out")
+        AFTER=drv_after
+        if [ $choosable = 1 ]; then choose_buttons drv_screen 0 "Use these" "Change a driver" || { AFTER=; return 1; }
+        else choose_buttons drv_screen 0 "Use these" || { AFTER=; return 1; }; fi
+        AFTER=
+        [ "$PICK" -eq 0 ] && return 0
+        # Change a driver: each chip that has another driver that works.
+        local picks=()
+        for line in "${chips[@]}"; do
+            IFS=$'\t' read -r slot name set alts <<<"$line"
+            [ -n "$alts" ] || continue
+            cur=$set
+            for s in "${DRIVER_PICKS[@]}"; do [ "${s%%=*}" = "$slot" ] && cur=${s#*=}; done
+            LIST_ITEMS=() LIST_OFF=() local sets=() sel=0
+            for s in "$set" ${alts//,/ }; do sets+=("$s"); LIST_ITEMS+=("$(drivers_plan desc "$s")"); done
+            for i in "${!sets[@]}"; do [ "${sets[i]}" = "$cur" ] && sel=$i; done
+            DRV_CHIP="$name: pick its driver"
+            LIST_HINT="The first one is what ZeXOS picked" LIST_KEYS="↑/↓ choose · Enter pick · Esc back"
+            if choose_list drv_pick_screen "$sel" 6; then picks+=("$slot=${sets[PICK]}"); else picks+=("$slot=$cur"); fi
         done
-        r=$(ask --cancel-button Back --radiolist "$name → $(drivers_plan desc "$set")\\n\\nAnother driver can also work on this chip. Pick one (space picks, Enter confirms):" 0 0 0 "${items[@]}") || return 1
-        picks+=("$slot=$r")
+        DRIVER_PICKS=("${picks[@]}")
     done
-    out=$(drivers_plan resolve "${picks[@]}")
-    DRIVER_PICKS=("${picks[@]}")
-    DRIVERS=$(head -n1 <<< "$out")
-    DRIVER_LINES=$(tail -n +2 <<< "$out")
-    if [ ${#chips[@]} -eq 0 ]; then
-        DRIVER_LINES="No extra drivers are needed on this computer."
-    fi
-    whiptail --title "$TITLE" --yes-button "OK" --no-button "Back" --yesno \
-        "Drivers\\n\\nZeXOS looked at this computer's graphics, Wi-Fi and network chips:\\n\\n$DRIVER_LINES\\n\\nDrivers can be changed later in ZeXOS - Welcome → Drivers, or with the zexos-drivers command." 0 0 || return 1
-    return 0
 }
 
-on() { [[ " $2 " == *" $1 "* ]] && echo ON || echo OFF; }
+# ---------------------------------------------------------------- summary
 
-# Everything on one screen; pick a line to change it.
+review_screen() {
+    local d
+    head 9; title "Check everything before installing"; blank
+    say "${C_DIM}Keyboard    $R$(kb_name)"
+    say "${C_DIM}You         $R$FULLNAME ($USERNAME)"
+    say "${C_DIM}Computer    $R$HOSTNAME"
+    say "${C_DIM}Time zone   $R$TIMEZONE"
+    say "${C_DIM}Disk        $R${DISK#/dev/}, $(disk_size)  ${C_RED}will be erased$R, $([ "$ENCRYPT" = yes ] && echo encrypted || echo not encrypted)"
+    say "${C_DIM}Desktop     $R$(desk_words)"
+    d=$(awk -F'\t' '$1 != "Note:" { print ($1 == "Also:" ? $2 : $2) }' <<<"$DRIVER_LINES" | paste -sd, | sed 's/,/, /g')
+    say "${C_DIM}Drivers     $R${d:-none needed}"
+    blank
+}
+review_after() { blank; keys "←/→ choose · Enter · Change something jumps to any step"; }
+kb_name() { local i; for i in "${!KEYB_MAPS[@]}"; do [ "${KEYB_MAPS[i]}" = "$KEYMAP" ] && { printf '%s' "${KEYB_NAMES[i]}"; return; }; done; printf '%s' "$KEYMAP"; }
+disk_size() { [ -n "$DEMO" ] && { echo "238 GB"; return; }; lsblk -dno SIZE "$DISK" 2>/dev/null | tr -d ' ' | sed 's/G$/ GB/'; }
+desk_words() {
+    local c=() s=() w
+    for w in $COMPOSITORS; do case $w in niri) c+=(niri) ;; hyprland) c+=(Hyprland) ;; mango) c+=(Mango) ;; esac; done
+    for w in $SHELLS; do case $w in noctalia) s+=(Noctalia) ;; dms) s+=(DankMaterialShell) ;; esac; done
+    printf '%s · %s' "$(IFS=,; echo "${c[*]}" | sed 's/,/, /g')" "$(IFS=,; echo "${s[*]}" | sed 's/,/, /g')"
+}
+change_screen() { head 9; title "What do you want to change?"; blank; }
 review() {
-    local c
     while :; do
-        c=$(ask --cancel-button "Cancel" --ok-button "Select" --menu "Check everything, then pick Install.\nPick any other line to change it." 0 0 0 \
-            install  ">> Install ZeXOS now <<" \
-            keyboard "Keyboard:       $KEYMAP" \
-            account  "User:           $USERNAME   (computer: $HOSTNAME)" \
-            timezone "Time zone:      $TIMEZONE" \
-            disk     "Disk:           $DISK  $(lsblk -dno SIZE "$DISK")  -- WILL BE ERASED" \
-            encrypt  "Encryption:     $ENCRYPT" \
-            desktop  "Desktop:        $COMPOSITORS + $SHELLS" \
-            drivers  "Drivers:        $(head -n1 <<< "$DRIVER_LINES")$([ "$(wc -l <<< "$DRIVER_LINES")" -gt 1 ] && echo " (+ more)")") || return 1
-        case $c in
-            install) return 0 ;;
-            *) "ask_$c" ;;
+        AFTER=review_after
+        choose_buttons review_screen 0 "Install ZeXOS" "Change something" || { AFTER=; return 1; }
+        AFTER=
+        [ "$PICK" -eq 0 ] && return 0
+        LIST_ITEMS=(Keyboard "You (name and username)" Password "Computer name" "Time zone" Disk Encryption Desktop Drivers)
+        LIST_OFF=() LIST_HINT="After changing it you come straight back here" LIST_KEYS="↑/↓ choose · Enter · Esc back"
+        choose_list change_screen 0 9 || continue
+        case $PICK in
+            0) ask_keyboard ;; 1) ask_you ;; 2) ask_password ;; 3) ask_computer ;; 4) ask_timezone ;;
+            5) ask_disk ;; 6) ask_encrypt ;; 7) ask_desktop ;; 8) ask_drivers ;;
         esac
     done
 }
+
+# ---------------------------------------------------------------- install
 
 # Writes the archinstall config and credentials for the answers.
 write_config() {
@@ -424,51 +897,212 @@ write_drivers_choice() {
     fi
 }
 
-run_install() {
-    clear
-    echo "Installing ZeXOS on $DISK. This takes a while; you can leave it alone."
-    echo "Everything is logged to $LOG."
-    echo
+# The install itself, in the background. Writes its step to $WORK/stage and,
+# when done, its result to $WORK/result ("ok", or a reason).
+install_job() {
+    stage() { echo "$1" > "$WORK/stage"; echo "== ZeXOS step $1 ($(date '+%H:%M:%S'))"; }
     {
+        stage 1
         echo "== $(date) archinstall"
         archinstall --config "$WORK/user_configuration.json" --creds "$WORK/user_credentials.json" --silent
-    } 2>&1 | tee -a "$LOG"
-    rm -f "$WORK/user_credentials.json"
-
-    if [ ! -f "$ROOT/etc/os-release" ] || ! awk -F: -v u="$USERNAME" '$1 == u { f = 1 } END { exit !f }' "$ROOT/etc/passwd"; then
-        msg "Setting up Arch failed, so ZeXOS was not installed. The log is at $LOG (and /var/log/archinstall/install.log).\n\nOpen a shell from the menu to look, or start again."
-        return 1
-    fi
-    carry_wifi
-    cp -f "$LOG" "$ROOT/var/log/zexos-install-arch.log" 2>/dev/null
-
-    export ZEXOS_COMPOSITORS="$COMPOSITORS" ZEXOS_SHELLS="$SHELLS"
-    write_drivers_choice
-    echo
-    echo "Arch is set up. Now ZeXOS itself for $USERNAME."
-    echo
-    if zexos-install-into "$ROOT" "$USERNAME"; then
-        [ -n "$ANSWERS" ] && return 0
-        if whiptail --title "$TITLE" --yesno "ZeXOS is installed.\n\nReboot now? (Take the USB stick or ISO out when the screen goes dark.)" 0 0; then
-            umount -R "$ROOT" 2>/dev/null
-            systemctl reboot
+        rm -f "$WORK/user_credentials.json"
+        if [ ! -f "$ROOT/etc/os-release" ] || ! awk -F: -v u="$USERNAME" '$1 == u { f = 1 } END { exit !f }' "$ROOT/etc/passwd"; then
+            echo "Setting up Arch failed, so ZeXOS was not installed." > "$WORK/result"
+            return
         fi
+        # The full name shows on the login screen.
+        [ -n "$FULLNAME" ] && arch-chroot "$ROOT" chfn -f "$FULLNAME" "$USERNAME" >/dev/null 2>&1
+        carry_wifi
+        stage 4
+        export ZEXOS_COMPOSITORS="$COMPOSITORS" ZEXOS_SHELLS="$SHELLS"
+        write_drivers_choice
+        if zexos-install-into "$ROOT" "$USERNAME"; then
+            echo ok > "$WORK/result"
+        else
+            echo "The ZeXOS step stopped." > "$WORK/result"
+        fi
+        cp -f "$LOG" "$ROOT/var/log/zexos-install-iso.log" 2>/dev/null
+    } >>"$LOG" 2>&1
+}
+
+# A pretend install for --demo: walks through the steps with fake output.
+demo_job() {
+    local i
+    { echo 1 > "$WORK/stage"; sleep 3; echo 2 > "$WORK/stage"
+      for i in $(seq 1 228); do echo "($i/228) installing package-$i"; sleep 0.03; done
+      echo 3 > "$WORK/stage"; sleep 2; echo 4 > "$WORK/stage"
+      for i in $(seq 1 323); do echo "($i/323) installing desktop-$i"; [ $i = 200 ] && echo "A download failed; trying again (2 of 3)..."; sleep 0.04
+          [ -n "${DEMO_FAIL:-}" ] && [ $i = 120 ] && { echo "error: failed retrieving file 'libxft-2.3.9-1-x86_64.pkg.tar.zst.sig'"; echo "The ZeXOS step stopped." > "$WORK/result"; return; }; done
+      echo "Stowing niri"; echo "✔ Done: niri"; sleep 2; echo "✔ ZEXOS INSTALLATION COMPLETE"; sleep 1
+      echo "installed intel-vpl"; sleep 2; echo ok > "$WORK/result"; } >>"$LOG" 2>&1
+}
+
+STAGE_NAMES=("" "Preparing the disk" "Installing Arch" "Your account and settings" "Installing the desktop" "Finishing touches" "Drivers")
+# Percent bands for each step (start, end).
+BAND_LO=(0 0 5 30 35 85 95) BAND_HI=(0 5 30 35 85 95 100)
+TIPS=("Mod+Space opens the app launcher" "Mod+C opens a terminal" "Mod+B opens the web browser" "Mod+E opens your files"
+      "Mod+M opens the app store to get more apps" "Mod+W picks a new wallpaper, and the colours follow it"
+      "Mod+O shows all your workspaces" "Mod+Shift+D switches between Noctalia and DankMaterialShell"
+      "Mod+L locks the screen" "Mod+Esc opens log out, restart and shut down" "Mod+Q closes a window"
+      "Mod+F1 shows every key" "ZeXOS - Welcome helps with updates, drivers and gaming")
+
+# Reads the log: sets STAGE, COUNT ("212 of 323"), CUR/TOTAL.
+read_progress() {
+    local s tail_txt m
+    s=$(cat "$WORK/stage" 2>/dev/null); s=${s:-1}
+    tail_txt=$( { tail -c 30000 "$AILOG" 2>/dev/null; tail -c 30000 "$LOG"; } | tr '\r' '\n')
+    # Inside archinstall (steps 1-3) and install.sh (steps 4-6), the step
+    # shows in what they print.
+    if [ "$s" -lt 4 ]; then
+        grep -qE '\([0-9]+/[0-9]+\) installing|Installing packages|pacstrap' <<<"$tail_txt" && [ "$s" -lt 2 ] && s=2
+        grep -qiE 'creating user|setting hostname|installing bootloader|adding bootloader|bootloader' <<<"$(tail -n 40 <<<"$tail_txt")" && [ "$s" -lt 3 ] && s=3
     else
-        msg "The ZeXOS step failed. The log is at $ROOT/var/log/zexos-install.log.\n\nThe Arch system itself is installed; you can open a shell from the menu and look, or try again."
-        return 1
+        tail_txt=$(tail -c 30000 "$LOG" | tr '\r' '\n')
+        grep -qE 'Stowing|STOW|FINAL TOUCHES' <<<"$tail_txt" && [ "$s" -lt 5 ] && s=5
+        grep -qE 'ZEXOS INSTALLATION COMPLETE' <<<"$tail_txt" && s=6
+        [ "$(cat "$WORK/stage" 2>/dev/null)" -gt "$s" ] 2>/dev/null && s=$(cat "$WORK/stage")
+    fi
+    [ "$s" -gt "${STAGE:-1}" ] && { STAGE=$s; STAGE_T0=$SECONDS; }
+    COUNT="" CUR=0 TOTAL=0
+    if [ "$STAGE" = 2 ] || [ "$STAGE" = 4 ]; then
+        m=$(grep -oE '\([0-9]+/[0-9]+\) installing' <<<"$tail_txt" | tail -n1)
+        if [[ $m =~ \(([0-9]+)/([0-9]+)\) ]]; then CUR=${BASH_REMATCH[1]} TOTAL=${BASH_REMATCH[2]}; COUNT="$CUR of $TOTAL packages"; fi
+    fi
+}
+# The percentage: counted packages in steps 2 and 4, otherwise a slow
+# approach to the step's end. It never goes back.
+PCT=0
+calc_pct() {
+    local lo=${BAND_LO[STAGE]} hi=${BAND_HI[STAGE]} p t
+    if [ "$TOTAL" -gt 0 ]; then p=$(( lo + (hi - lo) * CUR / TOTAL ))
+    else t=$(( SECONDS - STAGE_T0 )); p=$(( lo + (hi - lo) * t / (t + 20) )); fi
+    [ "$p" -gt "$PCT" ] && PCT=$p
+    [ "$PCT" -gt 99 ] && PCT=99
+}
+bar() {
+    local w=$1 f
+    f=$(( w * PCT / 100 ))
+    printf '%s%s%s%s%s' "$C_VIOLET" "$(printf '%*s' "$f" '' | sed 's/ /█/g')" "$(fg 6)" "$(printf '%*s' $((w - f)) '' | sed 's/ /█/g')" "$R"
+}
+elapsed() { local s=$(( SECONDS - INSTALL_T0 )); printf '%d min %d s' $((s / 60)) $((s % 60)); }
+
+progress_screen() {
+    local tip=${TIPS[$(( (SECONDS - INSTALL_T0) / 8 % ${#TIPS[@]} ))]} what
+    what="$C_WHITE$B${STAGE_NAMES[STAGE]}$R"; [ -n "$COUNT" ] && what+="$C_DIM  ·  $COUNT$R"
+    size; frame
+    local top=$(( (ROWS - 22) / 2 )); [ $top -lt 0 ] && top=0
+    for (( i = 0; i < top; i++ )); do blank; done
+    draw_logo; blank; blank
+    center "$what"; blank
+    center "$(bar 62)  $C_GREEN$B$PCT%$R"; blank
+    center "${C_DIM}Step $STAGE of 6 · $(elapsed)$R"; blank; blank
+    center "$(fg 13)Tip: $tip$R"; blank; blank; blank
+    center "$BTN_OFF V $R$C_DIM Show details$R"
+    show
+}
+details_screen() {
+    local what n line c
+    what="$C_WHITE$B${STAGE_NAMES[STAGE]}$R"; [ -n "$COUNT" ] && what+="$C_DIM  ·  $COUNT$R"
+    size; frame; blank; draw_logo; blank
+    center "$what  $(bar 36) $C_GREEN$B$PCT%$R"; blank
+    n=$(( ROWS - FRAME_ROWS - 3 )); [ $n -lt 3 ] && n=3
+    while IFS= read -r line; do
+        line=${line:0:$((COLS - PAD - 2))}
+        case $line in
+            *✖*|*rror*|*ailed*|*FAIL*) c=$C_RED ;;
+            *trying\ again*|*arning*) c=$C_AMBER ;;
+            *✔*) c=$C_GREEN ;;
+            *installing*) c=$C_FG ;;
+            *) c=$C_DIM ;;
+        esac
+        say "$c$line$R"
+    done < <(tail -c 60000 "$LOG" | tr '\r' '\n' | sed 's/\x1b\[[0-9;?]*[A-Za-z]//g' | grep -v '^[[:space:]]*$' | tail -n "$n")
+    while [ "$FRAME_ROWS" -lt $(( ROWS - 2 )) ]; do blank; done
+    say "$BTN_OFF V $R$C_DIM Hide details    Full log: $LOG$R"
+    show
+}
+
+# Runs the install with the progress screen; V switches to the details.
+# Returns 0 when ZeXOS is installed.
+run_install() {
+    mkdir -p "$WORK"; rm -f "$WORK/stage" "$WORK/result"
+    : >"$LOG"
+    STAGE=1 STAGE_T0=$SECONDS INSTALL_T0=$SECONDS PCT=0 DETAILS=""
+    if [ -n "$DEMO" ]; then demo_job & else install_job & fi
+    local job=$!
+    while [ ! -s "$WORK/result" ]; do
+        read_progress; calc_pct
+        if [ -n "$DETAILS" ]; then details_screen; else progress_screen; fi
+        if IFS= read -rsn1 -t 0.4 k; then
+            case $k in v|V) [ -n "$DETAILS" ] && DETAILS="" || DETAILS=1 ;; esac
+        fi
+        if ! kill -0 "$job" 2>/dev/null && [ ! -s "$WORK/result" ]; then
+            echo "The installer stopped without finishing." > "$WORK/result"
+        fi
+    done
+    wait "$job" 2>/dev/null
+    INSTALL_TIME=$(elapsed)
+    [ "$(cat "$WORK/result")" = ok ] && { PCT=100; return 0; }
+    FAIL_WHY=$(cat "$WORK/result")
+    FAIL_STAGE=${STAGE_NAMES[STAGE]}
+    return 1
+}
+
+done_screen() {
+    size; frame
+    local top=$(( (ROWS - 18) / 2 )); [ $top -lt 0 ] && top=0
+    for (( i = 0; i < top; i++ )); do blank; done
+    draw_logo; blank; blank
+    center "$C_WHITE${B}ZeXOS is installed$R$C_GREEN in $INSTALL_TIME$R"; blank
+    center "${C_DIM}Take the USB stick out when the screen goes dark.$R"; blank; blank
+}
+finished() {
+    local n=${#SHADES[@]} k
+    # A one-time shimmer: the logo's colours sweep across once.
+    for (( k = 0; k <= 2 * n - 2; k++ )); do SHIFT=$k; done_screen; show; sleep 0.09; done
+    SHIFT=0
+    choose_buttons done_screen 0 "Reboot now" "Stay here" || return
+    if [ "$PICK" -eq 0 ]; then
+        [ -n "$DEMO" ] && return
+        umount -R "$ROOT" 2>/dev/null
+        systemctl reboot
     fi
 }
 
-install_zexos() {
-    until online; do
-        whiptail --title "$TITLE" --yes-button "Set up Wi-Fi" --no-button "Back" --yesno \
-            "No internet connection. ZeXOS is downloaded while it installs, so it needs one.\n\nWith a network cable, plug it in and wait a few seconds." 0 0 || return
-        wifi
+fail_screen() {
+    size; frame; blank; draw_logo; blank; blank
+    say "$C_RED${B}The install stopped$R  at $FAIL_STAGE"; blank
+    say "$FAIL_WHY"
+    local why
+    why=$(tail -c 60000 "$LOG" | tr '\r' '\n' | sed 's/\x1b\[[0-9;?]*[A-Za-z]//g' | grep -iE 'error|failed|✖' | tail -n1)
+    [ -n "$why" ] && say "$C_DIM${why:0:$((COLS - PAD - 2))}$R"
+    say "${C_DIM}Your disk was changed, so start the install again to finish it.$R"; blank
+}
+failed() {
+    while :; do
+        LIST_ITEMS=("Try again" "Show the log" "Open a shell" "Reboot" "Power off") LIST_OFF=()
+        LIST_HINT="Try again keeps all your answers" LIST_KEYS="↑/↓ choose · Enter"
+        choose_list fail_screen 0 5 || continue
+        case $PICK in
+            0) umount -R "$ROOT" 2>/dev/null; return 0 ;;
+            1) clear; less -R +G "$LOG" ;;
+            2) shell ;;
+            3) [ -z "$DEMO" ] && systemctl reboot ;;
+            4) [ -z "$DEMO" ] && systemctl poweroff ;;
+        esac
     done
+}
 
-    msg "Welcome! A few questions, then ZeXOS installs by itself.\n\nBack (or Esc) always goes one step back. Nothing is changed on your disks until you pick Install on the last screen."
+shell() { reset_palette; clear; tput cnorm; echo "Type exit to come back to the ZeXOS installer."; zsh; set_palette; tput civis; }
 
-    local steps=(keyboard account timezone disk encrypt desktop drivers) i=0
+# ---------------------------------------------------------------- the flow
+
+install_zexos() {
+    if ! online; then
+        ask_wifi || return
+    fi
+    WIFI_DONE=1
+    local steps=(keyboard you password computer timezone disk encrypt desktop drivers) i=0
     while [ $i -lt ${#steps[@]} ]; do
         if "ask_${steps[i]}"; then
             i=$((i + 1))
@@ -477,55 +1111,29 @@ install_zexos() {
             [ $i -lt 0 ] && return
         fi
     done
-    review || return
-    write_config || { msg "Could not write the install settings. Nothing was changed."; return; }
-    run_install
-}
-
-# The old way: Arch's own installer menus, with the ZeXOS defaults picked.
-install_manual() {
-    until online; do
-        whiptail --title "$TITLE" --yesno "No internet connection. This installer downloads everything, so it needs one.\n\nSet up Wi-Fi now?" 0 0 || return
-        wifi
-    done
-
-    msg "Step 1 of 2: archinstall\n\nArch's own installer opens next, with the ZeXOS settings already picked (minimal profile, NetworkManager, PipeWire, systemd-boot).\n\nYou still choose:\n  - Disk configuration\n  - User account (make it a superuser)\n  - Root password, timezone, locale\n\nThen pick Install. When it asks to chroot into the new system, answer No."
-
-    clear
-    archinstall --config "$PRESET" || true
-
-    if [ ! -f "$ROOT/etc/os-release" ]; then
-        msg "No installed system is mounted at $ROOT, so archinstall did not finish. Nothing was changed. You can start again from the menu."
-        return
-    fi
-
-    local users=() items=() u
-    mapfile -t users < <(awk -F: '$3 >= 1000 && $3 < 60000 { print $1 }' "$ROOT/etc/passwd")
-    case ${#users[@]} in
-        0) msg "The new system has no normal user. Run the install again and add a user (as a superuser)."; return ;;
-        1) USERNAME=${users[0]} ;;
-        *)
-            for u in "${users[@]}"; do items+=("$u" ""); done
-            USERNAME=$(ask --menu "Which user gets ZeXOS?" 0 0 0 "${items[@]}") || return
-            ;;
-    esac
-    ask_desktop || return
-    ask_drivers || return
-
-    export ZEXOS_COMPOSITORS="$COMPOSITORS" ZEXOS_SHELLS="$SHELLS"
-    write_drivers_choice
-    clear
-    echo "Step 2 of 2: installing ZeXOS for $USERNAME. This takes a few minutes."
-    echo
-    if zexos-install-into "$ROOT" "$USERNAME"; then
-        if whiptail --title "$TITLE" --yesno "ZeXOS is installed.\n\nReboot now? (Take the USB stick or ISO out when the screen goes dark.)" 0 0; then
-            umount -R "$ROOT" 2>/dev/null
-            systemctl reboot
+    while :; do
+        review || return
+        if [ -z "$DEMO" ]; then
+            write_config || { head 9; say "${C_RED}Could not write the install settings. Nothing was changed.$R"; show; sleep 3; return; }
         fi
-    else
-        msg "The ZeXOS step failed. The log is at $ROOT/var/log/zexos-install.log.\n\nThe Arch system itself is installed; you can open a shell from the menu and look, or try again."
-    fi
+        if run_install; then finished; return; fi
+        failed || return
+    done
 }
+
+start_screen() {
+    size; frame
+    local top=$(( (ROWS - 20) / 2 )); [ $top -lt 0 ] && top=0
+    for (( i = 0; i < top; i++ )); do blank; done
+    draw_logo; blank; blank
+    center "$C_WHITE${B}The ZeXOS installer$R"; blank
+    if [ -n "$ONLINE" ]; then center "${C_DIM}Your computer is online. Everything downloads while it installs.$R"
+    else center "${C_DIM}Not online yet: pick Wi-Fi first, or plug in a network cable.$R"; fi
+    blank; blank
+}
+start_after() { blank; blank; blank; center "${C_DIM}←/→ choose · Enter start$R"; }
+
+cleanup() { reset_palette; tput cnorm 2>/dev/null; printf '\e[H\e[2J'; }
 
 ANSWERS=
 DRY=
@@ -533,6 +1141,7 @@ while [ $# -gt 0 ]; do
     case $1 in
         --answers) ANSWERS=$2; shift ;;
         --dry-run) DRY=1 ;;
+        --demo) DEMO=1; ROOT=/tmp/zexos-demo-root; LOG=/tmp/zexos-demo.log; AILOG=/nonexistent ;;
     esac
     shift
 done
@@ -542,29 +1151,33 @@ if [ -n "$ANSWERS" ]; then
     for v in USERNAME PASSWORD DISK TIMEZONE; do
         [ -n "${!v}" ] || { echo "$ANSWERS does not set $v" >&2; exit 1; }
     done
+    HOSTNAME=${HOSTNAME:-$USERNAME-zexos}
     write_config || exit 1
     if [ -n "$DRY" ]; then
         echo "Wrote $WORK/user_configuration.json and $WORK/user_credentials.json"
         exit 0
     fi
-    run_install
+    mkdir -p "$WORK"; rm -f "$WORK/result"; : >"$LOG"
+    install_job & job=$!
+    tail -n +1 -f "$LOG" --pid "$job"
+    [ "$(cat "$WORK/result" 2>/dev/null)" = ok ]
     exit
 fi
 
+trap cleanup EXIT
+trap 'cleanup; exit 130' INT
+wait_for_screen
+set_palette
+tput civis
 while true; do
-    choice=$(ask --nocancel --menu "Welcome to ZeXOS. What would you like to do?" 0 0 0 \
-        install "Install ZeXOS" \
-        wifi    "Connect to Wi-Fi" \
-        manual  "Install with Arch's own installer menus (advanced)" \
-        shell   "Open a shell (type exit to come back)" \
-        reboot  "Reboot" \
-        off     "Power off")
-    case $choice in
-        install) install_zexos ;;
-        wifi) online && msg "You are already online." || wifi ;;
-        manual) install_manual ;;
-        shell) clear; echo "Type exit to return to the ZeXOS menu."; zsh ;;
-        reboot) systemctl reboot ;;
-        off) systemctl poweroff ;;
+    ONLINE=; online && ONLINE=1
+    AFTER=start_after
+    choose_buttons start_screen "$([ -n "$ONLINE" ] && echo 0 || echo 1)" "Install ZeXOS" "Wi-Fi" "Open a shell" "Power off" || { AFTER=; continue; }
+    AFTER=
+    case $PICK in
+        0) install_zexos ;;
+        1) if online && [ -z "$DEMO" ]; then :; else ask_wifi; fi ;;
+        2) shell ;;
+        3) [ -n "$DEMO" ] && exit 0; systemctl poweroff ;;
     esac
 done

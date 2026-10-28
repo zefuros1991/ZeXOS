@@ -1,70 +1,66 @@
-# ZeXOS installer ISOs
+# ZeXOS installer ISO
 
-Two live ISOs, both built on Arch's own `releng` profile (from the
-`archiso` package). Both are **online** installers: they download Arch and
-ZeXOS while installing.
+One live ISO with both installers, built on Arch's own `releng` profile
+(from the `archiso` package). The stick's start menu picks one:
 
-| ISO | What you get |
+| Start menu entry | What you get |
 |---|---|
-| `tui` | Text installer: a few plain questions, one screen to check them, then it installs everything by itself. |
-| `gui` | Graphical installer: Calamares on a small niri desktop, with language, disk, compositor, shell and user pages and a slideshow while it installs. |
+| ZeXOS (window installer) | Calamares on a small niri desktop, with language, disk, compositor, shell, drivers and user pages and a slideshow while it installs. The default. |
+| ZeXOS (text installer) | `zexos-tui`: the ZeXOS logo, one plain question per screen, a summary to check, then a progress screen while it installs. |
+| ZeXOS (safe graphics) | The window installer with basic graphics, for a card that shows a black screen. |
 
-On both you can pick any mix of compositors (niri, Hyprland, Mango) and
-shells (Noctalia, DMS). Pick a single shell and the shell switcher is left
-out.
+Both are **online** installers: they download Arch and ZeXOS while
+installing. On both you can pick any mix of compositors (niri, Hyprland,
+Mango) and shells (Noctalia, DMS). Pick a single shell and the shell
+switcher is left out. The text entry adds `zexos.installer=text` to the
+kernel line; the live system's login on the first screen
+(`gui/airootfs/root/.config/fish/conf.d/zexos-live.fish`) reads it.
 
 ## Folders
 
 ```
 iso/
-  build.sh          builds either ISO
-  common/           files both ISOs get (zexos-install-into, ...)
-  tui/              text installer extras
-  gui/              graphical installer extras
+  build.sh          builds the ISO
+  common/           files the ISO always gets (zexos-install-into, the start menu entries)
+  gui/              window installer
     calamares-pkg/  PKGBUILD for zexos-calamares
     customize.sh    runs at build time (wallpaper, slides, previews, repo path)
     previews/       animated <id>.webp clips for the picker pages
     airootfs/etc/calamares/  settings, module configs and the zexos branding
+  tui/              text installer (zexos-tui)
 ```
-
-## Building the text ISO
-
-```bash
-sudo pacman -S --needed podman
-sudo ZEXOS_BRANCH=beta ./iso/build.sh tui
-```
-
-The build runs inside a clean Arch Linux container with Arch's own pacman and
-archiso, so nothing from the build computer (a CachyOS pacman, its mirrors or
-packages) reaches the ISO. The builder image is made on the first run and
-remade once a week. `ZEXOS_ISO_NATIVE=1` builds with the computer's own
-archiso instead.
 
 ## What the text installer does
 
-`zexos-tui` asks, one step at a time: keyboard, Wi-Fi (only if there is no
-cable), your name and password, computer name, time zone, disk, disk
-encryption and which compositors and shells to install. Then it shows all
-the answers on one screen; pick a line to change it. After that it does the
-rest by itself: it writes an archinstall config (an EFI partition plus a
-btrfs root, encrypted if you said yes), runs archinstall without its menus,
-and puts ZeXOS on the new system before the first boot.
+`zexos-tui` asks, one step at a time: Wi-Fi (only if there is no cable;
+Tab shows the password you typed), keyboard, your name and username,
+password, computer name, time zone, disk, disk encryption (No by default,
+like the window installer), compositors and shells, and drivers. Then it
+shows all the answers on one screen; "Change something" jumps to any step.
+Esc always goes one step back.
+
+After that it does the rest by itself: it writes an archinstall config (an
+EFI partition plus a btrfs root, encrypted if you said yes), runs archinstall
+without its menus, and puts ZeXOS on the new system before the first boot.
+The install screen shows a progress bar, what it is doing and tips; V shows
+the live output. The log is `/var/log/zexos-install.log` (also copied into
+the new system).
 
 Installing the same way on many machines, or testing:
 
 ```bash
 zexos-tui --answers answers.sh            # no questions
 zexos-tui --answers answers.sh --dry-run  # only writes the config to /tmp/zexos
+zexos-tui --demo                          # every screen, no disk is touched
 ```
 
 `answers.sh` sets `USERNAME`, `PASSWORD`, `DISK` and `TIMEZONE` (needed) and
-`KEYMAP`, `HOSTNAME`, `ENCRYPT`, `COMPOSITORS`, `SHELLS` (optional) as
-shell variables. Arch's own installer menus are still in the first menu ("Install with
-Arch's own installer menus") for anything the questions don't cover.
+`KEYMAP`, `FULLNAME`, `HOSTNAME`, `ENCRYPT`, `COMPOSITORS`, `SHELLS` (optional)
+as shell variables.
 
-## Building the graphical ISO
+## Building the ISO
 
-Arch has no official Calamares package, so the graphical ISO builds its own
+Arch has no official Calamares package, so the window installer uses its own
 from upstream Calamares (with the QML package chooser for the picker pages),
 `zexos-calamares`, served from a small local repo. Everything else comes from
 Arch's own repos.
@@ -80,11 +76,17 @@ Arch's own repos.
    iso/gui/build-calamares.sh $B/repo
    ```
 
-2. Build the ISO, pointing at that repo:
+2. Build the ISO, pointing at that repo (needs podman):
 
    ```bash
-   sudo ZEXOS_BRANCH=beta ZEXOS_CALAMARES_REPO=$B/repo ./iso/build.sh gui
+   sudo ZEXOS_BRANCH=beta ZEXOS_CALAMARES_REPO=$B/repo ./iso/build.sh
    ```
+
+   The build runs inside a clean Arch Linux container with Arch's own pacman
+   and archiso, so nothing from the build computer (a CachyOS pacman, its
+   mirrors or packages) reaches the ISO. The builder image is made on the
+   first run and remade once a week. `ZEXOS_ISO_NATIVE=1` builds with the
+   computer's own archiso instead.
 
 The `[zexos-iso]` repo is only used inside the live system. The installed
 system gets a plain Arch `pacman.conf` (everything above the
@@ -105,7 +107,7 @@ Bootloader: systemd-boot only for now (UEFI). GRUB and Limine are planned.
 
 ## The ZeXOS name
 
-Only systems installed from these ISOs are called ZeXOS. It works the way
+Only systems installed from this ISO are called ZeXOS. It works the way
 CachyOS and EndeavourOS do it:
 
 - `zexos-branding` writes `/etc/os-release` with `NAME="ZeXOS"`, `ID=zexos`

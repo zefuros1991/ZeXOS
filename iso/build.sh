@@ -1,26 +1,30 @@
 #!/usr/bin/env bash
-# Builds a ZeXOS installer ISO on top of Arch's own live ISO profile
+# Builds the ZeXOS installer ISO on top of Arch's own live ISO profile
 # (releng, from the archiso package).
 #
-#   sudo ./iso/build.sh tui        text installer (archinstall + ZeXOS)
-#   sudo ./iso/build.sh gui        graphical installer (Calamares on niri)
+#   sudo ZEXOS_CALAMARES_REPO=... ./iso/build.sh
 #
+# One ISO with both installers; the stick's start menu picks one:
+#   ZeXOS (window installer)  the live desktop with Calamares (iso/gui)
+#   ZeXOS (text installer)    zexos-tui in text screens (iso/tui)
+#   ZeXOS (safe graphics)     the window installer with basic graphics
 # Both are online installers: they download Arch and ZeXOS while installing.
 #
 # Settings (environment):
 #   ZEXOS_BRANCH   branch the ISO installs (default main; beta for testing)
 #   ZEXOS_ISO_OUT  where the .iso goes          (default ./out)
 #   ZEXOS_ISO_WORK scratch space, several GB    (default /var/tmp/zexos-iso)
-#   ZEXOS_CALAMARES_REPO  gui only: folder with the zexos-calamares package
-#                  and its zexos-iso.db (see iso/README.md)
+#   ZEXOS_CALAMARES_REPO  folder with the zexos-calamares package and its
+#                  zexos-iso.db (see iso/README.md)
 set -euo pipefail
 
-variant="${1:-}"
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-case "$variant" in
-    tui|gui) ;;
-    *) echo "usage: sudo $0 tui|gui" >&2; exit 1 ;;
+case "${1:-}" in
+    "") ;;
+    tui|gui) echo "There is one ISO now, with both installers: run sudo $0 (no tui/gui)." >&2; exit 1 ;;
+    *) echo "usage: sudo ZEXOS_CALAMARES_REPO=... $0" >&2; exit 1 ;;
 esac
+variant=zexos
 if [ "$(id -u)" -ne 0 ]; then
     echo "mkarchiso needs root: run this with sudo." >&2
     exit 1
@@ -58,12 +62,10 @@ EOF
           -e ZEXOS_BRANCH="$BRANCH" -e ZEXOS_ISO_OUT=/out -e ZEXOS_ISO_WORK=/work
           -e ZEXOS_ISO_COMPRESS="${ZEXOS_ISO_COMPRESS:-}"
           -e SUDO_UID="${SUDO_UID:-0}" -e SUDO_GID="${SUDO_GID:-0}")
-    if [ "$variant" = gui ]; then
-        calrepo="${ZEXOS_CALAMARES_REPO:?Set ZEXOS_CALAMARES_REPO to a folder with zexos-iso.db (see iso/README.md).}"
-        args+=(-v "$(cd "$calrepo" && pwd):/calrepo:ro" -e ZEXOS_CALAMARES_REPO=/calrepo)
-    fi
+    calrepo="${ZEXOS_CALAMARES_REPO:?Set ZEXOS_CALAMARES_REPO to a folder with zexos-iso.db (see iso/README.md).}"
+    args+=(-v "$(cd "$calrepo" && pwd):/calrepo:ro" -e ZEXOS_CALAMARES_REPO=/calrepo)
     exec podman run --rm --privileged --network host "${args[@]}" "$image" bash -c \
-        "pacman -Syu --noconfirm --needed $tools >/dev/null && exec bash /zexos/iso/build.sh \"\$0\"" "$variant"
+        "pacman -Syu --noconfirm --needed $tools >/dev/null && exec bash /zexos/iso/build.sh"
 fi
 command -v mkarchiso >/dev/null || { echo "Install archiso first: sudo pacman -S archiso" >&2; exit 1; }
 profile="$WORK/profile-$variant"
@@ -102,17 +104,20 @@ sed -i -e "s|^Include = /etc/pacman.d/mirrorlist|Include = $WORK/mirrorlist|" \
     -e "s|^#CacheDir .*|CacheDir = $WORK/pkg-cache/|" \
     -e "s|^#GPGDir .*|GPGDir = $GPGDIR/|" "$profile/pacman.conf"
 
-# Files: common ones first, then the variant's own.
-for part in common "$variant"; do
+# Files: common ones first, then the window installer's, then the text one's.
+for part in common gui tui; do
     [ -d "$here/$part/airootfs" ] && cp -a "$here/$part/airootfs/." "$profile/airootfs/"
     [ -f "$here/$part/packages.x86_64" ] && cat "$here/$part/packages.x86_64" >> "$profile/packages.x86_64"
     [ -f "$here/$part/pacman.conf.append" ] && cat "$here/$part/pacman.conf.append" >> "$profile/pacman.conf"
-    [ -f "$here/$part/zlogin.append" ] && cat "$here/$part/zlogin.append" >> "$profile/airootfs/root/.zlogin"
     if [ -f "$here/$part/permissions" ]; then
         { echo "file_permissions+=("; cat "$here/$part/permissions"; echo ")"; } >> "$profile/profiledef.sh"
     fi
     [ -x "$here/$part/customize.sh" ] && "$here/$part/customize.sh" "$profile"
 done
+
+# Each package once (several parts need git, the ZeXOS keyring, ...).
+awk '/^[[:space:]]*(#|$)/ || !seen[$1]++' "$profile/packages.x86_64" > "$profile/packages.x86_64.new"
+mv "$profile/packages.x86_64.new" "$profile/packages.x86_64"
 
 # Nothing on the ISO may point at this build computer's folders.
 if grep -rlF "$WORK" "$profile/airootfs"; then
@@ -128,13 +133,13 @@ sh "$here/common/airootfs/usr/local/share/zexos/branding/zexos-branding" "$profi
 
 # Name it ZeXOS instead of Arch Linux: file name, volume label, boot menu.
 sed -i \
-    -e "s|^iso_name=.*|iso_name=\"zexos-$variant\"|" \
+    -e "s|^iso_name=.*|iso_name=\"zexos\"|" \
     -e "s|^iso_label=.*|iso_label=\"ZEXOS_\$(date --date=\"@\${SOURCE_DATE_EPOCH:-\$(date +%s)}\" +%Y%m)\"|" \
     -e "s|^iso_publisher=.*|iso_publisher=\"ZeXOS <https://github.com/zefuros1991/ZeXOS>\"|" \
-    -e "s|^iso_application=.*|iso_application=\"ZeXOS installer ($variant)\"|" \
+    -e "s|^iso_application=.*|iso_application=\"ZeXOS installer\"|" \
     "$profile/profiledef.sh"
 grep -rl "Arch Linux install medium" "$profile/efiboot" "$profile/syslinux" "$profile/grub" 2>/dev/null \
-    | xargs -r sed -i "s/Arch Linux install medium/ZeXOS installer ($variant)/g"
+    | xargs -r sed -i "s/Arch Linux install medium/ZeXOS (window installer)/g"
 
 # Packing the live system is most of the build time. Test ISOs (any branch
 # but main) use zstd: several times faster to make, a somewhat bigger file.
@@ -151,5 +156,5 @@ fi
 echo "Packing: $COMPRESS ($( [ "$COMPRESS" = fast ] && echo zstd || echo xz ))"
 
 mkarchiso -v -r -w "$WORK/work-$variant" -o "$OUT" "$profile"
-chown "$owner" "$OUT"/zexos-"$variant"-*.iso
-ls -lh "$OUT"/zexos-"$variant"-*.iso
+chown "$owner" "$OUT"/zexos-[0-9]*.iso
+ls -lh "$OUT"/zexos-[0-9]*.iso

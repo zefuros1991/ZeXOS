@@ -1,5 +1,4 @@
 Welcome to the ZeXOS installer.
 
-To start it again: zexos-tui on the text ISO, zexos-gui-installer on the desktop ISO.
+To start it again: zexos-tui (text installer) or zexos-gui-installer (window installer, on the desktop).
 For Wi-Fi, use the iwctl utility. Wired internet works by itself.
-

@@ -516,9 +516,13 @@ install_local "Hardware drivers (zexos-drivers)" zexos-drivers
 # "ZeXOS - Welcome" is part of the full ZeXOS distro: only a system installed
 # from the ZeXOS ISO gets it (/etc/os-release ID=zexos), never a script
 # install on CachyOS, Arch or EndeavourOS, and never the ISO's live desktop.
+# The live desktop is told apart by /etc/zexos-iso.conf, which only the ISO
+# has. Not /run/archiso: the ISO's installer runs this inside the new system
+# with arch-chroot, which passes the live /run through, so the new system
+# would look live and miss the app.
 # It needs Qt for Python, Arch's mirror tester and the tools its buttons use.
 zexos_welcome_wanted() {
-    [ ! -d /run/archiso ] && [ "$(. /etc/os-release 2>/dev/null; echo "${ID:-}")" = zexos ]
+    [ ! -f /etc/zexos-iso.conf ] && [ "$(. /etc/os-release 2>/dev/null; echo "${ID:-}")" = zexos ]
 }
 if zexos_welcome_wanted; then
     install_pacman "Welcome app" pyside6 qt6-svg rate-mirrors pacman-contrib flatpak kitty

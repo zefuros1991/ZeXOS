@@ -510,7 +510,9 @@ echo -e "\n${GREEN}${BOLD}✔ ZEXOS INSTALLATION COMPLETE${RESET}"
 # A driver that couldn't be installed is said again here, where it is seen,
 # not only in the middle of the package step.
 if command -v zexos-drivers >/dev/null 2>&1; then
-    drv_problem="$(zexos-drivers status 2>/dev/null | grep '^Problem:')"
+    # No "Problem:" line is the normal case; grep then fails, which must not
+    # stop the script (set -e).
+    drv_problem="$(zexos-drivers status 2>/dev/null | grep '^Problem:' || true)"
     if [ -n "$drv_problem" ]; then
         echo -e "${RED}✖ Driver: ${drv_problem#Problem: }${RESET}"
         echo -e "${YELLOW}  The desktop still starts on the open-source driver. Try again later: sudo zexos-drivers install${RESET}"

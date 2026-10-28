@@ -3,7 +3,7 @@
 
 pkgname=zexos-calamares
 pkgver=3.3.14
-pkgrel=3
+pkgrel=4
 pkgdesc='Distribution-independent installer framework'
 arch=('x86_64')
 license=(GPL-3.0-or-later)
@@ -51,12 +51,12 @@ sha256sums=('SKIP')
 options=('!emptydirs')
 
 prepare() {
-    # Welcome page: upstream puts an empty stretch above the logo, so the
-    # logo only gets the bottom half of the page and sits low. Give the
-    # logo the stretch instead, so it is centred.
+    # Welcome page: the logo is only as tall as its picture, so it sits
+    # right above the language picker (WelcomePage below centres the two
+    # together under the title and its line).
     local f=calamares/src/modules/welcome/checker/ResultsListWidget.cpp
-    grep -q 'm_centralLayout->addWidget( imageLabel );' "$f"
-    sed -i 's|m_centralLayout->addWidget( imageLabel );|m_centralLayout->addWidget( imageLabel, 1 );|' "$f"
+    grep -q 'imageLabel->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Expanding );' "$f"
+    sed -i 's|imageLabel->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Expanding );|imageLabel->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Maximum );|' "$f"
 
     # After the install, upstream keeps Back and Next on screen (Next still
     # looks like the main button) and turns Cancel into a plain "Done" that
@@ -69,6 +69,143 @@ prepare() {
     grep -q '{ setButtonIcon( quit, n ); }' "$f"
     sed -i -e 's|{ setButtonIcon( quit, n ); }|{ setButtonIcon( quit, n ); quit->setDefault( n == QStringLiteral( "dialog-ok-apply" ) ); quit->style()->unpolish( quit ); quit->style()->polish( quit ); }|' \
         -e 's|^#include <QLabel>$|&\n#include <QStyle>|' "$f"
+
+    # Enter works like pressing Next on every page (upstream: only a click
+    # does). Pages drawn in QML (Drivers, Compositors, Shells, Users) handle
+    # Enter themselves and call ViewManager.next(), so key presses inside
+    # them are left alone here, as are open drop-down lists and dialogs.
+    f=calamares/src/libcalamaresui/ViewManager.h
+    grep -q '^    explicit ViewManager( QObject\* parent = nullptr );' "$f"
+    sed -i 's|^    explicit ViewManager( QObject\* parent = nullptr );|&\n    bool eventFilter( QObject* watched, QEvent* event ) override;|' "$f"
+    f=calamares/src/libcalamaresui/ViewManager.cpp
+    grep -q '^    m_widget->setLayout( mainLayout );' "$f"
+    grep -q '^#include <QApplication>$' "$f"
+    sed -i -e 's|^    m_widget->setLayout( mainLayout );|&\n    qApp->installEventFilter( this );|' \
+        -e 's|^#include <QApplication>$|&\n#include <QKeyEvent>|' "$f"
+    cat >> "$f" <<'EOF'
+
+bool
+Calamares::ViewManager::eventFilter( QObject* watched, QEvent* event )
+{
+    if ( event->type() == QEvent::KeyPress && !QApplication::activePopupWidget()
+         && !QApplication::activeModalWidget() )
+    {
+        const auto* key = static_cast< QKeyEvent* >( event );
+        QWidget* focus = QApplication::focusWidget();
+        if ( ( key->key() == Qt::Key_Return || key->key() == Qt::Key_Enter ) && ( key->modifiers() & ~Qt::KeypadModifier ) == Qt::NoModifier
+             && focus && watched == focus && !focus->inherits( "QQuickWidget" )
+             && focus->window() == m_widget->window() )
+        {
+            if ( nextEnabled() )
+            {
+                next();
+            }
+            return true;
+        }
+    }
+    return QAbstractListModel::eventFilter( watched, event );
+}
+EOF
+
+    # QML pages (Drivers, Compositors, Shells, Users) take the keyboard as
+    # soon as they open, so you can type a name or press Enter right away;
+    # upstream leaves the focus on the page you came from until you click.
+    f=calamares/src/libcalamaresui/viewpages/QmlViewStep.cpp
+    grep -q '^QmlViewStep::onActivate()$' "$f"
+    perl -0pi -e 's/(QmlViewStep::onActivate\(\)\n\{\n)/$1    QWidget* zexosFocus = m_qmlWidget;\n    QTimer::singleShot( 0, zexosFocus, [ zexosFocus ] { zexosFocus->setFocus( Qt::OtherFocusReason ); } );\n/ or die "QmlViewStep::onActivate not found\n"' "$f"
+    grep -q '^#include <QTimer>' "$f" || sed -i '0,/^#include <Q/s|^#include <Q|#include <QTimer>\n&|' "$f"
+
+    # Summary page: upstream lays it out full width, each section indented
+    # with no box around it. Give the parts names the stylesheet can style
+    # (a centred column of cards) and even padding inside each card.
+    f=calamares/src/modules/summary/SummaryPage.cpp
+    grep -q '^    m_scrollArea->setWidgetResizable( true );' "$f"
+    grep -q '^    m_contentWidget = new QWidget;' "$f"
+    grep -q '^    QWidget\* w = new QWidget();' "$f"
+    grep -q '^    itemBodyLayout->addSpacing( Calamares::defaultFontHeight() \* 2 );' "$f"
+    grep -q '^    Calamares::unmarginLayout( itemBodyLayout );' "$f"
+    grep -q '^    itemBodyCoreLayout->addSpacing( Calamares::defaultFontHeight() / 2 );' "$f"
+    sed -i -e 's|^    m_scrollArea->setWidgetResizable( true );|&\n    m_scrollArea->setAlignment( Qt::AlignHCenter );|' \
+        -e 's|^    m_contentWidget = new QWidget;|&\n    m_contentWidget->setObjectName( "summaryContent" );|' \
+        -e 's|^    QWidget\* w = new QWidget();|&\n    w->setObjectName( "summaryItem" );|' \
+        -e '/^    itemBodyLayout->addSpacing( Calamares::defaultFontHeight() \* 2 );/d' \
+        -e 's|^    Calamares::unmarginLayout( itemBodyLayout );|    itemBodyLayout->setContentsMargins( 20, 14, 20, 14 );|' \
+        -e '/^    itemBodyCoreLayout->addSpacing( Calamares::defaultFontHeight() \/ 2 );/d' "$f"
+
+    # Welcome page: upstream spreads it over the whole page (language
+    # picker along the bottom, full width). The title and its line stay at
+    # the top; the checker part (that line, then space, then the logo) and
+    # the space under the buttons share the room 3:2 (the checker spends
+    # some of its share on its own spacing), so logo, language and buttons
+    # sit together in the middle of the page. The language picker gets a
+    # sensible width (stylesheet).
+    f=calamares/src/modules/welcome/WelcomePage.cpp
+    grep -q '^    ui->verticalLayout->insertWidget( welcome_text_idx + 1, m_checkingWidget );' "$f"
+    sed -i 's|^    ui->verticalLayout->insertWidget( welcome_text_idx + 1, m_checkingWidget );|&\n    ui->verticalLayout->setStretchFactor( m_checkingWidget, 3 );\n    ui->verticalLayout->addStretch( 2 );\n    ui->horizontalLayout_3->insertStretch( 0, 1 );\n    ui->horizontalLayout_3->addStretch( 1 );|' "$f"
+
+    # Location page: upstream puts the map at the top and the language lines
+    # at the bottom edge. Make it one block, as wide as the map, in the
+    # middle of the page.
+    f=calamares/src/modules/locale/LocalePage.cpp
+    perl -0pi -e 's/\Q    mainLayout->addLayout( tzwLayout );
+    mainLayout->addStretch();
+    mainLayout->addLayout( zoneAndRegionLayout );
+    mainLayout->addStretch();
+    mainLayout->addLayout( localeLayout );
+    mainLayout->addLayout( formatsLayout );\E/    QWidget* zexosBlock = new QWidget( this );
+    zexosBlock->setObjectName( "localeBlock" );
+    zexosBlock->setFixedWidth( m_tzWidget->width() );
+    QBoxLayout* zexosBlockLayout = new QVBoxLayout( zexosBlock );
+    zexosBlockLayout->setContentsMargins( 0, 0, 0, 0 );
+    zexosBlockLayout->setSpacing( 12 );
+    zexosBlockLayout->addLayout( zoneAndRegionLayout );
+    zexosBlockLayout->addSpacing( 12 );
+    zexosBlockLayout->addLayout( localeLayout );
+    zexosBlockLayout->addLayout( formatsLayout );
+    mainLayout->addStretch( 1 );
+    mainLayout->addLayout( tzwLayout );
+    mainLayout->addSpacing( 24 );
+    mainLayout->addWidget( zexosBlock, 0, Qt::AlignHCenter );
+    mainLayout->addStretch( 1 );/ or die "LocalePage layout not found\n"' "$f"
+    grep -q 'zexosBlock' "$f"
+
+    # Keyboard page: upstream fills the whole page with two tall lists.
+    # The stylesheet makes the lists shorter and the rows narrower; this
+    # centres every row and puts the block in the middle, top to bottom.
+    f=calamares/src/modules/keyboard/KeyboardPage.cpp
+    grep -q '^    ui->KBPreviewLayout->addWidget( m_keyboardPreview );' "$f"
+    sed -i 's|^    ui->KBPreviewLayout->addWidget( m_keyboardPreview );|&\n    ui->verticalLayout->insertStretch( 0, 1 );\n    ui->verticalLayout->addStretch( 1 );\n    for ( auto* l : { ui->horizontalLayout_2, ui->horizontalLayout_3, ui->horizontalLayout_4 } )\n    {\n        ui->verticalLayout->setAlignment( l, Qt::AlignHCenter );\n    }\n    for ( auto* l : { ui->horizontalLayout_2, ui->horizontalLayout_4 } )\n    {\n        l->insertStretch( 0, 1 );\n        l->addStretch( 1 );\n    }|' "$f"
+
+    # QML pages can read Calamares' shared storage (Global.value) but not
+    # write it. The Drivers page saves the chosen driver sets there
+    # (Global.insert), for the install step's ${gs[zexosDrivers]}; without
+    # this that command can't run and the install stops at the end.
+    f=calamares/src/libcalamares/GlobalStorage.h
+    grep -q '^    void insert( const QString& key, const QVariant& value );' "$f"
+    sed -i 's|^    void insert( const QString& key, const QVariant& value );|    Q_INVOKABLE void insert( const QString\& key, const QVariant\& value );|' "$f"
+
+    # Partitions page: upstream writes the disk names under the before/after
+    # bars in black (sizes in grey), which is unreadable on our dark
+    # background. Use the page's own text colour (the stylesheet sets it),
+    # and a faded copy of it for the sizes.
+    f=calamares/src/modules/partition/gui/PartitionLabelsView.cpp
+    grep -q 'painter->setPen( Qt::black );' "$f"
+    grep -q 'painter->setPen( Qt::gray );' "$f"
+    sed -i -e 's|painter->setPen( Qt::black );|painter->setPen( palette().windowText().color() );|' \
+        -e 's|painter->setPen( Qt::gray );|{ QColor faded = palette().windowText().color(); faded.setAlphaF( 0.6 ); painter->setPen( faded ); }|' \
+        -e 's|painter->setBrush( QPalette().window().color().lighter( 102 ) );|painter->setBrush( palette().window().color().lighter( 102 ) );|' "$f"
+
+    # Partitions page: upstream puts the choices (alongside, erase, ...)
+    # in the top-left corner with small icons, and the disk picker row on
+    # the left. Make the icons bigger, centre the choices both ways (the
+    # stylesheet gives them one shared width) and centre the disk picker row.
+    f=calamares/src/modules/partition/gui/ChoicePage.cpp
+    grep -q 'QSize iconSize( Calamares::defaultIconSize().width() \* 2, Calamares::defaultIconSize().height() \* 2 );' "$f"
+    grep -q '^    m_itemsLayout->addStretch();' "$f"
+    grep -q '^    m_drivesLayout->addStretch();' "$f"
+    sed -i -e 's|QSize iconSize( Calamares::defaultIconSize().width() \* 2, Calamares::defaultIconSize().height() \* 2 );|QSize iconSize( Calamares::defaultIconSize().width() * 3, Calamares::defaultIconSize().height() * 3 );|' \
+        -e 's|^    m_itemsLayout->addStretch();|&\n    m_itemsLayout->insertStretch( 0 );\n    for ( auto* b : { m_alongsideButton, m_replaceButton, m_eraseButton, m_somethingElseButton } )\n    {\n        m_itemsLayout->setAlignment( b, Qt::AlignHCenter );\n    }|' \
+        -e 's|^    m_drivesLayout->addStretch();|&\n    m_drivesLayout->insertStretch( 0 );|' "$f"
 }
 
 build() {
@@ -87,7 +224,7 @@ build() {
         openrcdmcryptcfg fsresizer \
         rawfs mkinitfs contextualprocess interactiveterminal \
         plasmalnf services-openrc \
-        summaryq tracking usersq webview welcomeq"
+        summaryq tracking webview welcomeq"
     cmake --build build
 }
 

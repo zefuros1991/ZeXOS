@@ -4,7 +4,10 @@
 componentName:  zexos
 welcomeStyleCalamares: false
 welcomeExpandingLogo: false
-windowExpanding: normal
+# noexpand: a page that doesn't fit (the Summary) scrolls inside the window
+# instead of growing it past the bottom of the screen, which hid the
+# Install button.
+windowExpanding: noexpand
 windowSize: 1180px,720px
 windowPlacement: center
 sidebar: qml,left

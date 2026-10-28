@@ -1,7 +1,0 @@
-
-# ZeXOS's own packages (zexos-keyring, zexos-drivers) for the live system,
-# signed with the ZeXOS key (build.sh puts that key in the build's own
-# keyring). The installed system adds this repo itself.
-[zexos]
-SigLevel = Required
-Server = https://github.com/zefuros1991/ZeXOS/releases/download/prebuilt

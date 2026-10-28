@@ -1,7 +1,6 @@
-# Added to the Arch live ISO package list (releng) for the TUI installer
-# (libnewt is whiptail, jq writes the archinstall config).
-libnewt
-git
+# Added to the ISO's package list for the text installer (jq writes the
+# archinstall config). Everything else it needs comes with the live system.
 jq
+git
 zexos-keyring
 zexos-drivers

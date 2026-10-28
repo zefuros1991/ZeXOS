@@ -531,7 +531,12 @@ class Welcome(QMainWindow):
         cards = [("Learn the basic keys", "12 keys to find your way around, with a Try it button for each.", lambda: self.show_page(PAGES.index("Keys"))),
                  ("Keep your system healthy", "Update, faster download servers and tidying up.", lambda: self.show_page(PAGES.index("System care"))),
                  ("Set up for gaming", "Steam, Lutris, Wine and the tools games need, in one click.", lambda: self.show_page(PAGES.index("Gaming"))),
+                 ("Check your drivers", "See the drivers picked for your graphics, Wi-Fi and network, and fix any that are missing.", lambda: self.show_page(PAGES.index("Drivers"))),
                  ("Get apps", "Open the app store to find and install more apps.", self.get_apps)]
+        # Four equal columns, each card two wide: a card left alone on the
+        # last row sits in the middle two, the same width as the others.
+        for c in range(4):
+            grid.setColumnStretch(c, 1)
         for n, (t, d, fn) in enumerate(cards):
             b = QPushButton()
             b.setProperty("card", True)
@@ -544,7 +549,8 @@ class Welcome(QMainWindow):
             bl.addWidget(label(d, muted=True))
             b.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
             b.clicked.connect(fn)
-            grid.addWidget(b, n // 2, n % 2)
+            alone = n == len(cards) - 1 and n % 2 == 0
+            grid.addWidget(b, n // 2, 1 if alone else (n % 2) * 2, 1, 2)
         lay.addLayout(grid)
         return w
 

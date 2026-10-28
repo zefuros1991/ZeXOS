@@ -30,9 +30,15 @@ iso/
 ## Building the text ISO
 
 ```bash
-sudo pacman -S --needed archiso
+sudo pacman -S --needed podman
 sudo ZEXOS_BRANCH=beta ./iso/build.sh tui
 ```
+
+The build runs inside a clean Arch Linux container with Arch's own pacman and
+archiso, so nothing from the build computer (a CachyOS pacman, its mirrors or
+packages) reaches the ISO. The builder image is made on the first run and
+remade once a week. `ZEXOS_ISO_NATIVE=1` builds with the computer's own
+archiso instead.
 
 ## What the text installer does
 

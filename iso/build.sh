@@ -25,11 +25,47 @@ if [ "$(id -u)" -ne 0 ]; then
     echo "mkarchiso needs root: run this with sudo." >&2
     exit 1
 fi
-command -v mkarchiso >/dev/null || { echo "Install archiso first: sudo pacman -S archiso" >&2; exit 1; }
 
 BRANCH="${ZEXOS_BRANCH:-main}"
 OUT="${ZEXOS_ISO_OUT:-$PWD/out}"
 WORK="${ZEXOS_ISO_WORK:-/var/tmp/zexos-iso}"
+
+# The ISO is made inside a clean Arch Linux container, never with this
+# computer's own pacman and archiso: on CachyOS, its pacman writes fields of
+# its own into the stick's package list, and the stick's pacman then warns
+# "unknown key '%INSTALLED_DB%'" for every package. The builder image is
+# ready-made (archiso and the image tools) and remade once a week; every
+# build updates it to today's Arch first, keeping its downloads in
+# $WORK/builder-pkg. This folder goes in read-only; only $OUT and $WORK are
+# written. It uses this computer's network as it is (root podman's own
+# network can be blocked by the firewall). ZEXOS_ISO_NATIVE=1 builds with
+# this computer's tools instead.
+if [ ! -e /run/.containerenv ] && [ "${ZEXOS_ISO_NATIVE:-0}" != 1 ]; then
+    command -v podman >/dev/null || { echo "Install podman, or set ZEXOS_ISO_NATIVE=1." >&2; exit 1; }
+    image=zexos-iso-builder
+    tools="archiso imagemagick librsvg python"
+    made=$(podman image inspect -f '{{.Created.Unix}}' "$image" 2>/dev/null || echo 0)
+    if [ $(( $(date +%s) - made )) -gt $(( 7 * 86400 )) ]; then
+        echo "Making the ISO builder image (only when it's new or a week old)..."
+        podman build --network host --pull=always -t "$image" -f - <<EOF
+FROM docker.io/library/archlinux:latest
+RUN pacman -Syu --noconfirm --needed $tools && pacman -Scc --noconfirm
+EOF
+    fi
+    mkdir -p "$OUT" "$WORK/builder-pkg"
+    args=(-v "$here/..:/zexos:ro" -v "$OUT:/out" -v "$WORK:/work"
+          -v "$WORK/builder-pkg:/var/cache/pacman/pkg"
+          -e ZEXOS_BRANCH="$BRANCH" -e ZEXOS_ISO_OUT=/out -e ZEXOS_ISO_WORK=/work
+          -e ZEXOS_ISO_COMPRESS="${ZEXOS_ISO_COMPRESS:-}"
+          -e SUDO_UID="${SUDO_UID:-0}" -e SUDO_GID="${SUDO_GID:-0}")
+    if [ "$variant" = gui ]; then
+        calrepo="${ZEXOS_CALAMARES_REPO:?Set ZEXOS_CALAMARES_REPO to a folder with zexos-iso.db (see iso/README.md).}"
+        args+=(-v "$(cd "$calrepo" && pwd):/calrepo:ro" -e ZEXOS_CALAMARES_REPO=/calrepo)
+    fi
+    exec podman run --rm --privileged --network host "${args[@]}" "$image" bash -c \
+        "pacman -Syu --noconfirm --needed $tools >/dev/null && exec bash /zexos/iso/build.sh \"\$0\"" "$variant"
+fi
+command -v mkarchiso >/dev/null || { echo "Install archiso first: sudo pacman -S archiso" >&2; exit 1; }
 profile="$WORK/profile-$variant"
 
 mkdir -p "$WORK" "$OUT"

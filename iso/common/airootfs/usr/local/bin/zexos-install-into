@@ -38,15 +38,30 @@ dropin="$ROOT/etc/sudoers.d/99-zexos-installer"
 cleanup() { rm -f "$dropin"; }
 trap cleanup EXIT
 
+# pacman -S in the new system, tried up to three times: one file that a
+# mirror fails to send (it happens) would otherwise stop the whole install.
+# Each retry refreshes the package lists first.
+install_pkgs() {
+    local try
+    for try in 1 2 3; do
+        arch-chroot "$ROOT" pacman -S --needed --noconfirm "$@" && return 0
+        [ "$try" -lt 3 ] || break
+        echo "A download failed; trying again ($((try + 1)) of 3)..."
+        sleep 5
+        arch-chroot "$ROOT" pacman -Syy --noconfirm >/dev/null || true
+    done
+    return 1
+}
+
 # The new system needs git and curl to fetch ZeXOS, and sudo for the
 # installer itself (a minimal install can leave them out).
-arch-chroot "$ROOT" pacman -S --needed --noconfirm git curl sudo
+install_pkgs git curl sudo
 
 # A ZeXOS installed from the ISO is a full distro, so it comes with what most
 # Arch-based distros ship (CachyOS, EndeavourOS, Manjaro): Firefox as the web
 # browser, and fish as the user's shell, like CachyOS. The ZeXOS terminal
 # look works the same in fish. Script installs on another distro keep theirs.
-arch-chroot "$ROOT" pacman -S --needed --noconfirm firefox fish
+install_pkgs firefox fish
 arch-chroot "$ROOT" chsh -s /usr/bin/fish "$USERNAME"
 
 # ...and Firefox is the default for web links, for every app and Mod+B.

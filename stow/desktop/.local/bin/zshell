@@ -893,7 +893,9 @@ case "$cmd" in
     menu)    menu ;;
     current) current ;;
     relink)  link_kitty "$(current)"; link_theme "$(current)"
-             [ "$(current)" = dms ] && mango_dms_colors ;;
+             # "if", not "&&": under Noctalia the test is false, and as the
+             # last command it would make relink report a failure.
+             if [ "$(current)" = dms ]; then mango_dms_colors; fi ;;
     dms-video) dms_video ;;   # used by zshell itself, see dms_video
     ""|-h|--help) sed -n '2,25p' "$0" | sed 's/^# \{0,1\}//' ;;
     *)

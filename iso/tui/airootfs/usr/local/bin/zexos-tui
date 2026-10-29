@@ -90,15 +90,22 @@ LOGO=(
 LOGO_W=0
 for _l in "${LOGO[@]}"; do [ ${#_l} -gt $LOGO_W ] && LOGO_W=${#_l}; done
 # One logo row in its colours; SHIFT moves the shades (the finish shimmer).
-SHIFT=0
+# SHINE, when set, is the column of a white glint slanting across the logo:
+# white at its centre, light violet at its edges.
+SHIFT=0 SHINE=
 logo_row() {
-    local r=$1 row=${LOGO[$1]} out="" last=-1 i ch s n=${#SHADES[@]}
+    local r=$1 row=${LOGO[$1]} out="" last=-1 i ch s c d n=${#SHADES[@]}
     for (( i = 0; i < ${#row}; i++ )); do
         ch=${row:i:1}
         if [ "$ch" = " " ]; then out+=" "; continue; fi
         s=$(( (i * 10 + r * 24) * n / (LOGO_W * 10 + 9 * 24) ))
         s=$(( (s + SHIFT) % (2 * n - 2) )); [ $s -ge $n ] && s=$(( 2 * n - 2 - s ))
-        [ $s -ne $last ] && { out+=$(fg "${SHADES[s]}"); last=$s; }
+        c=${SHADES[s]}
+        if [ -n "$SHINE" ]; then
+            d=$(( i + r * 2 - SHINE )); [ $d -lt 0 ] && d=$(( -d ))
+            if [ $d -le 2 ]; then c=15; elif [ $d -le 5 ]; then c=13; fi
+        fi
+        [ "$c" != "$last" ] && { out+=$(fg "$c"); last=$c; }
         out+=$ch
     done
     REPLY="$out$R"
@@ -1148,6 +1155,9 @@ finished() {
     # A one-time shimmer: the logo's colours sweep across once.
     for (( k = 0; k <= 2 * n - 2; k++ )); do SHIFT=$k; done_screen; show; sleep 0.09; done
     SHIFT=0
+    # Then a white glint sweeps across it, left to right.
+    for (( k = -8; k <= LOGO_W + 24; k += 3 )); do SHINE=$k; done_screen; show; sleep 0.03; done
+    SHINE=
     choose_buttons done_screen 0 "Reboot now" "Stay here" || return
     if [ "$PICK" -eq 0 ]; then
         [ -n "$DEMO" ] && return

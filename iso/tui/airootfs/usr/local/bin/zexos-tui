@@ -53,8 +53,8 @@ DEMO=
 # violet to green (5, 9, 12, 11, 14, 10, 2), none of them pink. Only 0-7
 # can be backgrounds on the Linux console, so the selected row (4) and the
 # plain button (6) live there.
-PALETTE=(0f0f14 ff6b81 3ddc97 f5a97f 2a2540 7c5cff 2a2a38 e6e6ef
-         6a6a80 6d6cf6 3fc4ae 4d97d9 5d80ea a78bfa 43aec4 ffffff)
+PALETTE=(0f0f14 ff6b81 3ddc97 f5a97f 342645 a85cff 2a2a38 e6e6ef
+         6a6a80 8e68f7 3fc4ae 4d97d9 6b73ed c596fa 43aec4 ffffff)
 SHADES=(5 9 12 11 14 10 2)
 set_palette() {
     local i
@@ -147,8 +147,9 @@ show() {
         for (( i = 0; i < top; i++ )); do pad+=$'\e[K\n'; done
         FRAME=$'\e[H'"$pad${FRAME#$'\e[H'}"
     fi
-    [ -n "${RESIZED:-}" ] && { printf '\e[2J'; RESIZED=; }
-    printf '%s\e[J' "$FRAME"
+    # The wipe and the new picture go out in one write, so it doesn't flicker.
+    local wipe=; [ -n "${RESIZED:-}" ] && { wipe=$'\e[2J'; RESIZED=; }
+    printf '%s%s\e[J' "$wipe" "$FRAME"
 }
 
 draw_logo() {
@@ -1111,6 +1112,13 @@ run_install() {
     local job=$!
     while [ ! -s "$WORK/result" ]; do
         read_progress; calc_pct
+        # Every 5 s the whole screen is wiped and its colours set again, so
+        # anything that upsets the screen during the install (a message
+        # printed over it, a font or mode change) is gone within seconds.
+        if [ $(( SECONDS - ${WIPED:-0} )) -ge 5 ]; then
+            WIPED=$SECONDS RESIZED=1
+            printf '\e[r\e[?7h'; set_palette
+        fi
         if [ -n "$DETAILS" ]; then details_screen; else progress_screen; fi
         if IFS= read -rsn1 -t 0.4 k; then
             case $k in v|V) [ -n "$DETAILS" ] && DETAILS="" || DETAILS=1 ;; esac

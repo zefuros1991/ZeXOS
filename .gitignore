@@ -80,3 +80,7 @@ stow/noctalia/.config/noctalia/zexos-motion.toml
 
 # welcome app: list of ZeXOS packages written at install time (scripts/packages.sh)
 stow/welcome/.local/share/zexos-welcome/protected.list
+
+# local notes for working on ZeXOS, never committed
+/.claude/
+/HANDOFF.md

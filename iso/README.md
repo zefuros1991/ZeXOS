@@ -72,15 +72,21 @@ Arch's own repos.
    installer then will not start on most laptops.
 
    ```bash
-   B=/path/to/calamares-build            # any roomy folder
-   iso/gui/build-calamares.sh $B/repo
+   iso/gui/build-calamares.sh
    ```
 
-2. Build the ISO, pointing at that repo (needs podman):
+2. Build the ISO (needs podman):
 
    ```bash
-   sudo ZEXOS_BRANCH=beta ZEXOS_CALAMARES_REPO=$B/repo ./iso/build.sh
+   sudo ZEXOS_BRANCH=beta ./iso/build.sh
    ```
+
+   Everything both steps make goes in one folder next to the repo's folder,
+   never inside it: for `~/Projects/ZeXOS` that is `~/Projects/ZeXOS-iso`,
+   with the ISOs in `out/`, the package in `calamares-repo/` and scratch
+   space in `work/`. All of it belongs to you, not root, so it can be
+   deleted without sudo. `ZEXOS_ISO_OUT`, `ZEXOS_ISO_WORK` and
+   `ZEXOS_CALAMARES_REPO` pick other folders.
 
    The build runs inside a clean Arch Linux container with Arch's own pacman
    and archiso, so nothing from the build computer (a CachyOS pacman, its

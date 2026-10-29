@@ -2,7 +2,7 @@
 # Builds the ZeXOS installer ISO on top of Arch's own live ISO profile
 # (releng, from the archiso package).
 #
-#   sudo ZEXOS_CALAMARES_REPO=... ./iso/build.sh
+#   sudo ./iso/build.sh
 #
 # One ISO with both installers; the stick's start menu picks one:
 #   ZeXOS (window installer)  the live desktop with Calamares (iso/gui)
@@ -10,19 +10,23 @@
 #   ZeXOS (safe graphics)     the window installer with basic graphics
 # Both are online installers: they download Arch and ZeXOS while installing.
 #
-# Settings (environment):
+# Everything the build makes goes in one folder next to this repo's folder,
+# never inside it: ../ZeXOS-iso (for ~/Projects/ZeXOS, ~/Projects/ZeXOS-iso).
+#   out/             the finished ISOs
+#   calamares-repo/  the zexos-calamares package (iso/gui/build-calamares.sh)
+#   work/            scratch space and download caches, several GB
+#
+# Settings (environment), each one optional:
 #   ZEXOS_BRANCH   branch the ISO installs (default main; beta for testing)
-#   ZEXOS_ISO_OUT  where the .iso goes          (default ./out)
-#   ZEXOS_ISO_WORK scratch space, several GB    (default /var/tmp/zexos-iso)
-#   ZEXOS_CALAMARES_REPO  folder with the zexos-calamares package and its
-#                  zexos-iso.db (see iso/README.md)
+#   ZEXOS_ISO_OUT, ZEXOS_ISO_WORK, ZEXOS_CALAMARES_REPO  other folders for
+#                  out/, work/ and calamares-repo/
 set -euo pipefail
 
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 case "${1:-}" in
     "") ;;
     tui|gui) echo "There is one ISO now, with both installers: run sudo $0 (no tui/gui)." >&2; exit 1 ;;
-    *) echo "usage: sudo ZEXOS_CALAMARES_REPO=... $0" >&2; exit 1 ;;
+    *) echo "usage: sudo $0" >&2; exit 1 ;;
 esac
 variant=zexos
 if [ "$(id -u)" -ne 0 ]; then
@@ -31,8 +35,9 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 BRANCH="${ZEXOS_BRANCH:-main}"
-OUT="${ZEXOS_ISO_OUT:-$PWD/out}"
-WORK="${ZEXOS_ISO_WORK:-/var/tmp/zexos-iso}"
+base="$(cd "$here/../.." && pwd)/ZeXOS-iso"
+OUT="${ZEXOS_ISO_OUT:-$base/out}"
+WORK="${ZEXOS_ISO_WORK:-$base/work}"
 
 # The ISO is made inside a clean Arch Linux container, never with this
 # computer's own pacman and archiso: on CachyOS, its pacman writes fields of
@@ -62,7 +67,8 @@ EOF
           -e ZEXOS_BRANCH="$BRANCH" -e ZEXOS_ISO_OUT=/out -e ZEXOS_ISO_WORK=/work
           -e ZEXOS_ISO_COMPRESS="${ZEXOS_ISO_COMPRESS:-}"
           -e SUDO_UID="${SUDO_UID:-0}" -e SUDO_GID="${SUDO_GID:-0}")
-    calrepo="${ZEXOS_CALAMARES_REPO:?Set ZEXOS_CALAMARES_REPO to a folder with zexos-iso.db (see iso/README.md).}"
+    calrepo="${ZEXOS_CALAMARES_REPO:-$base/calamares-repo}"
+    [ -f "$calrepo/zexos-iso.db" ] || { echo "No zexos-calamares package in $calrepo: run iso/gui/build-calamares.sh first (see iso/README.md)." >&2; exit 1; }
     args+=(-v "$(cd "$calrepo" && pwd):/calrepo:ro" -e ZEXOS_CALAMARES_REPO=/calrepo)
     exec podman run --rm --privileged --network host "${args[@]}" "$image" bash -c \
         "pacman -Syu --noconfirm --needed $tools >/dev/null && exec bash /zexos/iso/build.sh"
@@ -71,10 +77,17 @@ command -v mkarchiso >/dev/null || { echo "Install archiso first: sudo pacman -S
 profile="$WORK/profile-$variant"
 
 mkdir -p "$WORK" "$OUT"
-# The build runs as root, but the ISOs are yours: hand the output folder back
-# to whoever ran sudo, so old ISOs can be deleted without sudo.
+# The build runs as root, but its files are yours: hand them back to whoever
+# ran sudo, so nothing in the folder needs sudo to look at or delete. The
+# live system's files (made with root's own ownership) are thrown away when
+# the build ends, even a failed one; the next build makes them anew anyway.
 owner="${SUDO_UID:-0}:${SUDO_GID:-0}"
 chown "$owner" "$OUT"
+hand_back() {
+    rm -rf "$WORK/profile-$variant" "$WORK/work-$variant"
+    chown -R "$owner" "$WORK" "$OUT"
+}
+trap hand_back EXIT
 # Two builds at once would write over each other's files.
 exec 9>"$WORK/.lock"
 flock -n 9 || { echo "Another ISO build is running (lock: $WORK/.lock)." >&2; exit 1; }
@@ -156,5 +169,4 @@ fi
 echo "Packing: $COMPRESS ($( [ "$COMPRESS" = fast ] && echo zstd || echo xz ))"
 
 mkarchiso -v -r -w "$WORK/work-$variant" -o "$OUT" "$profile"
-chown "$owner" "$OUT"/zexos-[0-9]*.iso
 ls -lh "$OUT"/zexos-[0-9]*.iso

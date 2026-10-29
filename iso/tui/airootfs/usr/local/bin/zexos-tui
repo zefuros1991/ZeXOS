@@ -120,12 +120,25 @@ vlen() { local s; s=$(sed 's/\x1b\[[0-9;]*m//g' <<<"$1"); printf '%d' "${#s}"; }
 
 # A screen is built in FRAME and drawn at once (no flicker).
 FRAME=""
-frame() { FRAME=$'\e[H'; FRAME_ROWS=0; }
+frame() { FRAME=$'\e[H'; FRAME_ROWS=0; MIDDLE=; }
+# Screens that set MIDDLE (a name per screen) are drawn in the middle of the
+# screen, top to bottom. Each one keeps the tallest height it has had, so a
+# line that comes and goes (an error, a shorter list) doesn't make it jump.
+declare -A TALLEST=()
 put() { FRAME+="$1"$'\e[K\n'; FRAME_ROWS=$((FRAME_ROWS + 1)); }        # a line as it is
 say() { put "$(printf '%*s' "$PAD" '')$1"; }                          # lined up with the logo
 center() { local l; l=$(vlen "$1"); put "$(printf '%*s' $(( (COLS - l) / 2 > 0 ? (COLS - l) / 2 : 0 )) '')$1"; }
 blank() { put ""; }
-show() { printf '%s\e[J' "$FRAME"; }
+show() {
+    if [ -n "$MIDDLE" ]; then
+        local h=${TALLEST[$MIDDLE]:-0} top i pad=""
+        [ "$FRAME_ROWS" -gt "$h" ] && h=$FRAME_ROWS; TALLEST[$MIDDLE]=$h
+        top=$(( (ROWS - h) / 2 )); [ $top -lt 0 ] && top=0
+        for (( i = 0; i < top; i++ )); do pad+=$'\e[K\n'; done
+        FRAME=$'\e[H'"$pad${FRAME#$'\e[H'}"
+    fi
+    printf '%s\e[J' "$FRAME"
+}
 
 draw_logo() {
     local r
@@ -149,8 +162,8 @@ strip() {
     center "$out$R"
 }
 # Top of every question: logo, step strip, a blank line.
-head() { size; frame; blank; draw_logo; blank; strip "$1"; blank; }
-title() { say "$C_WHITE$B$1$R"; }
+head() { size; frame; MIDDLE=step$1; blank; draw_logo; blank; strip "$1"; blank; }
+title() { [ -n "$MIDDLE" ] && MIDDLE+=":$1"; say "$C_WHITE$B$1$R"; }
 hint() { say "$C_DIM$1$R"; }
 keys() { blank; say "$C_DIM$1$R"; }
 err_line() { [ -n "$ERR" ] && say "$C_RED✖ $ERR$R"; }
@@ -578,7 +591,52 @@ disk_screen() { head 6; title "Where should ZeXOS go?"; blank; }
 erase_screen() {
     head 6; title "Where should ZeXOS go?"; blank
     say "$SEL $(printf '%-62s' "${DISK_LABEL}") $R"; blank
+    if [ -z "$DISK_PARTS" ]; then
+        say "${C_DIM}It has no partitions: nothing on it now.$R"; blank
+    else
+        say "${C_DIM}What is on it now:$R"
+        say "$C_DIM$(printf '%-12s %8s   %-22s %s' Partition Size Holds Name)$R"
+        # As many rows as fit above the buttons (9 lines go below the table).
+        local n=0 part size kind name all fit
+        all=$(wc -l <<<"$DISK_PARTS") fit=$(( ROWS - FRAME_ROWS - 9 ))
+        [ $fit -gt 10 ] && fit=10; [ $fit -lt 2 ] && fit=2; [ "$all" -gt $fit ] && fit=$((fit - 1))
+        while IFS=$'\t' read -r part size kind name; do
+            n=$((n + 1))
+            [ $n -gt $fit ] && { say "${C_DIM}... and $((all - fit)) more$R"; break; }
+            [ ${#name} -gt 24 ] && name="${name:0:23}…"
+            say "$(printf '%-12s %8s   %-22s %s' "$part" "$size" "$kind" "$name")"
+        done <<<"$DISK_PARTS"
+        blank
+    fi
     say "$C_RED${B}Everything on ${DISK#/dev/} will be erased.$R"; blank
+}
+# The partitions on $DISK, one per line: name, size, what it holds, its name.
+disk_parts() {
+    if [ -n "$DEMO" ]; then
+        [ "$DISK" = /dev/nvme0n1 ] && printf '%s\t%s\t%s\t%s\n' \
+            nvme0n1p1 "260 MB" "Boot files (FAT32)" SYSTEM \
+            nvme0n1p2 "16 MB" "Unknown or empty" "Microsoft reserved partition" \
+            nvme0n1p3 "237 GB" "Windows files (NTFS)" Windows \
+            nvme0n1p4 "750 MB" "Windows files (NTFS)" "Windows RE tools"
+        return
+    fi
+    local name size fs label kind
+    while IFS=$'\t' read -r name size fs label; do
+        case $fs in
+            ntfs) kind="Windows files (NTFS)" ;;
+            vfat) kind="Boot files (FAT32)" ;;
+            exfat) kind="Files (exFAT)" ;;
+            ext4|btrfs|xfs|f2fs|ext3|ext2) kind="Linux files ($fs)" ;;
+            crypto_LUKS) kind="Locked (encrypted)" ;;
+            swap) kind="Swap (spare memory)" ;;
+            LVM2_member) kind="Linux volumes (LVM)" ;;
+            linux_raid_member) kind="Part of a RAID" ;;
+            "") kind="Unknown or empty" ;;
+            *) kind="Files ($fs)" ;;
+        esac
+        printf '%s\t%s\t%s\t%s\n' "${name##*/}" "$(sed 's/\([0-9]\)\([KMGT]\)$/\1 \2B/' <<<"$size")" "$kind" "$label"
+    done < <(lsblk -Jpo NAME,SIZE,FSTYPE,LABEL,PARTLABEL,TYPE "$DISK" 2>/dev/null |
+             jq -r '.. | objects | select(.type? == "part") | [.name, .size, (.fstype // ""), (.label // .partlabel // "")] | @tsv')
 }
 erase_after() { keys "←/→ choose · Enter"; }
 ask_disk() {
@@ -619,6 +677,7 @@ ask_disk() {
         LIST_KEYS="↑/↓ choose disk · Enter · Esc back"
         choose_list disk_screen "$sel" 6 || return 1
         DISK=${names[PICK]} DISK_LABEL=${LIST_ITEMS[PICK]}
+        DISK_PARTS=$(disk_parts)
         AFTER=erase_after
         choose_buttons erase_screen 0 "Erase it and continue" "Back" || { AFTER=; continue; }
         AFTER=
@@ -1070,7 +1129,7 @@ finished() {
 }
 
 fail_screen() {
-    size; frame; blank; draw_logo; blank; blank
+    size; frame; MIDDLE=fail; blank; draw_logo; blank; blank
     say "$C_RED${B}The install stopped$R  at $FAIL_STAGE"; blank
     say "$FAIL_WHY"
     local why

@@ -2,7 +2,10 @@
 # Builds the zexos-calamares package inside a clean Arch Linux container and
 # puts it in a local repo for the graphical ISO.
 #
-#   iso/gui/build-calamares.sh /path/to/calamares-build/repo
+#   iso/gui/build-calamares.sh [REPO_DIR]
+#
+# REPO_DIR defaults to calamares-repo in the build folder next to this repo
+# (../ZeXOS-iso/calamares-repo), where iso/build.sh looks for it.
 #
 # Why a container: a CachyOS compiler marks every program it builds as
 # "needs an x86-64-v4 CPU", even with generic flags. The installer then
@@ -24,7 +27,7 @@
 set -euo pipefail
 
 here=$(cd "$(dirname "$0")" && pwd)
-repo=${1:?usage: build-calamares.sh REPO_DIR}
+repo=${1:-$(cd "$here/../../.." && pwd)/ZeXOS-iso/calamares-repo}
 mkdir -p "$repo"
 repo=$(cd "$repo" && pwd)
 rm -f "$repo"/zexos-calamares-*.pkg.tar.zst "$repo"/zexos-iso.*

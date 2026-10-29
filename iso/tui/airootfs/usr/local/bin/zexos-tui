@@ -105,7 +105,17 @@ logo_row() {
 }
 
 # Screen size, read at every redraw (a VM's console can grow after boot).
-size() { COLS=$(tput cols 2>/dev/null || echo 100); ROWS=$(tput lines 2>/dev/null || echo 32);
+# A failed read keeps the last size: a guess drawn over a bigger screen leaves
+# pieces of the old picture all over it. When the size really changes, the
+# next frame clears the whole screen first.
+size() {
+         local r c
+         read -r r c < <(stty size </dev/tty 2>/dev/null)
+         if [ "${r:-0}" -gt 0 ] 2>/dev/null && [ "${c:-0}" -gt 0 ] 2>/dev/null; then
+             [ -n "${ROWS:-}" ] && { [ "$r" != "$ROWS" ] || [ "$c" != "$COLS" ]; } && RESIZED=1
+             ROWS=$r COLS=$c
+         fi
+         : "${ROWS:=32}" "${COLS:=100}"
          BIG=1; [ "$COLS" -lt $((LOGO_W + 4)) ] || [ "$ROWS" -lt 28 ] && BIG=;
          PAD=$(( BIG ? (COLS - LOGO_W) / 2 : 2 )); [ $PAD -lt 2 ] && PAD=2; }
 # Waits until the console stops changing size (it settles late in VMs).
@@ -137,6 +147,7 @@ show() {
         for (( i = 0; i < top; i++ )); do pad+=$'\e[K\n'; done
         FRAME=$'\e[H'"$pad${FRAME#$'\e[H'}"
     fi
+    [ -n "${RESIZED:-}" ] && { printf '\e[2J'; RESIZED=; }
     printf '%s\e[J' "$FRAME"
 }
 

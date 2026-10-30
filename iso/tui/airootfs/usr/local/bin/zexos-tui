@@ -1128,7 +1128,10 @@ run_install() {
     mkdir -p "$WORK"; rm -f "$WORK/stage" "$WORK/result"
     : >"$LOG"
     STAGE=1 STAGE_T0=$SECONDS INSTALL_T0=$SECONDS PCT=0 DETAILS=""
-    if [ -n "$DEMO" ]; then demo_job & else install_job & fi
+    # The job gets no keyboard: a tool in the chroot (flatpak, at about 85%)
+    # that finds a terminal on its input puts it in raw mode, which turns the
+    # screen into a staircase and freezes the keys until it is reset.
+    if [ -n "$DEMO" ]; then demo_job </dev/null & else install_job </dev/null & fi
     local job=$!
     while [ ! -s "$WORK/result" ]; do
         read_progress; calc_pct
@@ -1138,6 +1141,7 @@ run_install() {
         if [ $(( SECONDS - ${WIPED:-0} )) -ge 5 ]; then
             WIPED=$SECONDS RESIZED=1
             printf '\e[r\e[?7h'; set_palette
+            stty opost onlcr isig 2>/dev/null
         fi
         if [ -n "$DETAILS" ]; then details_screen; else progress_screen; fi
         if IFS= read -rsn1 -t 0.4 k; then
@@ -1213,7 +1217,7 @@ failed() {
     done
 }
 
-shell() { reset_palette; clear; tput cnorm; echo "Type exit to come back to the ZeXOS installer."; zsh; set_palette; tput civis; }
+shell() { stty sane 2>/dev/null; reset_palette; clear; tput cnorm; echo "Type exit to come back to the ZeXOS installer."; zsh; set_palette; tput civis; }
 
 # ---------------------------------------------------------------- the flow
 

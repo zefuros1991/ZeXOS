@@ -54,14 +54,17 @@ install_pkgs() {
 }
 
 # The new system needs git and curl to fetch ZeXOS, and sudo for the
-# installer itself (a minimal install can leave them out).
-install_pkgs git curl sudo
-
+# installer itself. Everything the install would otherwise fetch in separate
+# rounds (stow, flatpak, base-devel and the app store from install.sh, plus
+# the two below) is already put in by the base install (archinstall's package
+# list / pacstrap), so this is normally a no-op safety net, and the install
+# only downloads once.
+#
 # A ZeXOS installed from the ISO is a full distro, so it comes with what most
 # Arch-based distros ship (CachyOS, EndeavourOS, Manjaro): Firefox as the web
 # browser, and fish as the user's shell, like CachyOS. The ZeXOS terminal
 # look works the same in fish. Script installs on another distro keep theirs.
-install_pkgs firefox fish
+install_pkgs git curl sudo base-devel stow flatpak discover firefox fish
 arch-chroot "$ROOT" chsh -s /usr/bin/fish "$USERNAME"
 
 # ...and Firefox is the default for web links, for every app and Mod+B.
@@ -100,7 +103,7 @@ arch-chroot "$ROOT" runuser -u "$USERNAME" -- env -i \
     HOME="$home" USER="$USERNAME" LOGNAME="$USERNAME" SHELL=/bin/bash \
     PATH=/usr/local/sbin:/usr/local/bin:/usr/bin \
     TERM="$TERM" LANG="${LANG:-C.UTF-8}" \
-    ZEXOS_PACKAGES=prebuilt ZEXOS_BRANCH="$ZEXOS_BRANCH" \
+    ZEXOS_PACKAGES=prebuilt ZEXOS_FROM_ISO=1 ZEXOS_BRANCH="$ZEXOS_BRANCH" \
     ZEXOS_COMPOSITORS="${ZEXOS_COMPOSITORS:-}" ZEXOS_SHELLS="${ZEXOS_SHELLS:-}" \
     bash -c 'cd "$HOME" && curl -fsSL "$0" -o /tmp/zexos-install.sh && bash /tmp/zexos-install.sh; rc=$?; rm -f /tmp/zexos-install.sh; exit $rc' "$url"
 

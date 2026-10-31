@@ -115,7 +115,13 @@ fi
 # 1. SYSTEM UPDATE
 # -----------------------------
 echo -e "\n${YELLOW}==> [1/4] SYSTEM UPDATE${RESET}"
-sudo pacman -Syu --noconfirm
+# Straight after the ISO's base install the system is already current, and
+# packages.sh syncs again before its big install, so skip the extra round.
+if [ -n "${ZEXOS_FROM_ISO:-}" ]; then
+    echo -e "${GREEN}✔ System was just installed, already up to date${RESET}"
+else
+    sudo pacman -Syu --noconfirm
+fi
 
 cd "$HOME"
 

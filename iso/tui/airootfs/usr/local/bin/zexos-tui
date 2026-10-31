@@ -966,7 +966,7 @@ write_config() {
       locale_config: {kb_layout: $km, sys_lang: "en_US.UTF-8", sys_enc: "UTF-8"},
       network_config: {type: "nm"},
       ntp: true,
-      packages: ["git", "curl", "sudo"],
+      packages: ["git", "curl", "sudo", "base-devel", "stow", "flatpak", "discover", "firefox", "fish"],
       parallel_downloads: 8,
       profile_config: {profile: {main: "Minimal"}},
       swap: {enabled: true, algorithm: "zstd"},

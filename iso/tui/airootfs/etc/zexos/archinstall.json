@@ -7,7 +7,7 @@
     "kernels": ["linux"],
     "network_config": { "type": "nm" },
     "ntp": true,
-    "packages": ["git", "curl", "sudo"],
+    "packages": ["git", "curl", "sudo", "base-devel", "stow", "flatpak", "discover", "firefox", "fish"],
     "profile_config": { "profile": { "main": "Minimal" } },
     "swap": true
 }

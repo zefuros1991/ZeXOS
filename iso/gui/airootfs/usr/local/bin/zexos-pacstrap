@@ -15,4 +15,5 @@ systemctl is-active -q pacman-init.service || systemctl start pacman-init.servic
 pacstrap -C /etc/zexos/pacman-arch.conf -K "$ROOT" \
     base base-devel linux linux-headers linux-firmware "${ucode[@]}" \
     networkmanager sudo git curl nano man-db \
-    btrfs-progs dosfstools e2fsprogs xfsprogs efibootmgr
+    btrfs-progs dosfstools e2fsprogs xfsprogs efibootmgr \
+    stow flatpak discover firefox fish

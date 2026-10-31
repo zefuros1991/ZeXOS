@@ -636,7 +636,7 @@ live_disk() {
     src=$(findmnt -no SOURCE /run/archiso/bootmnt 2>/dev/null) || return
     # A USB stick written with dd holds the ISO from its first byte, so the
     # mount source can be the whole disk, which has no parent.
-    lsblk -no PKNAME "$src" 2>/dev/null | head -n1 | grep . || basename "$src"
+    lsblk -no PKNAME "$src" 2>/dev/null | command head -n1 | grep . || basename "$src"
 }
 disk_screen() { head 6; title "Where should ZeXOS go?"; blank; }
 erase_screen() {
@@ -839,7 +839,7 @@ ask_drivers() {
     for line in "${chips[@]}"; do IFS=$'\t' read -r slot name set alts <<<"$line"; [ -n "$alts" ] && choosable=1; done
     while :; do
         out=$(drivers_plan resolve "${DRIVER_PICKS[@]}")
-        DRIVERS=$(head -n1 <<<"$out")
+        DRIVERS=$(command head -n1 <<<"$out")
         DRIVER_LINES=$(tail -n +2 <<<"$out")
         AFTER=drv_after
         if [ $choosable = 1 ]; then choose_buttons drv_screen 0 "Use these" "Change a driver" || { AFTER=; return 1; }

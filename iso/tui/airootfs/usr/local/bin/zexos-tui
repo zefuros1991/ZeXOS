@@ -1006,12 +1006,62 @@ write_drivers_choice() {
     fi
 }
 
+# Works out which of the desktop's packages archinstall can put in with the
+# base install, so they download together in one round instead of in several
+# rounds later (the later install then finds nearly everything in place and
+# only fills the gaps). It asks scripts/packages.sh for its list (the same list
+# the later install uses, for the compositors and shells picked here), keeps
+# what the Arch repos have.
+# Anything off or missing: nothing is added, and the later install does it all.
+# Writes $WORK/extra.pkgs (one name per line).
+plan_extras() {
+    local t repo conf db
+    local ZEXOS_BRANCH=main
+    [ -f /etc/zexos-iso.conf ] && . /etc/zexos-iso.conf
+    rm -f "$WORK/extra.pkgs"
+    t=$(mktemp -d) || return 1
+    repo=$t/repo conf=$t/pacman.conf db=$t/db
+    mkdir -p "$db/sync" "$t/home"
+    # pacman downloads as the "alpm" user when the config says so.
+    chmod 755 "$t"; chown -R alpm: "$db" 2>/dev/null || chmod -R a+rwX "$db"
+    cp /etc/pacman.conf "$conf"
+    echo "== Planning which packages can come with the base install"
+    timeout 90 git clone -q --depth 1 -b "$ZEXOS_BRANCH" https://github.com/zefuros1991/ZeXOS.git "$repo" || { rm -rf "$t"; return 1; }
+    timeout 180 pacman --config "$conf" --dbpath "$db" -Sy --noconfirm >/dev/null || { rm -rf "$t"; return 1; }
+    HOME=$t/home ZEXOS_PLAN=$t/plan ZEXOS_PLAN_CONF=$conf ZEXOS_PLAN_DB=$db ZEXOS_PACKAGES=prebuilt \
+        ZEXOS_COMPOSITORS="$COMPOSITORS" ZEXOS_SHELLS="$SHELLS" \
+        bash "$repo/scripts/packages.sh" >/dev/null 2>&1 || true
+    [ -s "$t/plan" ] || { rm -rf "$t"; return 1; }
+
+    # What the Arch repos have, out of what the desktop wants.
+    pacman --config "$conf" --dbpath "$db" -Slq | sort -u > "$t/avail"
+    awk '$1 == "REPO" { for (i = 2; i <= NF; i++) print $i }' "$t/plan" | sort -u | comm -12 - "$t/avail" > "$t/repo.pkgs"
+
+    # (ZeXOS's own packages stay with the later install: the new system does
+    # not trust the ZeXOS key yet while archinstall installs, so they cannot
+    # come in that round.)
+    cp "$t/repo.pkgs" "$WORK/extra.pkgs"
+    echo "== Planned: $(wc -l < "$t/repo.pkgs") packages from the Arch repos"
+    rm -rf "$t"
+}
+
+# Adds what plan_extras found to the archinstall config. Any trouble leaves
+# the config as it was.
+apply_extras() {
+    [ -s "$WORK/extra.pkgs" ] || return 0
+    local cfg=$WORK/user_configuration.json add
+    add=$(jq -R . "$WORK/extra.pkgs" | jq -s .) || return 0
+    jq --argjson add "$add" '.packages = ((.packages + $add) | unique)' \
+        "$cfg" > "$cfg.new" && mv "$cfg.new" "$cfg" || rm -f "$cfg.new"
+}
+
 # The install itself, in the background. Writes its step to $WORK/stage and,
 # when done, its result to $WORK/result ("ok", or a reason).
 install_job() {
     stage() { echo "$1" > "$WORK/stage"; echo "== ZeXOS step $1 ($(date '+%H:%M:%S'))"; }
     {
         stage 1
+        plan_extras && apply_extras || echo "== No extra packages planned, the later install does it all"
         echo "== $(date) archinstall"
         archinstall --config "$WORK/user_configuration.json" --creds "$WORK/user_credentials.json" --silent
         rm -f "$WORK/user_credentials.json"
@@ -1040,16 +1090,19 @@ demo_job() {
     local i
     { echo 1 > "$WORK/stage"; sleep 3; echo 2 > "$WORK/stage"
       for i in $(seq 1 228); do echo "($i/228) installing package-$i"; sleep 0.03; done
-      echo 3 > "$WORK/stage"; sleep 2; echo 4 > "$WORK/stage"
-      for i in $(seq 1 323); do echo "($i/323) installing desktop-$i"; [ $i = 200 ] && echo "A download failed; trying again (2 of 3)..."; sleep 0.04
-          [ -n "${DEMO_FAIL:-}" ] && [ $i = 120 ] && { echo "error: failed retrieving file 'libxft-2.3.9-1-x86_64.pkg.tar.zst.sig'"; echo "The ZeXOS step stopped." > "$WORK/result"; return; }; done
+      echo 3 > "$WORK/stage"; sleep 2
+      echo "Installing packages: ['git', 'firefox', 'fish']"
+      for i in $(seq 1 500); do echo "($i/500) installing app-$i"; sleep 0.02; done
+      echo 4 > "$WORK/stage"
+      for i in $(seq 1 40); do echo "($i/40) installing desktop-$i"; [ $i = 20 ] && echo "A download failed; trying again (2 of 3)..."; sleep 0.04
+          [ -n "${DEMO_FAIL:-}" ] && [ $i = 12 ] && { echo "error: failed retrieving file 'libxft-2.3.9-1-x86_64.pkg.tar.zst.sig'"; echo "The ZeXOS step stopped." > "$WORK/result"; return; }; done
       echo "Stowing niri"; echo "✔ Done: niri"; sleep 2; echo "✔ ZEXOS INSTALLATION COMPLETE"; sleep 1
       echo "installed intel-vpl"; sleep 2; echo ok > "$WORK/result"; } >>"$LOG" 2>&1
 }
 
-STAGE_NAMES=("" "Preparing the disk" "Installing Arch" "Your account and settings" "Installing the desktop" "Finishing touches" "Drivers")
+STAGE_NAMES=("" "Preparing the disk" "Installing Arch" "Your account, settings and apps" "Installing the desktop" "Finishing touches" "Drivers")
 # Percent bands for each step (start, end).
-BAND_LO=(0 0 5 30 35 85 95) BAND_HI=(0 5 30 35 85 95 100)
+BAND_LO=(0 0 4 22 68 90 96) BAND_HI=(0 4 22 68 90 96 100)
 TIPS=("Mod+Space opens the app launcher" "Mod+C opens a terminal" "Mod+B opens the web browser" "Mod+E opens your files"
       "Mod+M opens the app store to get more apps" "Mod+W picks a new wallpaper, and the colours follow it"
       "Mod+O shows all your workspaces" "Mod+Shift+D switches between Noctalia and DankMaterialShell"
@@ -1074,7 +1127,13 @@ read_progress() {
     fi
     [ "$s" -gt "${STAGE:-1}" ] && { STAGE=$s; STAGE_T0=$SECONDS; }
     COUNT="" CUR=0 TOTAL=0
-    if [ "$STAGE" = 2 ] || [ "$STAGE" = 4 ]; then
+    if [ "$STAGE" = 3 ]; then
+        # The big package round (desktop and apps) comes with the account step;
+        # count only after its "Installing packages: ... firefox" line.
+        m=$(awk '/Installing packages:.*firefox/ {n=""} {n=n $0 "\n"} END {printf "%s", n}' <<<"$tail_txt" \
+            | grep -oE '\([0-9]+/[0-9]+\) installing' | tail -n1)
+        if [[ $m =~ \(([0-9]+)/([0-9]+)\) ]]; then CUR=${BASH_REMATCH[1]} TOTAL=${BASH_REMATCH[2]}; COUNT="$CUR of $TOTAL packages"; fi
+    elif [ "$STAGE" = 2 ] || [ "$STAGE" = 4 ]; then
         m=$(grep -oE '\([0-9]+/[0-9]+\) installing' <<<"$tail_txt" | tail -n1)
         if [[ $m =~ \(([0-9]+)/([0-9]+)\) ]]; then CUR=${BASH_REMATCH[1]} TOTAL=${BASH_REMATCH[2]}; COUNT="$CUR of $TOTAL packages"; fi
     fi

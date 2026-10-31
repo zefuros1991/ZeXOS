@@ -17,9 +17,23 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 . "$REPO_ROOT/scripts/lib-banner.sh"
 zexos_setup_xdg_env
 
+# ZEXOS_PLAN=<file>: only work out which packages this install would want and
+# write them to <file> (lines "REPO <names>" and "LOCAL <names>"), then stop.
+# The ISO's installer runs it before archinstall so most packages come in with
+# the base install. It installs nothing, asks for no password, writes no log.
+ZEXOS_PLAN="${ZEXOS_PLAN:-}"
+
+# Plan mode looks at the distro's repos the way the ISO has them: its own
+# package config and a throwaway database folder (ZEXOS_PLAN_CONF/_DB).
+if [ -n "$ZEXOS_PLAN" ]; then
+    pacman() { command pacman --config "$ZEXOS_PLAN_CONF" --dbpath "$ZEXOS_PLAN_DB" "$@"; }
+fi
+
 LOGFILE="$REPO_ROOT/packages.log"
-mkdir -p "$REPO_ROOT"
-exec > >(tee -a "$LOGFILE") 2>&1
+if [ -z "$ZEXOS_PLAN" ]; then
+    mkdir -p "$REPO_ROOT"
+    exec > >(tee -a "$LOGFILE") 2>&1
+fi
 
 # -----------------------------
 # COLORS
@@ -55,12 +69,14 @@ spinner() {
 # -----------------------------
 # ASCII HEADER
 # -----------------------------
+if [ -z "$ZEXOS_PLAN" ]; then
 clear
 zexos_banner "ZeXOS PACKAGE INSTALLER"
 
 echo -e "${VIOLET}GitHub: https://github.com/zefuros1991/ZeXOS${RESET}"
 echo -e "${VIOLET}Log: $LOGFILE${RESET}"
 echo -e "${VIOLET}--------------------------------------------------${RESET}"
+fi
 
 # -----------------------------
 # SUDO KEEPALIVE (standalone safety)
@@ -71,17 +87,21 @@ echo -e "${VIOLET}--------------------------------------------------${RESET}"
 # run standalone with a cold sudo cache, this prompts once up front instead
 # of leaving that to whichever backgrounded pacman call happens to need it
 # first.
+if [ -z "$ZEXOS_PLAN" ]; then
 echo -e "\n${YELLOW}==> AUTHENTICATION${RESET}"
 sudo -v
+fi
 
+SUDO_KEEPALIVE_PID=
+if [ -z "$ZEXOS_PLAN" ]; then
 (
     while true; do
         sudo -n true
         sleep 50
     done
 ) &
-
 SUDO_KEEPALIVE_PID=$!
+fi
 trap 'kill $SUDO_KEEPALIVE_PID 2>/dev/null || true' EXIT
 
 # makepkg normally calls "sudo -k", which forgets the password on purpose
@@ -533,6 +553,17 @@ if zexos_welcome_wanted; then
     welcome_share="${XDG_DATA_HOME:-$HOME/.local/share}/zexos-welcome"
     mkdir -p "$welcome_share"
     printf '%s\n' ${GROUP_PKGS[@]} "${LOCAL_DIRS[@]}" sddm | sort -u > "$welcome_share/protected.list"
+fi
+
+# Plan only (ZEXOS_PLAN): hand the lists to the ISO's installer and stop.
+if [ -n "$ZEXOS_PLAN" ]; then
+    {
+        for group in "${GROUP_PKGS[@]}"; do echo "REPO $group"; done
+        for dir in "${LOCAL_DIRS[@]}"; do
+            echo "LOCAL $dir $(. "$REPO_ROOT/packaging/$dir/PKGBUILD"; echo "$pkgver-$pkgrel")"
+        done
+    } > "$ZEXOS_PLAN"
+    exit 0
 fi
 
 # =========================================================

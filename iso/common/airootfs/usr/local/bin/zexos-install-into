@@ -38,6 +38,19 @@ dropin="$ROOT/etc/sudoers.d/99-zexos-installer"
 cleanup() { rm -f "$dropin"; }
 trap cleanup EXIT
 
+# Trust the ZeXOS package key from the very start, taken from this ISO (the
+# zexos-keyring package on it) instead of downloading it later. This is the
+# safer source: the ISO is what you chose to boot. packages.sh then finds
+# the key already trusted and skips its own download. If it fails, that
+# download path still works as the fallback.
+if [ -f /usr/share/pacman/keyrings/zexos.gpg ] && [ -d "$ROOT/etc/pacman.d/gnupg" ]; then
+    if pacman-key --gpgdir "$ROOT/etc/pacman.d/gnupg" --populate zexos >/dev/null 2>&1; then
+        echo "ZeXOS signing key trusted from the ISO."
+    else
+        echo "Could not trust the ZeXOS key from the ISO; will fetch it later."
+    fi
+fi
+
 # pacman -S in the new system, tried up to three times: one file that a
 # mirror fails to send (it happens) would otherwise stop the whole install.
 # Each retry refreshes the package lists first.

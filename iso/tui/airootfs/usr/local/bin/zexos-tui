@@ -383,7 +383,17 @@ cable_in() {
     return 1
 }
 
-wifi_device() { iwctl device list 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | awk '$0 ~ /station/ { print $1; exit }'; }
+# The Wi-Fi service sleeps until the first iwctl call and shows the card about
+# a second later, so ask again for up to 10 seconds before saying "no card".
+wifi_device() {
+    local i dev
+    for i in 1 2 3 4 5 6 7 8 9 10; do
+        dev=$(iwctl device list 2>/dev/null | sed 's/\x1b\[[0-9;]*m//g' | awk '$0 ~ /station/ { print $1; exit }')
+        [ -n "$dev" ] && break
+        sleep 1
+    done
+    printf '%s\n' "$dev"
+}
 
 # The networks, strongest first: "name<TAB>bars<TAB>security".
 wifi_scan() {
@@ -1016,6 +1026,7 @@ install_job() {
         stage 4
         export ZEXOS_COMPOSITORS="$COMPOSITORS" ZEXOS_SHELLS="$SHELLS"
         write_drivers_choice
+        zexos-clean-boot-entries
         if zexos-install-into "$ROOT" "$USERNAME"; then
             echo ok > "$WORK/result"
         else

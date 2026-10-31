@@ -16,6 +16,7 @@ if [ "$fstype" = btrfs ]; then
 fi
 
 arch-chroot "$ROOT" bootctl install --esp-path=/boot
+zexos-clean-boot-entries
 
 mkdir -p "$ROOT/boot/loader/entries"
 cat > "$ROOT/boot/loader/loader.conf" <<CONF

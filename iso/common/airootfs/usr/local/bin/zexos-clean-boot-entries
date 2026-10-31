@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+# Removes the BIOS boot entries that systemd-boot left behind on earlier
+# installs: "Linux Boot Manager" entries whose drive layout no longer exists.
+# Entries that still point at a real partition are never touched.
+[ -d /sys/firmware/efi ] && command -v efibootmgr >/dev/null || exit 0
+have="$(lsblk -rno PARTUUID 2>/dev/null | tr 'A-F' 'a-f')"
+efibootmgr -v 2>/dev/null | while IFS= read -r line; do
+    case "$line" in
+        Boot[0-9A-F][0-9A-F][0-9A-F][0-9A-F]*"Linux Boot Manager"*) ;;
+        *) continue ;;
+    esac
+    num="${line:4:4}"
+    guid="$(grep -oiE 'HD\([0-9]+,GPT,[0-9a-f-]+' <<<"$line" | cut -d, -f3 | tr 'A-F' 'a-f')"
+    [ -n "$guid" ] || continue
+    grep -qx "$guid" <<<"$have" || efibootmgr -q -B -b "$num" || true
+done
+exit 0

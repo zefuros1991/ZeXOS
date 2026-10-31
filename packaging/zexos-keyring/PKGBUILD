@@ -4,7 +4,7 @@
 # zexos-trusted (fully trusted master keys), zexos-revoked (revoked keys).
 # Key changes: see ROTATION.md.
 pkgname=zexos-keyring
-pkgver=20261015
+pkgver=20261031
 pkgrel=1
 pkgdesc="ZeXOS package signing keys"
 arch=(any)

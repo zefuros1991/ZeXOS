@@ -1228,7 +1228,7 @@ failed() {
     done
 }
 
-shell() { stty sane 2>/dev/null; reset_palette; clear; tput cnorm; echo "Type exit to come back to the ZeXOS installer."; zsh; set_palette; tput civis; }
+shell() { stty sane 2>/dev/null; reset_palette; clear; tput cnorm; echo "Type exit to come back to the ZeXOS installer."; zsh 2>&3; set_palette; tput civis; }
 
 # ---------------------------------------------------------------- the flow
 
@@ -1304,6 +1304,9 @@ trap cleanup EXIT
 trap 'cleanup; exit 130' INT
 # Kernel and audit log lines must never be drawn over the screens.
 dmesg -n 1 2>/dev/null
+# Error text from the script itself goes to a file, not over the screens
+# (fd 3 keeps the real screen for the shell).
+exec 3>&2 2>>/tmp/zexos-tui.err
 wait_for_screen
 set_palette
 tput civis

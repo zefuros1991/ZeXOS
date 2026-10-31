@@ -1302,6 +1302,8 @@ fi
 
 trap cleanup EXIT
 trap 'cleanup; exit 130' INT
+# Kernel and audit log lines must never be drawn over the screens.
+dmesg -n 1 2>/dev/null
 wait_for_screen
 set_palette
 tput civis

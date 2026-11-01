@@ -3,7 +3,7 @@
 
 pkgname=zexos-calamares
 pkgver=3.3.14
-pkgrel=5
+pkgrel=6
 pkgdesc='Distribution-independent installer framework'
 arch=('x86_64')
 license=(GPL-3.0-or-later)
@@ -57,6 +57,81 @@ prepare() {
     local f=calamares/src/modules/welcome/checker/ResultsListWidget.cpp
     grep -q 'imageLabel->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Expanding );' "$f"
     sed -i 's|imageLabel->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Expanding );|imageLabel->setSizePolicy( QSizePolicy::Expanding, QSizePolicy::Maximum );|' "$f"
+
+    # Welcome page, offline: upstream shows a big box (and no logo) until
+    # every check passes. When the internet is the only thing missing, keep
+    # the logo and show one orange warning line instead, with a link that
+    # opens Noctalia's network panel (the live desktop's Wi-Fi menu).
+    grep -q '^    if ( requirementsSatisfied )$' "$f"
+    grep -q 'if ( !Calamares::Branding::instance()->imagePath( Calamares::Branding::ProductWelcome ).isEmpty() )' "$f"
+    python3 - "$f" <<'PY'
+import sys
+p = sys.argv[1]
+s = open(p).read()
+s = s.replace('#include <QLabel>\n', '#include <QLabel>\n#include <QPalette>\n#include <QProcess>\n', 1)
+s = s.replace('#include "Settings.h"\n', '#include "Settings.h"\n#include "modulesystem/RequirementsModel.h"\n', 1)
+new = r'''    bool zexosOnlyOffline = false;
+    {
+        auto* model = m_config->requirementsModel();
+        int missing = 0, offline = 0;
+        for ( int i = 0; i < model->count(); ++i )
+        {
+            const auto index = model->index( i );
+            if ( model->data( index, Calamares::RequirementsModel::Satisfied ).toBool() )
+            {
+                continue;
+            }
+            ++missing;
+            if ( model->data( index, Calamares::RequirementsModel::Name ).toString() == QStringLiteral( "internet" ) )
+            {
+                ++offline;
+            }
+        }
+        zexosOnlyOffline = missing > 0 && missing == offline;
+    }
+    QLabel* zexosWarn = findChild< QLabel* >( "offlineWarning" );
+    if ( zexosOnlyOffline )
+    {
+        if ( !zexosWarn )
+        {
+            zexosWarn = new QLabel;
+            zexosWarn->setObjectName( "offlineWarning" );
+            zexosWarn->setTextFormat( Qt::RichText );
+            zexosWarn->setAlignment( Qt::AlignCenter );
+            zexosWarn->setWordWrap( true );
+            zexosWarn->setText( tr( "<span style=\"color:#ffa94d;\">&#9888;&nbsp; This computer is not connected to the internet.</span><br>"
+                                    "To connect to Wi-Fi, click <a href=\"network\">here</a>." ) );
+            QPalette pal = zexosWarn->palette();
+            pal.setColor( QPalette::Link, QColor( "#ffa94d" ) );
+            zexosWarn->setPalette( pal );
+            connect( zexosWarn, &QLabel::linkActivated, this, [] {
+                QProcess::startDetached( QStringLiteral( "noctalia" ),
+                                         { QStringLiteral( "msg" ), QStringLiteral( "panel-open" ), QStringLiteral( "control-center" ), QStringLiteral( "network" ) } );
+            } );
+            m_centralLayout->insertWidget( 0, zexosWarn );
+        }
+        zexosWarn->show();
+        m_explanation->hide();
+        delete m_centralWidget;
+        m_centralWidget = nullptr;
+    }
+    else
+    {
+        if ( zexosWarn )
+        {
+            zexosWarn->hide();
+        }
+        m_explanation->show();
+    }
+
+'''
+a = '    if ( requirementsSatisfied )\n'
+assert a in s
+s = s.replace(a, new + '    if ( requirementsSatisfied || zexosOnlyOffline )\n', 1)
+b = 'if ( !Calamares::Branding::instance()->imagePath( Calamares::Branding::ProductWelcome ).isEmpty() )'
+s = s.replace(b, 'if ( !findChild< QLabel* >( "welcomeLogo" ) && !Calamares::Branding::instance()->imagePath( Calamares::Branding::ProductWelcome ).isEmpty() )', 1)
+open(p, 'w').write(s)
+PY
 
     # After the install, upstream keeps Back and Next on screen (Next still
     # looks like the main button) and turns Cancel into a plain "Done" that

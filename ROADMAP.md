@@ -70,6 +70,12 @@ New features that work on top of an existing install:
 - This is a major version because it changes how ZeXOS is installed and
   updated. Moving a script install to the distro may need a reinstall
 
+## After 2.0
+
+- **Limine bootloader option**: choose Limine instead of systemd-boot at
+  install time. With a btrfs disk it makes every snapshot a boot entry, so
+  you can boot back into a working system if an update goes wrong
+
 ## Not planned
 
 - **Debian, Ubuntu, Fedora and other non-Arch distros**: they use other

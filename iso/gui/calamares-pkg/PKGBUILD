@@ -3,7 +3,7 @@
 
 pkgname=zexos-calamares
 pkgver=3.3.14
-pkgrel=4
+pkgrel=5
 pkgdesc='Distribution-independent installer framework'
 arch=('x86_64')
 license=(GPL-3.0-or-later)
@@ -106,6 +106,16 @@ Calamares::ViewManager::eventFilter( QObject* watched, QEvent* event )
     return QAbstractListModel::eventFilter( watched, event );
 }
 EOF
+
+    # Time zone guess: upstream asks the GeoIP service once, when Calamares
+    # starts, and never again. The installer starts with the desktop, before
+    # the network is up, so the lookup was skipped and everyone got London
+    # (Wi-Fi even more so). Ask again when the Location page opens (the
+    # Welcome page needs internet, so it is up by then), if the first try
+    # did not happen.
+    f=calamares/src/modules/locale/Config.cpp
+    grep -q '^    if ( !m_currentLocation && m_startingTimezone.isValid() )$' "$f"
+    perl -0pi -e 's/(Config::setCurrentLocation\(\)\n\{\n)/$1    if ( !m_currentLocation && !m_geoipWatcher && m_geoip && m_geoip->isValid() )\n    {\n        Calamares::Network::Manager network;\n        if ( network.hasInternet() || network.synchronousPing( m_geoip->url() ) )\n        {\n            auto lookup = m_geoip->query();\n            lookup.waitForFinished();\n            const auto found = lookup.result();\n            if ( found.isValid() )\n            {\n                m_startingTimezone = found;\n                m_geoip.reset();\n            }\n        }\n    }\n/ or die "Config::setCurrentLocation not found\n"' "$f"
 
     # QML pages (Drivers, Compositors, Shells, Users) take the keyboard as
     # soon as they open, so you can type a name or press Enter right away;

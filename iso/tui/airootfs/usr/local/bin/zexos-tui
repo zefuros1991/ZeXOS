@@ -637,8 +637,12 @@ ask_timezone() {
     if [ -z "${TZ_GUESS:-}" ]; then
         TZ_GUESS=$TIMEZONE
         if [ -z "$TZ_GUESS" ] && [ -z "$DEMO" ]; then
-            TZ_GUESS=$(curl -fsS --max-time 5 https://ipapi.co/timezone 2>/dev/null)
-            [ -f "/usr/share/zoneinfo/$TZ_GUESS" ] || TZ_GUESS=
+            local svc
+            for svc in https://ipapi.co/timezone https://ipinfo.io/timezone; do
+                TZ_GUESS=$(curl -fsS --max-time 5 "$svc" 2>/dev/null)
+                [ -f "/usr/share/zoneinfo/$TZ_GUESS" ] && break
+                TZ_GUESS=
+            done
         fi
         [ -n "$DEMO" ] && TZ_GUESS=${TZ_GUESS:-Europe/Athens}
     fi

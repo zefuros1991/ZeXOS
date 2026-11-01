@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Calamares step: times the install, like the text installer's "N min S s".
+#   zexos-install-time start    first step of the install: remember the time
+#   zexos-install-time show     last step: say how long it all took
+# Calamares' finished page has a fixed text, so the time goes into the log,
+# the new system's install log (if still mounted) and a desktop notification.
+start=/tmp/zexos-install-start
+case "${1:-}" in
+start)
+    date +%s > "$start" ;;
+show)
+    [ -s "$start" ] || exit 0
+    s=$(( $(date +%s) - $(cat "$start") ))
+    msg="$(printf '%d min %d s' $((s / 60)) $((s % 60)))"
+    echo "ZeXOS installed in $msg."
+    export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/0}"
+    export DBUS_SESSION_BUS_ADDRESS="${DBUS_SESSION_BUS_ADDRESS:-unix:path=$XDG_RUNTIME_DIR/bus}"
+    # A message on the live desktop that stays until it is closed.
+    busctl --user call org.freedesktop.Notifications /org/freedesktop/Notifications \
+        org.freedesktop.Notifications Notify susssasa\{sv\}i \
+        "ZeXOS installer" 0 "" "ZeXOS is installed" "It took $msg. You can restart now." 0 0 0 >/dev/null 2>&1 || true
+    ;;
+esac
+exit 0

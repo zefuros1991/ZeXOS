@@ -181,7 +181,7 @@ draw_logo() {
 }
 
 # The steps, as the strip under the logo shows them.
-STEPS=(Wi-Fi Keyboard You Password Computer "Time zone" Disk Desktop Drivers Check)
+STEPS=(Wi-Fi Keyboard "Time zone" You Password Computer Disk Desktop Drivers Check)
 strip() {
     local i out="" cur=$1
     for i in "${!STEPS[@]}"; do
@@ -319,6 +319,7 @@ choose_list() {
 ask_text() {
     local var=$1 prompt=$2 hintt=$3 masked=${4:-} toggle=${5:-} text=${!1} shown="" shownow chip
     while :; do
+        TEXT_LIVE=$text
         "$SCREEN"
         if [ -n "$masked" ] && [ -z "$shown" ]; then shownow=$(printf '%*s' "${#text}" '' | sed 's/ /•/g'); else shownow=$text; fi
         chip=""
@@ -519,7 +520,7 @@ ask_keyboard() {
 # "Alex Kim" -> "alex", like the window installer.
 username_from() { local u; u=$(tr 'A-Z' 'a-z' <<<"${1%% *}" | tr -cd 'a-z0-9_-'); [[ $u =~ ^[a-z_] ]] || u="user$u"; printf '%s' "${u:0:32}"; }
 you_screen() {
-    head 2; title "Who's using this computer?"; blank
+    head 3; title "Who's using this computer?"; blank
     if [ "$YOU_FIELD" = user ]; then
         say "${C_VIOLET}Name> $R$FULLNAME"; hint "  Your full name, shown on the login screen"; blank
     fi
@@ -555,12 +556,38 @@ ask_you() {
 }
 
 pw_screen() {
-    head 3; title "Choose a password"; blank
+    head 4; title "Choose a password"; blank
     if [ "$PW_FIELD" = 2 ]; then
         say "${C_VIOLET}Password> $R$(printf '%*s' "${#P1}" '' | sed 's/ /•/g')"; hint "  To log in and for sudo, and for the disk if you encrypt it"; blank
     fi
 }
-pw_below() { blank; [ -n "$PW_OK" ] && say "$C_GREEN✔ The passwords match$R"; err_line; keys "Enter next · Esc back"; }
+# Strength 1-4 (0 = empty), the same rule as the window installer's bar:
+# length 8+/12+ and how many kinds of characters (a-z, A-Z, 0-9, symbols).
+pw_score() {
+    local pw=$1 s=0 kinds=0
+    [ -z "$pw" ] && { echo 0; return; }
+    [ ${#pw} -ge 12 ] && s=2 || { [ ${#pw} -ge 8 ] && s=1; }
+    [[ $pw =~ [a-z] ]] && kinds=$((kinds + 1))
+    [[ $pw =~ [A-Z] ]] && kinds=$((kinds + 1))
+    [[ $pw =~ [0-9] ]] && kinds=$((kinds + 1))
+    [[ $pw =~ [^A-Za-z0-9] ]] && kinds=$((kinds + 1))
+    [ $kinds -ge 3 ] && s=$((s + 2)) || { [ $kinds -ge 2 ] && s=$((s + 1)); }
+    [ $s -gt 4 ] && s=4; [ $s -lt 1 ] && s=1
+    echo $s
+}
+pw_below() {
+    local pw=$TEXT_LIVE sc i bar="" col words=("" Weak Fair Good Strong)
+    [ "${PW_FIELD:-1}" = 2 ] && pw=$P1
+    sc=$(pw_score "$pw")
+    if [ "$sc" -gt 0 ]; then
+        case $sc in 1) col=$C_RED ;; 2) col=$C_AMBER ;; 3) col=$C_VIOLET ;; *) col=$C_GREEN ;; esac
+        for i in 1 2 3 4; do
+            if [ $i -le "$sc" ]; then bar+="$col▰"; else bar+="$C_DIM▱"; fi
+        done
+        blank; say "$bar $col${words[sc]}$R"
+    fi
+    blank; [ -n "$PW_OK" ] && say "$C_GREEN✔ The passwords match$R"; err_line; keys "Enter next · Esc back"
+}
 ask_password() {
     local p2=""
     P1=$PASSWORD PW_OK="" ERR=""
@@ -568,6 +595,7 @@ ask_password() {
         PW_FIELD=1 SCREEN=pw_screen INPUT_BELOW=pw_below
         ask_text P1 Password "To log in and for sudo, and for the disk if you encrypt it" masked || { INPUT_BELOW=; return 1; }
         if [ -z "$P1" ]; then ERR="The password can't be empty"; continue; fi
+        if [ ${#P1} -lt 4 ]; then ERR="Use at least 4 characters"; continue; fi
         ERR="" p2=""
         PW_FIELD=2
         ask_text p2 Confirm "The same password again" masked || { ERR=""; continue; }
@@ -581,7 +609,7 @@ ask_password() {
     return 0
 }
 
-computer_screen() { head 4; title "Name this computer"; blank; }
+computer_screen() { head 5; title "Name this computer"; blank; }
 computer_below() { blank; err_line; keys "Enter next · Esc back"; }
 ask_computer() {
     local h=${HOSTNAME:-$USERNAME-zexos}
@@ -599,11 +627,11 @@ ask_computer() {
 }
 
 tz_screen() {
-    head 5; title "Your time zone"; blank
+    head 2; title "Your time zone"; blank
     say "We think it's $C_WHITE$B$TZ_GUESS$R (from your internet connection)."; blank
 }
-tz_list_screen() { head 5; title "Your time zone"; blank; }
-tz_after() { blank; hint 'Pick another opens a searchable list: type "lis" for Lisbon'; keys "←/→ choose · Enter next · Esc back"; }
+tz_list_screen() { head 2; title "Your time zone"; blank; }
+tz_after() { blank; hint 'Press C to pick a city yourself: type "lis" for Lisbon'; keys "Enter yes, that's right · C change · Esc back"; }
 ask_timezone() {
     local i sel=0
     if [ -z "${TZ_GUESS:-}" ]; then
@@ -615,10 +643,15 @@ ask_timezone() {
         [ -n "$DEMO" ] && TZ_GUESS=${TZ_GUESS:-Europe/Athens}
     fi
     if [ -n "$TZ_GUESS" ]; then
-        AFTER=tz_after
-        choose_buttons tz_screen 0 "Yes, that's right" "Pick another" || { AFTER=; return 1; }
-        AFTER=
-        [ "$PICK" -eq 0 ] && { TIMEZONE=$TZ_GUESS; return 0; }
+        while :; do
+            tz_screen; tz_after; show
+            read_key
+            case $KEY in
+                enter) TIMEZONE=$TZ_GUESS; return 0 ;;
+                esc) return 1 ;;
+                char) case $KCH in c|C|t|T) break ;; esac ;;
+            esac
+        done
     fi
     mapfile -t LIST_ITEMS < <(timedatectl list-timezones 2>/dev/null || (cd /usr/share/zoneinfo && find . -type f | sed 's|^\./||' | sort))
     LIST_OFF=()
@@ -719,10 +752,25 @@ ask_disk() {
             say "${C_RED}No disk to install on was found (it needs 20 GB or more).$R"; blank
             choose_buttons true 0 "Back"; return 1
         fi
-        sel=0
+        # Which disk starts highlighted: the one picked before; else the first
+        # NVMe drive (the computer's own disk), else the first disk that is not
+        # on USB; a USB drive only if nothing else fits. So Enter never wipes
+        # someone's USB stick by accident.
+        sel=-1
+        for i in "${!names[@]}"; do [ "${names[i]}" = "$DISK" ] && [ "${LIST_OFF[i]}" = 0 ] && sel=$i; done
         for i in "${!names[@]}"; do
-            if [ "${names[i]}" = "$DISK" ] || { [ -z "$DISK" ] && [ "${LIST_OFF[i]}" = 0 ] && [ $sel -eq 0 ] && [ "${LIST_OFF[0]}" = 1 ]; }; then sel=$i; fi
+            [ $sel -ge 0 ] && break
+            [ "${LIST_OFF[i]}" = 0 ] && [[ ${names[i]##*/} == nvme* ]] && sel=$i
         done
+        for i in "${!names[@]}"; do
+            [ $sel -ge 0 ] && break
+            [ "${LIST_OFF[i]}" = 0 ] && [ "$(lsblk -dno TRAN "${names[i]}" 2>/dev/null)" != usb ] && sel=$i
+        done
+        for i in "${!names[@]}"; do
+            [ $sel -ge 0 ] && break
+            [ "${LIST_OFF[i]}" = 0 ] && sel=$i
+        done
+        [ $sel -ge 0 ] || sel=0
         LIST_HINT="The stick you started from is greyed out, so it can't be picked"
         LIST_KEYS="↑/↓ choose disk · Enter · Esc back"
         choose_list disk_screen "$sel" 6 || return 1
@@ -894,11 +942,11 @@ review() {
         choose_buttons review_screen 0 "Install ZeXOS" "Change something" || { AFTER=; return 1; }
         AFTER=
         [ "$PICK" -eq 0 ] && return 0
-        LIST_ITEMS=(Keyboard "You (name and username)" Password "Computer name" "Time zone" Disk Encryption Desktop Drivers)
+        LIST_ITEMS=(Keyboard "Time zone" "You (name and username)" Password "Computer name" Disk Encryption Desktop Drivers)
         LIST_OFF=() LIST_HINT="After changing it you come straight back here" LIST_KEYS="↑/↓ choose · Enter · Esc back"
         choose_list change_screen 0 9 || continue
         case $PICK in
-            0) ask_keyboard ;; 1) ask_you ;; 2) ask_password ;; 3) ask_computer ;; 4) ask_timezone ;;
+            0) ask_keyboard ;; 1) ask_timezone ;; 2) ask_you ;; 3) ask_password ;; 4) ask_computer ;;
             5) ask_disk ;; 6) ask_encrypt ;; 7) ask_desktop ;; 8) ask_drivers ;;
         esac
     done
@@ -1295,7 +1343,7 @@ install_zexos() {
         ask_wifi || return
     fi
     WIFI_DONE=1
-    local steps=(keyboard you password computer timezone disk encrypt desktop drivers) i=0
+    local steps=(keyboard timezone you password computer disk encrypt desktop drivers) i=0
     while [ $i -lt ${#steps[@]} ]; do
         if "ask_${steps[i]}"; then
             i=$((i + 1))

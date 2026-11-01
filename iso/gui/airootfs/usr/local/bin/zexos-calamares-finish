@@ -9,6 +9,8 @@ ROOT="${1:?}" USERNAME="${2:?}"
 # The Wi-Fi (and other saved networks) used on the live ISO also work after
 # the first boot. Calamares' own networkcfg step is not enough: it skips
 # the copy when the folder is missing, and keeps per-user permissions lines.
+# The live card is called wlan0 but the installed one has another name
+# (wlp0s20f3), so the profile must not name an interface.
 # Copy every saved connection ourselves, usable by all users. A failure here
 # never stops the install.
 nm_src=/etc/NetworkManager/system-connections nm_dst="$ROOT/etc/NetworkManager/system-connections"
@@ -18,7 +20,7 @@ if [ -d "$nm_src" ]; then
         [ -f "$c" ] || continue
         n="${c##*/}"
         [ "$n" = LTSP.nmconnection ] && continue
-        ( umask 077; grep -v '^permissions=' "$c" > "$nm_dst/$n" ) &&
+        ( umask 077; grep -v -e '^permissions=' -e '^interface-name=' "$c" > "$nm_dst/$n" ) &&
             chmod 600 "$nm_dst/$n" && echo "Saved network carried over: ${n%.nmconnection}" || true
         grep -q '^psk-flags=[1-9]' "$c" && echo "Note: ${n%.nmconnection} keeps its password in the login keyring, so it may ask again after boot."
     done

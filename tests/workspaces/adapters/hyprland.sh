@@ -70,7 +70,7 @@ ws_check_bindings() {
     keys+=("SUPER + mouse_up" "SUPER + mouse_down" "SUPER + CTRL + mouse_up" "SUPER + CTRL + mouse_down")
     for b in "${keys[@]}"; do
         awk -v k="hl.bind(\"$b\"" 'index($0,k)==1{f=1;print;next} /^hl\.bind\(|^-- ===/{f=0} f' \
-            "$HYPR_SRC/cfg/keybinds.lua" | grep -q 'workspaces' || { echo "  FAIL  binding not using cfg.workspaces (wsm.): $b"; miss=1; }
+            "$HYPR_SRC/cfg/keybinds.lua" | grep -q 'wsm\.' || { echo "  FAIL  binding not using cfg.workspaces (wsm.): $b"; miss=1; }
     done
     grep -q 'wsm\.' "$HYPR_SRC/cfg/input.lua" || { echo "  FAIL  3-finger gesture not using cfg.workspaces"; miss=1; }
     ((miss)) && { FAIL=$((FAIL+1)); FAILED+=("bindings not using cfg.workspaces"); } || { PASS=$((PASS+1)); echo "  ok    all bindings use cfg.workspaces"; }

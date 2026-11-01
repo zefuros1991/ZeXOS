@@ -1046,9 +1046,9 @@ if ! flatpak remotes | grep -q flathub; then
     sudo flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
 fi
 
-FLATPAK_APPS=(
-    com.github.tchx84.Flatseal
-)
+# None by default: even a tiny app pulls in ~1 GB of runtimes and slows the
+# install by ~35 s. Apps come from the app store (Discover) afterwards.
+FLATPAK_APPS=()
 
 echo -e "\n${YELLOW}[FLATPAK] Applications${RESET}"
 

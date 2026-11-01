@@ -643,7 +643,12 @@ bar_shown() {
 logo() {
     case "$1" in
         noctalia) echo noctalia ;;
-        dms)      echo danklogo ;;
+        # DMS 2.0 renamed its icon from danklogo to dev.duxlabs.shell.
+        dms)      if [ -e /usr/share/icons/hicolor/scalable/apps/dev.duxlabs.shell.svg ]; then
+                      echo dev.duxlabs.shell
+                  else
+                      echo danklogo
+                  fi ;;
     esac
 }
 

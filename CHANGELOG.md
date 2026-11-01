@@ -98,6 +98,16 @@ New work is tested on the `beta` branch first and is listed under
 - With Noctalia as the only shell, the bar lost its left and middle
   islands (only the right one showed).
 
+- The shell switcher menu and its splash animation show the DMS logo
+  again (DMS 2.0 renamed the logo icon).
+- Window installer: the time zone is guessed when the Location page opens
+  (it used to be London for everyone), and Wi-Fi networks saved on the live
+  system are carried into the new system.
+- Window installer, first screen: when offline, a single orange line with a
+  "click here" link opens the Wi-Fi menu instead of a big warning box.
+- Text installer: the time zone is asked early, an NVMe drive is the default
+  (never a USB stick), and the password has the same rule and strength bar.
+
 ## [1.2.1] - 2026-10-14
 
 ### Fixed

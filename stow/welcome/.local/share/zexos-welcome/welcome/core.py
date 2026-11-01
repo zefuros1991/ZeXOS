@@ -24,7 +24,7 @@ CACHE = "/var/cache/pacman/pkg"
 NVIDIA_GUIDE = "https://wiki.archlinux.org/title/NVIDIA"
 
 # REQ-26: the Arch version of CachyOS's gaming bundle (cachyos-gaming-meta +
-# cachyos-gaming-applications), Arch repos only: no Heroic, no Flathub, no AUR.
+# cachyos-gaming-applications), Arch repos, plus Flatseal and Bottles from Flathub (added by zexos-welcome-job): no Heroic, no AUR.
 GAMING = [
     "steam", "lutris", "wine", "winetricks", "protontricks", "umu-launcher",
     "gamemode", "lib32-gamemode", "mangohud", "lib32-mangohud", "gamescope", "goverlay",
@@ -35,7 +35,7 @@ GAMING = [
 ]
 # The apps shown as chips on the Gaming page (the rest are support libraries and fonts).
 GAMING_APPS = ["Steam", "Lutris", "Wine", "winetricks", "protontricks", "umu-launcher",
-               "GameMode", "MangoHud", "gamescope", "GOverlay", "vulkan-tools"]
+               "GameMode", "MangoHud", "gamescope", "GOverlay", "vulkan-tools", "Flatseal", "Bottles"]
 
 GAMING_PACKAGE = "zexos-gaming-applications"   # pulls in zexos-gaming-meta (packaging/)
 GAMING_PACKAGES = ["zexos-gaming-applications", "zexos-gaming-meta"]

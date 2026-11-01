@@ -159,13 +159,23 @@ unlock)
 gaming)
     title "Set up for gaming"
     echo "Installing ZeXOS's gaming package: Steam, Lutris, GameMode, MangoHud, gamescope and GOverlay,"
-    echo "plus zexos-gaming-meta underneath (Wine and what Windows games need). All from Arch and ZeXOS."
+    echo "plus zexos-gaming-meta underneath (Wine and what Windows games need), then Flatseal and Bottles from Flathub."
     echo "pacman lists everything it will install and asks before it starts."
     echo
     as_admin pacman -S --needed "${items[@]}"
     rc=$?
-    [ $rc -eq 0 ] && echo "${GREEN}Gaming is set up. Open Steam or Lutris from the app launcher.${RESET}" \
-        || { echo "${RED}Nothing was installed (pacman said $rc).${RESET}"; end 1; }
+    [ $rc -eq 0 ] || { echo "${RED}Nothing was installed (pacman said $rc).${RESET}"; end 1; }
+    # Flatseal (per-app permissions) and Bottles (Windows apps) come from Flathub.
+    # They pull in some runtimes, so they live here and not in the base install.
+    # A failure here never undoes the gaming package.
+    if command -v flatpak >/dev/null 2>&1; then
+        echo
+        echo "Adding Flatseal and Bottles from Flathub (this downloads some runtimes)..."
+        as_admin flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flatpakrepo
+        as_admin flatpak install -y --system flathub com.github.tchx84.Flatseal com.usebottles.bottles \
+            || echo "${RED}Flatseal/Bottles did not install; you can add them later from the app store.${RESET}"
+    fi
+    echo "${GREEN}Gaming is set up. Open Steam or Lutris from the app launcher.${RESET}"
     end 0
     ;;
 *)

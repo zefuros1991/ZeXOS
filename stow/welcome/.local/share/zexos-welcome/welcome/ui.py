@@ -682,7 +682,7 @@ class Welcome(QMainWindow):
         lay.setContentsMargins(0, 0, 0, 0)
         lay.setSpacing(14)
         self.heading(lay, "Gaming", "One click installs what you need to start playing: Steam, Lutris, Wine, and the tools "
-                                    "that make games run smoothly. Everything comes from Arch's and ZeXOS's own software sources.")
+                                    "that make games run smoothly. Most comes from Arch's and ZeXOS's own software sources; Flatseal and Bottles come from Flathub.")
         hero = QFrame()
         hero.setProperty("hero", True)
         hl = QVBoxLayout(hero)
@@ -714,7 +714,7 @@ class Welcome(QMainWindow):
         lay.addWidget(chips)
         lay.addWidget(label("Installed as ZeXOS's zexos-gaming-applications package, with zexos-gaming-meta underneath "
                             "(Wine and the libraries and fonts Windows games need). Graphics drivers come from the ZeXOS "
-                            "installer.", muted=True))
+                            "installer. Flatseal and Bottles are added from Flathub.", muted=True))
         return w
 
     def page_news(self):

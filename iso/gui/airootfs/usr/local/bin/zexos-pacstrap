@@ -3,7 +3,10 @@
 # Uses only the official Arch repos (the live ISO's extra repos are cut out
 # of /etc/zexos/pacman-arch.conf when the ISO is built).
 set -euo pipefail
-ROOT="${1:?usage: zexos-pacstrap <root>}"
+ROOT="${1:?usage: zexos-pacstrap <root> [compositors] [shells]}"
+# The ticked boxes from the picker pages (space separated), used only to work
+# out the desktop's packages; unknown or empty means everything.
+ZEXOS_COMPOSITORS="${2:-}" ZEXOS_SHELLS="${3:-}"
 
 ucode=()
 grep -q GenuineIntel /proc/cpuinfo && ucode=(intel-ucode)
@@ -12,8 +15,38 @@ grep -q AuthenticAMD /proc/cpuinfo && ucode=(amd-ucode)
 # Arch's live ISO fills the keyring at boot; wait until that is done.
 systemctl is-active -q pacman-init.service || systemctl start pacman-init.service || true
 
+# The desktop's packages that the Arch repos have (same list the later ZeXOS
+# install wants, from scripts/packages.sh in plan mode), so they download
+# together with the base in one round instead of several rounds later. The
+# later install then finds nearly everything in place and only fills the gaps.
+# ZeXOS's own packages stay for later: the new system does not trust the ZeXOS
+# key yet. Anything off or missing: extras stays empty and nothing is lost.
+extras=()
+plan_extras() {
+    local branch=main t conf db
+    [ -f /etc/zexos-iso.conf ] && . /etc/zexos-iso.conf && branch="${ZEXOS_BRANCH:-main}"
+    t=$(mktemp -d) || return 1
+    trap 'rm -rf "$t"' RETURN
+    conf=$t/pacman.conf db=$t/db
+    mkdir -p "$db/sync" "$t/home"
+    # pacman downloads as the "alpm" user when the config says so.
+    chmod 755 "$t"; chown -R alpm: "$db" 2>/dev/null || chmod -R a+rwX "$db"
+    cp /etc/zexos/pacman-arch.conf "$conf"
+    timeout 90 git clone -q --depth 1 -b "$branch" https://github.com/zefuros1991/ZeXOS.git "$t/repo" || return 1
+    timeout 180 pacman --config "$conf" --dbpath "$db" -Sy --noconfirm >/dev/null || return 1
+    HOME=$t/home ZEXOS_PLAN=$t/plan ZEXOS_PLAN_CONF=$conf ZEXOS_PLAN_DB=$db ZEXOS_PACKAGES=prebuilt \
+        ZEXOS_COMPOSITORS="$ZEXOS_COMPOSITORS" ZEXOS_SHELLS="$ZEXOS_SHELLS" \
+        bash "$t/repo/scripts/packages.sh" >/dev/null 2>&1 || true
+    [ -s "$t/plan" ] || return 1
+    pacman --config "$conf" --dbpath "$db" -Slq | sort -u > "$t/avail"
+    awk '$1 == "REPO" { for (i = 2; i <= NF; i++) print $i }' "$t/plan" | sort -u | comm -12 - "$t/avail" > "$t/repo.pkgs"
+    mapfile -t extras < "$t/repo.pkgs"
+    echo "== Planned: ${#extras[@]} packages from the Arch repos"
+}
+plan_extras || { extras=(); echo "== No extra packages planned, the later install does it all"; }
+
 pacstrap -C /etc/zexos/pacman-arch.conf -K "$ROOT" \
     base base-devel linux linux-headers linux-firmware "${ucode[@]}" \
     networkmanager sudo git curl nano man-db \
     btrfs-progs dosfstools e2fsprogs xfsprogs efibootmgr \
-    stow flatpak discover firefox fish
+    stow flatpak discover firefox fish "${extras[@]}"

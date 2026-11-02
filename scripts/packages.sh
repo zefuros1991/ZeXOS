@@ -270,6 +270,8 @@ CORE_PACMAN=(
     ttf-nunito
     # zexos-border reads the wallpaper's colours with it.
     python-pillow
+    # The shell switcher's preview pictures are webp; Qt can't read them without it.
+    qt6-imageformats
 )
 
 # niri runs X11 apps through xwayland-satellite (Mango and Hyprland have

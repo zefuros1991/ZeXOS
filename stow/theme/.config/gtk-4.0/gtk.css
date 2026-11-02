@@ -2,5 +2,3 @@
 /* Written by zshell: the running shell's colours. Under DankMaterialShell it
    loads dank-colors.css. */
 @import url("shell.css");
-@import url('libadwaita.css');
-@import url('libadwaita-tweaks.css');

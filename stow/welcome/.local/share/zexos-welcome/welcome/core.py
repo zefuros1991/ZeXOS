@@ -117,11 +117,12 @@ def installed_set(pkgs):
 
 
 def shells_installed():
-    have = installed_set(["noctalia-zexos", "noctalia", "dms-shell", "dms-shell-bin", "dms-shell-git"])
+    have = installed_set(["noctalia-zexos", "noctalia", "dux-shell", "dux-shell-bin", "dms-shell", "dms-shell-bin", "dms-shell-git"])
     out = []
     if have & {"noctalia-zexos", "noctalia"}:
         out.append("noctalia")
-    if have & {"dms-shell", "dms-shell-bin", "dms-shell-git"}:
+    # dux-shell is DMS's new name upstream; pacman -Q doesn't follow Provides.
+        if have & {"dux-shell", "dux-shell-bin", "dms-shell", "dms-shell-bin", "dms-shell-git"}:
         out.append("dms")
     return out
 

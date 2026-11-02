@@ -41,7 +41,7 @@ _ws() { _h eval "require('cfg.workspaces').$1" >/dev/null; }
 
 ws_open() { open_window "$WD" "$1"; }
 ws_close_focused() { _h dispatch 'hl.dsp.window.close()' >/dev/null; }
-ws_goto() { _ws "goto($1)"; }
+ws_goto() { _ws "go($1)"; }
 ws_next() { _ws "next()"; }
 ws_prev() { _ws "prev()"; }
 ws_move() { _ws "move($1)"; }

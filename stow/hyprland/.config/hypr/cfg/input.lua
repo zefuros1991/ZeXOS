@@ -29,5 +29,9 @@ hl.config({
     },
 })
 
--- Three fingers up or down on the touchpad changes workspace, like niri.
-hl.gesture({ fingers = 3, direction = "vertical", action = "workspace" })
+-- Three fingers up or down on the touchpad changes workspace, like niri:
+-- up is the next one (with one empty one after the last), down the previous
+-- one, and it stops at workspace 1. (cfg/workspaces.lua)
+local wsm = require("cfg.workspaces")
+hl.gesture({ fingers = 3, direction = "up", action = wsm.next })
+hl.gesture({ fingers = 3, direction = "down", action = wsm.prev })

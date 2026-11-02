@@ -29,6 +29,8 @@ ws_close_focused() { _act close-window; }
 ws_goto() { _act focus-workspace "$1"; }
 ws_next() { _act focus-workspace-down; }
 ws_prev() { _act focus-workspace-up; }
+ws_gesture_next() { ws_next; }   # niri's own gesture is the same action
+ws_gesture_prev() { ws_prev; }
 ws_move() { _act move-column-to-workspace "$1"; }
 ws_move_next() { _act move-column-to-workspace-down; }
 ws_move_prev() { _act move-column-to-workspace-up; }

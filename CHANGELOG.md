@@ -90,6 +90,14 @@ New work is tested on the `beta` branch first and is listed under
 
 ### Fixed
 
+- Workspaces now behave the same on niri, Hyprland and Mango. There is always
+  one empty workspace after the last one in use; close the last window of a
+  workspace and, once you leave it, the ones after it move up; scrolling,
+  number keys, the touchpad swipe and moving a window along (Mod+Ctrl) all
+  stop at that empty workspace, and going up from workspace 1 does nothing
+  instead of wrapping around. On Hyprland this is the new `cfg/workspaces.lua`;
+  on Mango the three-finger swipe now reaches the empty workspace too. Tests
+  for all three are in `tests/workspaces`.
 - Mango works again on mangowm 0.18, which renamed most config settings
   (`exec-once` → `exec_once`, `windowrule` → `window_rule`, colours like
   `focuscolor` → `focus_color`, …). ZeXOS's Mango config and Noctalia's

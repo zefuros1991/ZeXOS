@@ -10,6 +10,7 @@
 -- All options: https://wiki.hypr.land/Configuring/Basics/Binds/
 
 local exec = hl.dsp.exec_cmd
+local wsm = require("cfg.workspaces")  -- niri-style workspaces
 
 -- Screens off. Hyprland's docs ask to do this a moment after the key, not
 -- straight from it. Any key or mouse move wakes the screens (misc.lua).
@@ -100,24 +101,25 @@ hl.bind("SUPER + SHIFT + CTRL + down", hl.dsp.window.move({ monitor = "down" }),
 
 -- 11. Workspaces
 -- Mod+number goes to that workspace; Mod+Ctrl+number takes the window along.
-hl.bind("SUPER + 1", hl.dsp.focus({ workspace = 1 }), { description = "Workspace 1" })
-hl.bind("SUPER + 2", hl.dsp.focus({ workspace = 2 }), { description = "Workspace 2" })
-hl.bind("SUPER + 3", hl.dsp.focus({ workspace = 3 }), { description = "Workspace 3" })
-hl.bind("SUPER + 4", hl.dsp.focus({ workspace = 4 }), { description = "Workspace 4" })
-hl.bind("SUPER + 5", hl.dsp.focus({ workspace = 5 }), { description = "Workspace 5" })
-hl.bind("SUPER + 6", hl.dsp.focus({ workspace = 6 }), { description = "Workspace 6" })
-hl.bind("SUPER + 7", hl.dsp.focus({ workspace = 7 }), { description = "Workspace 7" })
-hl.bind("SUPER + 8", hl.dsp.focus({ workspace = 8 }), { description = "Workspace 8" })
-hl.bind("SUPER + 9", hl.dsp.focus({ workspace = 9 }), { description = "Workspace 9" })
-hl.bind("SUPER + CTRL + 1", hl.dsp.window.move({ workspace = 1 }), { description = "Move the window to workspace 1" })
-hl.bind("SUPER + CTRL + 2", hl.dsp.window.move({ workspace = 2 }), { description = "Move the window to workspace 2" })
-hl.bind("SUPER + CTRL + 3", hl.dsp.window.move({ workspace = 3 }), { description = "Move the window to workspace 3" })
-hl.bind("SUPER + CTRL + 4", hl.dsp.window.move({ workspace = 4 }), { description = "Move the window to workspace 4" })
-hl.bind("SUPER + CTRL + 5", hl.dsp.window.move({ workspace = 5 }), { description = "Move the window to workspace 5" })
-hl.bind("SUPER + CTRL + 6", hl.dsp.window.move({ workspace = 6 }), { description = "Move the window to workspace 6" })
-hl.bind("SUPER + CTRL + 7", hl.dsp.window.move({ workspace = 7 }), { description = "Move the window to workspace 7" })
-hl.bind("SUPER + CTRL + 8", hl.dsp.window.move({ workspace = 8 }), { description = "Move the window to workspace 8" })
-hl.bind("SUPER + CTRL + 9", hl.dsp.window.move({ workspace = 9 }), { description = "Move the window to workspace 9" })
+-- Like niri: one empty workspace after the last one in use, and no further.
+hl.bind("SUPER + 1", function() wsm.go(1) end, { description = "Workspace 1" })
+hl.bind("SUPER + 2", function() wsm.go(2) end, { description = "Workspace 2" })
+hl.bind("SUPER + 3", function() wsm.go(3) end, { description = "Workspace 3" })
+hl.bind("SUPER + 4", function() wsm.go(4) end, { description = "Workspace 4" })
+hl.bind("SUPER + 5", function() wsm.go(5) end, { description = "Workspace 5" })
+hl.bind("SUPER + 6", function() wsm.go(6) end, { description = "Workspace 6" })
+hl.bind("SUPER + 7", function() wsm.go(7) end, { description = "Workspace 7" })
+hl.bind("SUPER + 8", function() wsm.go(8) end, { description = "Workspace 8" })
+hl.bind("SUPER + 9", function() wsm.go(9) end, { description = "Workspace 9" })
+hl.bind("SUPER + CTRL + 1", function() wsm.move(1) end, { description = "Move the window to workspace 1" })
+hl.bind("SUPER + CTRL + 2", function() wsm.move(2) end, { description = "Move the window to workspace 2" })
+hl.bind("SUPER + CTRL + 3", function() wsm.move(3) end, { description = "Move the window to workspace 3" })
+hl.bind("SUPER + CTRL + 4", function() wsm.move(4) end, { description = "Move the window to workspace 4" })
+hl.bind("SUPER + CTRL + 5", function() wsm.move(5) end, { description = "Move the window to workspace 5" })
+hl.bind("SUPER + CTRL + 6", function() wsm.move(6) end, { description = "Move the window to workspace 6" })
+hl.bind("SUPER + CTRL + 7", function() wsm.move(7) end, { description = "Move the window to workspace 7" })
+hl.bind("SUPER + CTRL + 8", function() wsm.move(8) end, { description = "Move the window to workspace 8" })
+hl.bind("SUPER + CTRL + 9", function() wsm.move(9) end, { description = "Move the window to workspace 9" })
 hl.bind("SUPER + Tab", hl.dsp.focus({ workspace = "previous" }), { description = "Back to the last workspace" })
 
 -- 12. Screenshots
@@ -133,25 +135,13 @@ hl.bind("SUPER + mouse:272", hl.dsp.window.drag(), { mouse = true, description =
 hl.bind("SUPER + mouse:273", hl.dsp.window.resize(), { mouse = true, description = "Resize the window (drag)" })
 -- Hold Mod and scroll: up/down changes workspace, sideways moves between
 -- windows. Add Ctrl to take the window along.
-hl.bind("SUPER + mouse_up", hl.dsp.focus({ workspace = "m-1" }), { description = "Previous workspace" })
--- Next workspace, like niri: one empty workspace after the last one with
--- windows, and no further. ("m+1" alone only visits workspaces that exist,
--- so the empty one was never reached.)
-hl.bind("SUPER + mouse_down", function()
-    local cur = hl.get_active_workspace()
-    if cur == nil or cur.windows == 0 then return end
-    for _, ws in ipairs(hl.get_workspaces()) do
-        if not ws.special and ws.monitor ~= nil and cur.monitor ~= nil
-            and ws.monitor.id == cur.monitor.id and ws.id > cur.id then
-            hl.dispatch(hl.dsp.focus({ workspace = "m+1" }))
-            return
-        end
-    end
-    hl.dispatch(hl.dsp.focus({ workspace = "emptynm" }))
-end, { description = "Next workspace" })
+hl.bind("SUPER + mouse_up", wsm.prev, { description = "Previous workspace" })
+-- Down goes to the next workspace, with one empty one after the last that has
+-- windows. Up stops at workspace 1. (cfg/workspaces.lua)
+hl.bind("SUPER + mouse_down", wsm.next, { description = "Next workspace" })
 hl.bind("SUPER + mouse_left", hl.dsp.focus({ direction = "left" }), { description = "Focus the window to the left" })
 hl.bind("SUPER + mouse_right", hl.dsp.focus({ direction = "right" }), { description = "Focus the window to the right" })
-hl.bind("SUPER + CTRL + mouse_up", hl.dsp.window.move({ workspace = "r-1" }), { description = "Move the window to the previous workspace" })
-hl.bind("SUPER + CTRL + mouse_down", hl.dsp.window.move({ workspace = "r+1" }), { description = "Move the window to the next workspace" })
+hl.bind("SUPER + CTRL + mouse_up", wsm.move_prev, { description = "Move the window to the previous workspace" })
+hl.bind("SUPER + CTRL + mouse_down", wsm.move_next, { description = "Move the window to the next workspace" })
 hl.bind("SUPER + CTRL + mouse_left", hl.dsp.window.move({ direction = "left" }), { description = "Move the window left" })
 hl.bind("SUPER + CTRL + mouse_right", hl.dsp.window.move({ direction = "right" }), { description = "Move the window right" })

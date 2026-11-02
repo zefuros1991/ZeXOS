@@ -46,9 +46,9 @@ ShellRoot {
     readonly property string icon: Quickshell.env("ZX_ICON") || ""
 
     // How long each part takes (ms).
-    readonly property int fadeIn: 700
-    readonly property int shift: 2200
-    readonly property int fadeOut: 800
+    readonly property int fadeIn: 800      // the iris closing
+    readonly property int shift: 1600
+    readonly property int fadeOut: 1050     // logo fades (250), then the iris opens (800)
 
     // The two dark shades. Filled in by the colour pickers below.
     property color fromColour: shade(fallback)
@@ -61,6 +61,16 @@ ShellRoot {
     property bool shiftDone: false
     property bool liftWanted: false
     property bool wallGone: false
+    property bool irisGo: false             // the iris may open (the logo has faded)
+    property real time: 0                   // seconds, drives the aurora drift
+    // Iris size: 1 = open past the screen corners, 0 = closed.
+    property real hole: (phase === 1 || phase === 2 || (phase === 3 && !irisGo)) ? 0 : 1
+    Behavior on hole {
+        NumberAnimation { duration: root.phase === 3 ? 800 : root.fadeIn; easing.type: Easing.InOutQuad }
+    }
+    // How full the logo is: fills during the colour slide.
+    property real filled: phase >= 2 ? 1 : 0
+    Behavior on filled { NumberAnimation { duration: root.shift; easing.type: Easing.InOutSine } }
 
     // A dark shade of a colour: its hue, kept a little vivid, at low light.
     function shade(c) {
@@ -139,8 +149,10 @@ ShellRoot {
         log("phase " + phase)
         if (phase === 1) coveredLater.start()
         if (phase === 2) shiftLater.start()
-        if (phase === 3) { quitLater.start(); wallLater.start() }
+        if (phase === 3) { irisLater.start(); quitLater.start(); wallLater.start() }
     }
+    Timer { id: irisLater; interval: 250; onTriggered: root.irisGo = true }
+    FrameAnimation { running: root.phase >= 1; onTriggered: root.time += frameTime }
     // The wallpaper copy goes once the new shell has surely drawn its own.
     Timer { id: wallLater; interval: root.fadeOut + 1500; onTriggered: root.wallGone = true }
     Timer { id: quitLater; interval: root.fadeOut + 2000; onTriggered: Qt.quit() }
@@ -248,44 +260,69 @@ ShellRoot {
 
             Item {
                 anchors.fill: parent
-                opacity: root.phase === 1 || root.phase === 2 ? 1 : 0
-                Behavior on opacity {
-                    NumberAnimation { duration: root.phase === 3 ? root.fadeOut : root.fadeIn; easing.type: Easing.InOutCubic }
-                }
 
-                // The colour, drawn by a small shader that dithers it, so
-                // the slide between two dark shades is smooth instead of
-                // stepping one level at a time (shaders/shift.frag).
+                // The curtain: aurora bands, outside the iris
+                // (shaders/shift.frag).
                 ShaderEffect {
                     id: fill
                     anchors.fill: parent
                     property color from: root.fromColour
                     property color to: root.toColour
                     property real amount: root.mix
+                    property real time: root.time
+                    property real hole: root.hole
+                    property vector2d size: Qt.vector2d(width, height)
                     fragmentShader: Qt.resolvedUrl("shaders/shift.frag.qsb")
                 }
-                // Plain colour if the shader can't load.
+                // Plain colour (outside the iris) if the shader can't load.
                 Rectangle {
                     anchors.fill: parent
                     visible: fill.status === ShaderEffect.Error
                     color: root.shown
+                    opacity: root.hole < 0.02 ? 1 : 0
                 }
 
-                Image {
+                // The logo, as tall as nearly half the screen. A dim copy,
+                // and a bright copy that fills up from the bottom while the
+                // new shell loads. Sized and placed from the screen, not the
+                // window, so it can't jump while the window settles.
+                Item {
+                    id: logo
                     visible: root.style === "logo" && root.icon !== ""
-                    // As tall as nearly half the screen, so it is the first
-                    // thing you notice. Sized and placed from the screen, not
-                    // the window, so it can't jump while the window settles.
                     readonly property int side: Math.round(win.modelData.height * 0.46)
                     x: Math.round((win.modelData.width - side) / 2)
                     y: Math.round((win.modelData.height - side) / 2)
-                    height: side
                     width: side
-                    sourceSize: Qt.size(side * 2, side * 2)
-                    fillMode: Image.PreserveAspectFit
-                    smooth: true
-                    mipmap: true
-                    source: root.icon ? Quickshell.iconPath(root.icon, true) : ""
+                    height: side
+                    opacity: root.phase === 2 ? 1 : 0
+                    Behavior on opacity { NumberAnimation { duration: 300; easing.type: Easing.InOutCubic } }
+
+                    Image {
+                        anchors.fill: parent
+                        opacity: 0.22
+                        sourceSize: Qt.size(logo.side * 2, logo.side * 2)
+                        fillMode: Image.PreserveAspectFit
+                        smooth: true
+                        mipmap: true
+                        source: root.icon ? Quickshell.iconPath(root.icon, true) : ""
+                    }
+                    Item {
+                        id: brightPart
+                        width: parent.width
+                        height: Math.round(parent.height * root.filled)
+                        anchors.bottom: parent.bottom
+                        clip: true
+                        Image {
+                            width: logo.side
+                            height: logo.side
+                            anchors.bottom: parent.bottom
+                            sourceSize: Qt.size(logo.side * 2, logo.side * 2)
+                            fillMode: Image.PreserveAspectFit
+                            smooth: true
+                            mipmap: true
+                            source: root.icon ? Quickshell.iconPath(root.icon, true) : ""
+                        }
+                    }
                 }
             }
         }

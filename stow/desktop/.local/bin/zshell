@@ -675,7 +675,7 @@ menu() {
     [ "$n" -ge 2 ] || return 0
     for s in $SHELLS; do
         installed "$s" || continue
-        items+="$sep{\"id\":\"$s\",\"name\":\"$(pretty "$s")\",\"icon\":\"$(logo "$s")\",\"current\":$([ "$s" = "$cur" ] && echo true || echo false)}"
+        items+="$sep{\"id\":\"$s\",\"name\":\"$(pretty "$s")\",\"icon\":\"$(logo "$s")\",\"wall\":\"$(saved_wallpaper "$s")\",\"current\":$([ "$s" = "$cur" ] && echo true || echo false)}"
         sep=","
     done
     ZX_ITEMS="[$items]" \

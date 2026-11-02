@@ -1,10 +1,11 @@
 // The shell switcher (Mod+Shift+D), started by `zshell menu`.
 // It has no search box on purpose: a stray key press can't hide the choices.
-// Keys: Up/Down (or W/S, Tab, j/k) to move, Enter/Space to pick, 1/2 to pick
+// Each choice shows a small picture of its look: its own wallpaper with a
+// drawn bar. Keys: Left/Right/Up/Down (or W/S, Tab, j/k) to move, Enter/Space to pick, 1/2 to pick
 // straight away, Esc or a click outside to close.
 //
 // zshell passes everything in through environment variables:
-//   ZX_ITEMS   JSON list of {id, name, icon, current}
+//   ZX_ITEMS   JSON list of {id, name, icon, wall, current}
 //   ZX_BG, ZX_BORDER (also used as the theme colour for the names)
 //              colours as #AARRGGBB, from the shell's fuzzel colours
 // Quickshell docs: https://quickshell.org/docs/types/Quickshell.Wayland/WlrLayershell/
@@ -52,9 +53,8 @@ ShellRoot {
 
         Rectangle {
             id: card
-            // About 1.2x the old fuzzel menu, and the two choices fill all of it.
-            width: 476
-            height: column.implicitHeight + 2 * 19
+            width: row.implicitWidth + 2 * 19
+            height: row.implicitHeight + 2 * 19
             anchors.centerIn: parent
             radius: 27
             color: root.colour("ZX_BG", "#cc200f2f")
@@ -69,9 +69,9 @@ ShellRoot {
                     Qt.quit(); break
                 case Qt.Key_Return: case Qt.Key_Enter: case Qt.Key_Space:
                     root.pick(root.selected); break
-                case Qt.Key_Up: case Qt.Key_Left: case Qt.Key_W: case Qt.Key_K: case Qt.Key_Backtab:
+                case Qt.Key_Up: case Qt.Key_Left: case Qt.Key_A: case Qt.Key_W: case Qt.Key_K: case Qt.Key_Backtab:
                     root.selected = (root.selected - 1 + n) % n; break
-                case Qt.Key_Down: case Qt.Key_Right: case Qt.Key_S: case Qt.Key_J: case Qt.Key_Tab:
+                case Qt.Key_Down: case Qt.Key_Right: case Qt.Key_D: case Qt.Key_S: case Qt.Key_J: case Qt.Key_Tab:
                     root.selected = (root.selected + 1) % n; break
                 default:
                     const digit = event.key - Qt.Key_1
@@ -90,22 +90,22 @@ ShellRoot {
             Behavior on opacity { NumberAnimation { duration: 140 } }
             Behavior on scale { NumberAnimation { duration: 160; easing.type: Easing.OutCubic } }
 
-            ColumnLayout {
-                id: column
+            RowLayout {
+                id: row
                 anchors { fill: parent; margins: 19 }
-                spacing: 10
+                spacing: 14
 
                 Repeater {
                     model: root.items
 
                     Rectangle {
-                        id: row
+                        id: tile
                         required property var modelData
                         required property int index
                         readonly property bool active: index === root.selected
 
-                        Layout.fillWidth: true
-                        implicitHeight: 100
+                        implicitWidth: 300
+                        implicitHeight: 240
                         radius: 17
                         color: active ? root.selectionTint : "transparent"
                         border.width: active ? 2 : 0
@@ -116,44 +116,65 @@ ShellRoot {
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-                            onEntered: root.selected = row.index
-                            onClicked: root.pick(row.index)
+                            onEntered: root.selected = tile.index
+                            onClicked: root.pick(tile.index)
+                        }
+
+                        // The look: a recording of the shell.
+                        Item {
+                            id: thumb
+                            x: 12; y: 12
+                            width: parent.width - 24
+                            height: Math.round(width * 9 / 16)
+                            layer.enabled: true
+                            layer.smooth: true
+
+                            Rectangle { anchors.fill: parent; color: "#1c1c24"; radius: 10 }
+                            // The real look, a short recording of the shell itself.
+                            AnimatedImage {
+                                anchors.fill: parent
+                                source: Qt.resolvedUrl("previews/" + tile.modelData.id + ".webp")
+                                fillMode: Image.PreserveAspectCrop
+                                playing: true
+                                cache: false
+                            }
                         }
 
                         RowLayout {
-                            anchors { fill: parent; leftMargin: 22; rightMargin: 22 }
-                            spacing: 20
+                            x: 16; y: thumb.height + 24
+                            width: parent.width - 32
+                            spacing: 10
 
                             Image {
-                                Layout.preferredWidth: 73
-                                Layout.preferredHeight: 73
-                                source: Quickshell.iconPath(row.modelData.icon, true)
-                                sourceSize: Qt.size(146, 146)
+                                Layout.preferredWidth: 38
+                                Layout.preferredHeight: 38
+                                source: Quickshell.iconPath(tile.modelData.icon, true)
+                                sourceSize: Qt.size(76, 76)
                                 fillMode: Image.PreserveAspectFit
                                 smooth: true
                             }
 
                             ColumnLayout {
                                 Layout.fillWidth: true
-                                spacing: 2
+                                spacing: 0
 
                                 Text {
                                     Layout.fillWidth: true
-                                    text: row.modelData.name
+                                    text: tile.modelData.name
                                     font.family: "Nunito"
                                     font.weight: Font.ExtraBold
-                                    font.pixelSize: 29
+                                    font.pixelSize: 24
                                     font.letterSpacing: 0.4
                                     color: root.themeColour
                                     elide: Text.ElideRight
                                 }
 
                                 Text {
-                                    visible: row.modelData.current
+                                    visible: tile.modelData.current
                                     text: "IN USE"
                                     font.family: "Nunito"
                                     font.weight: Font.Bold
-                                    font.pixelSize: 13
+                                    font.pixelSize: 12
                                     font.letterSpacing: 2.2
                                     color: "#d6a85c"   // always this orange, whatever the theme
                                 }

@@ -9,7 +9,7 @@ and Mango, under Noctalia and DMS.
   zexos-motion print <compositor>  print a compositor's file (niri, hyprland, mango)
 
 Parts and their choices:
-  windows     rise (default), pop, balloon, fade, rise-shrink
+  windows     zoom (default), rise, pop, balloon, fade, rise-shrink
   workspaces  spring (default), snappy, glide
   panels      matched (default), off
   switch      logo (default), dip, none
@@ -18,7 +18,8 @@ Picks are saved in ~/.config/zexos/motion. Each compositor loads its
 generated file after the ZeXOS defaults, so it wins:
   ~/.config/niri/motion.kdl, ~/.config/hypr/motion.lua,
   ~/.config/mango/motion.conf, ~/.config/noctalia/zexos-motion.toml
-DMS has no extra file, so `panels` changes `animationSpeed` in its settings.
+DMS has no extra file, so `panels` changes `animationDuration` and
+`motionEffect` in its settings.
 
 Why only these: every choice must look the same on all three compositors
 and both shells. niri only slides workspaces up and down, Mango picks the
@@ -44,6 +45,7 @@ BOUNCE = (0.34, 1.56, 0.64, 1.0) # goes further past
 # name: (open kind, open scale, close kind, close scale, open ms, close ms,
 #        open curve, close curve)
 WINDOWS = {
+    "zoom":        ("zoom", 0.80, "zoom", 0.80, 350, 300, QUINT, QUINT),
     "rise":        ("rise", 0, "rise", 0, 420, 240, SPRING, INOUT),
     "pop":         ("zoom", 0.90, "zoom", 0.90, 250, 180, QUINT, QUINT),
     "balloon":     ("zoom", 0.10, "zoom", 0.10, 500, 220, BOUNCE, QUINT),
@@ -205,7 +207,7 @@ def noctalia(picks):
     return ("# Written by zexos-motion. Loaded after noctalia.toml, so it wins.\n"
             "[shell.animation]\n"
             f"enabled = {on}\n"
-            "speed = 1.0\n")
+            "speed = 0.7\n")
 
 
 def write(path, text):
@@ -224,17 +226,22 @@ def write(path, text):
 
 
 def dms_panels(picks):
-    # 0 = no animation, 1 = DMS's normal speed.
+    # animationDuration: ms, 0 = no animation. motionEffect: 0 standard,
+    # 1 slide only, 2 depth (the one that really zooms).
     path = os.path.join(CONF, "DankMaterialShell", "settings.json")
     try:
         with open(path) as f:
             data = json.load(f)
     except (OSError, ValueError):
         return
-    want = 1 if picks["panels"] == "matched" else 0
-    if data.get("animationSpeed", 1) == want:
+    if picks["panels"] != "matched":
+        want = {"animationDuration": 0}
+    else:
+        effect = {"zoom": 2, "pop": 2, "balloon": 2, "rise": 1}.get(picks["windows"], 0)
+        want = {"animationDuration": 350, "motionEffect": effect}
+    if all(data.get(k) == v for k, v in want.items()):
         return
-    data["animationSpeed"] = want
+    data.update(want)
     with open(path + ".tmp", "w") as f:
         json.dump(data, f, indent=2)
     os.replace(path + ".tmp", path)

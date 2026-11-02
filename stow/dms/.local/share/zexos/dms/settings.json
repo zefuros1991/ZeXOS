@@ -72,5 +72,7 @@
     "logout",
     "poweroff"
   ],
-  "powerMenuDefaultAction": "lock"
+  "powerMenuDefaultAction": "lock",
+  "motionEffect": 2,
+  "animationDuration": 350
 }

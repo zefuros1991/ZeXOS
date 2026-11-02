@@ -134,8 +134,12 @@ def niri(picks):
            niri_shader("open_color", ok, op, True), "    }\n",
            "    window-close {\n", f"        duration-ms {cm}\n", f'        curve "cubic-bezier" {sp(cc)}\n',
            niri_shader("close_color", ck, cp, False), "    }\n"]
-    for leaf in ("workspace-switch", "horizontal-view-movement", "window-movement", "window-resize"):
+    for leaf in ("workspace-switch", "window-movement", "window-resize"):
         out += [f"    {leaf} {{\n", pace, "    }\n"]
+    # The sideways scroll to a new window is short and bounce-free, or it
+    # slides the window in and hides its open animation.
+    out += ["    horizontal-view-movement {\n", "        duration-ms 220\n",
+            f'        curve "cubic-bezier" {sp(QUINT)}\n', "    }\n"]
     out.append("}\n")
     return "".join(out)
 

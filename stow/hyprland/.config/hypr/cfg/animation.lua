@@ -1,8 +1,7 @@
 -- How things move
 --
 -- ZeXOS defaults, the same as niri and Mango: windows zoom in from 80% and out on close,
--- workspaces slide with a small bounce. The
--- shell's bar and panels are left to the shell (Noctalia's docs ask for this).
+-- workspaces slide with a small bounce. 
 -- To pick another style run `zexos-motion` (it writes ../motion.lua, loaded after this).
 -- More: https://wiki.hypr.land/Configuring/Advanced-and-Cool/Animations/
 
@@ -16,4 +15,7 @@ hl.animation({ leaf = "fadeIn",  enabled = true, speed = 3.5, bezier = "zx_fade"
 hl.animation({ leaf = "fadeOut", enabled = true, speed = 3, bezier = "zx_fade" })
 hl.animation({ leaf = "windowsMove", enabled = true, speed = 4.5, bezier = "zx_pace" })
 hl.animation({ leaf = "workspaces",  enabled = true, speed = 4.5, bezier = "zx_pace", style = "slidevert" })
-hl.animation({ leaf = "layers", enabled = false })
+-- Noctalia's bar and panels zoom like the windows; Noctalia's own drop-down is
+-- switched off by zshell. DMS animates itself (see cfg/rules.lua).
+hl.animation({ leaf = "layersIn", enabled = true, speed = 3.5, bezier = "zx_open", style = "popin 80%" })
+hl.animation({ leaf = "layersOut", enabled = true, speed = 3, bezier = "zx_close", style = "popin 80%" })

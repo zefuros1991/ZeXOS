@@ -185,6 +185,11 @@ link_kitty() {
 link_noctalia() {
     local dir="$CONF_DIR/noctalia"
     [ -d "$dir" ] || return 0
+    local anim=''
+    # On Mango and Hyprland the compositor zooms Noctalia's panels like the
+    # windows, so Noctalia's own drop-down goes off. niri can't animate
+    # panels, so there Noctalia keeps its own.
+    [ "$(compositor)" != niri ] && anim='yes'
     if [ "$(compositor)" = mangowc ]; then
         printf '%s\n' '# Written by zshell: Mango is running.' \
             '' \
@@ -196,6 +201,8 @@ link_noctalia() {
     else
         echo '# Written by zshell: nothing extra for this compositor.' > "$dir/zexos-compositor.toml"
     fi
+    [ -n "$anim" ] && printf '%s\n' '' '# The compositor zooms the panels; no drop-down of our own.' \
+        '[shell.animation]' 'enabled = false' >> "$dir/zexos-compositor.toml"
     # Only one shell installed: nothing to switch to, so take the switch
     # button off the bar. Noctalia merges every .toml here, but a list of
     # bar groups replaces the whole list, so copy all the groups, not just

@@ -163,6 +163,14 @@ def hyprland(picks):
         return (f'hl.animation({{ leaf = "{leaf}", enabled = true, speed = {ds(n)}, '
                 f'bezier = "{bez}", style = "{st}" }})\n')
 
+    if picks["panels"] == "matched":
+        layers = [f'hl.animation({{ leaf = "layersIn", enabled = true, speed = {ds(om)}, '
+                  f'bezier = "zx_open", style = "popin 80%" }})\n',
+                  f'hl.animation({{ leaf = "layersOut", enabled = true, speed = {ds(cm)}, '
+                  f'bezier = "zx_close", style = "popin 80%" }})\n']
+    else:
+        layers = ['hl.animation({ leaf = "layers", enabled = false })\n']
+
     return "".join([
         f"-- Written by zexos-motion: windows {picks['windows']}, workspaces {picks['workspaces']}.\n",
         f'hl.curve("zx_open",  {{ type = "bezier", points = {pts(oc)} }})\n',
@@ -175,8 +183,10 @@ def hyprland(picks):
         f'hl.animation({{ leaf = "fadeOut", enabled = true, speed = {ds(cm)}, bezier = "zx_fade" }})\n',
         f'hl.animation({{ leaf = "windowsMove", enabled = true, speed = {ds(ms)}, bezier = "zx_pace" }})\n',
         f'hl.animation({{ leaf = "workspaces",  enabled = true, speed = {ds(ms)}, bezier = "zx_pace", style = "slidevert" }})\n',
-        # The shell animates its own bar and panels (Noctalia's docs ask for this).
-        'hl.animation({ leaf = "layers", enabled = false })\n',
+        # Noctalia's bar, panels and launcher zoom like the windows (Noctalia's
+        # own drop-down is switched off by zshell). DMS animates itself: see
+        # the no_anim rule in cfg/rules.lua.
+        *layers,
     ])
 
 
@@ -188,9 +198,13 @@ def mango(picks):
     def mc(c):
         return ",".join(f"{v:g}" for v in c)
 
+    layer_on = 1 if picks["panels"] == "matched" else 0
     return "".join([
         f"# Written by zexos-motion: windows {picks['windows']}, workspaces {picks['workspaces']}.\n",
         "animations=1\n",
+        # Noctalia's bar and panels zoom too (rules.conf keeps DMS out of it).
+        f"layer_animations={layer_on}\n",
+        "layer_animation_type_open=zoom\nlayer_animation_type_close=zoom\n",
         "tag_animation_direction=0\n",
         f"animation_type_open={kind[ok]}\n",
         f"animation_type_close={kind[ck]}\n",
@@ -207,10 +221,13 @@ def mango(picks):
 
 
 def noctalia(picks):
-    on = "true" if picks["panels"] == "matched" else "false"
+    # Only "off" says anything about enabled: on Mango and Hyprland zshell
+    # already switches Noctalia's own drop-down off (the compositor zooms
+    # the panels instead), and that must not be undone here.
+    off = "" if picks["panels"] == "matched" else "enabled = false\n"
     return ("# Written by zexos-motion. Loaded after noctalia.toml, so it wins.\n"
             "[shell.animation]\n"
-            f"enabled = {on}\n"
+            f"{off}"
             "speed = 0.7\n")
 
 

@@ -34,4 +34,6 @@ hl.window_rule({ name = "zexos-noctalia-settings", match = { class = [[^dev\.noc
 
 -- The desktop shell's own pieces (bar, panels, pop-ups) get no blur or
 -- shadow: layers have none unless a rule turns them on, so there is
--- nothing to do here. Their animation is off in animation.lua.
+-- nothing to do here. Noctalia's panels zoom (animation.lua); DMS
+-- animates its own, so the compositor stays out of its way.
+hl.layer_rule({ name = "zexos-dms-no-anim", match = { namespace = "^(dms:|quickshell)" }, no_anim = true })

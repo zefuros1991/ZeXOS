@@ -76,6 +76,10 @@ New features that work on top of an existing install:
 - **Limine bootloader option**: choose Limine instead of systemd-boot at
   install time. With a btrfs disk it makes every snapshot a boot entry, so
   you can boot back into a working system if an update goes wrong
+- **Shell switcher as its own project**: the Noctalia/DMS switcher, usable on
+  any Arch install that has both shells. Backdrops, logo animations and menu
+  styles (with previews, plain list, or none) become small swappable pieces
+  you pick in one settings file, so new ones can be added later
 
 ## Not planned
 

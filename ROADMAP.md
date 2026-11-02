@@ -41,6 +41,7 @@ Full details are in the [changelog](CHANGELOG.md).
 New features that work on top of an existing install:
 
 - **More animation polish**, on all three compositors and both shells
+- **Cheaper animated wallpapers**: the video wallpaper (mpvpaper) takes about half of an integrated graphics chip. Look at how other distros do it and change it at the root, for example animated pictures instead of video. A small patch update after 2.0.0.
 - **`zexos update`**: one command that updates ZeXOS and safely moves your
   config over when a new version changes how things are set up
 - **Signed ZeXOS package repo**: the repo from 1.2.0, with signed

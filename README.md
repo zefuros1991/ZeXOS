@@ -142,7 +142,7 @@ Press `Mod+Shift+D`, or click the ⇄ button at the right end of the bar (it is 
 
 The switch itself is animated: the screen fades to a dark shade of the old wallpaper's main colour with the new shell's logo large in the middle, that colour slowly turns into the new wallpaper's shade while the shells swap behind it, and then it fades out to the new desktop. You never see a grey or black gap, even with an animated wallpaper. `zexos-motion set switch dip` keeps the colours but drops the logo, and `none` switches with no animation.
 
-How windows open and close, how workspaces move and how fast the shells' panels slide can be picked the same way, and look the same on all three compositors and in both shells: `zexos-motion` lists the choices.
+How windows open and close (they zoom by default), how workspaces move and how fast the shells' panels slide can be picked the same way, and look the same on all three compositors and in both shells: `zexos-motion` lists the choices.
 
 Both use the same keys, because the keybinds call a small helper, `zshell`, instead of a shell directly. `zshell` sends each action (launcher, lock, volume, wallpaper, ...) to whichever shell is running. `zshell --help` lists them, and `zshell switch dms` or `zshell switch noctalia` does the same as the menu from a terminal.
 

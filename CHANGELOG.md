@@ -23,6 +23,11 @@ New work is tested on the `beta` branch first and is listed under
 
 ### Added
 
+- Windows now zoom in and out by default on niri, Hyprland and Mango (they
+  used to rise from below). The old looks are still there: `zexos-motion set
+  windows rise`. DMS panels use its "Depth" style, which zooms too, and
+  `zexos-motion`'s panels choice now really works on DMS 2.0. Noctalia can't
+  zoom its panels, so they are only slowed a little to be easier to see.
 - An overview on Mango and Hyprland, like niri's:
   [mango-overview](https://github.com/zefuros1991/mango-overview).
   `Mod+O` or four fingers up opens it. Drag windows between workspaces;

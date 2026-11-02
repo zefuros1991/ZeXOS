@@ -6,8 +6,10 @@
 // loaded after this file). Docs: https://yalter.github.io/niri/Configuration:-Animations
 
 animations {
+    // niri only: the sideways scroll to a new window eats into the zoom, so the
+    // zoom runs 100 ms longer here and the scroll is short and bounce-free.
     window-open {
-        duration-ms 350
+        duration-ms 450
         curve "cubic-bezier" 0.22 1 0.36 1
         custom-shader r"
         vec4 open_color(vec3 coords_geo, vec3 size_geo) {
@@ -38,7 +40,7 @@ animations {
     }
     // Short and bounce-free: a slow scroll to a new window hides its zoom.
     horizontal-view-movement {
-        duration-ms 220
+        duration-ms 320
         curve "cubic-bezier" 0.22 1 0.36 1
     }
     window-movement {

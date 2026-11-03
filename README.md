@@ -48,17 +48,20 @@ Everything in detail: [Customizing ZeXOS](docs/customizing.md).
 curl -fsSL https://raw.githubusercontent.com/zefuros1991/ZeXOS/main/install.sh -o /tmp/zexos-install.sh; bash /tmp/zexos-install.sh; rm -f /tmp/zexos-install.sh
 ```
 
-It works the same in fish, bash and zsh. The old desktop stays in the login screen's session list. More options, such as picking only some compositors or shells: [Installing ZeXOS](docs/install.md).
+It works the same in fish, bash and zsh. The old desktop stays in the login screen's session list. More options, such as picking only some compositors or shells: [Install options](docs/install-options.md).
 
 ## Documentation
 
 | | |
 |---|---|
-| [Installing ZeXOS](docs/install.md) | Distros, packages, the ISO, what the installer does |
+| [Installing ZeXOS](docs/install.md) | Which distros work, the install command, the ISO |
+| [Install options](docs/install-options.md) | Pick only some compositors or shells, ready-made or built packages |
 | [Main keybinds](docs/keybinds.md) | The keys you use every day |
 | [Compositors and shells](docs/compositors-and-shells.md) | niri, Hyprland, Mango, Noctalia, DankMaterialShell |
 | [Wallpapers and screens](docs/wallpapers-and-screens.md) | Wallpapers, animated wallpapers, screen setup |
 | [Customizing ZeXOS](docs/customizing.md) | Everything ZeXOS sets up and the config packages |
+| [Troubleshooting](docs/troubleshooting.md) | Find what you see, try the fix |
+| [How the installer works](docs/how-the-installer-works.md) | What each install script does |
 
 Questions, bugs and ideas: see [CONTRIBUTING](CONTRIBUTING.md). Security problems: [SECURITY](SECURITY.md).
 

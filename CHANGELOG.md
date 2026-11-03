@@ -23,6 +23,11 @@ New work is tested on the `beta` branch first and is listed under
 
 ### Added
 
+- The README is now a short landing page. The long text moved, unchanged, into
+  five pages under `docs/` (installing, keybinds, compositors and shells,
+  wallpapers and screens, customizing), with an index at `docs/README.md`.
+  New `CONTRIBUTING.md` and `SECURITY.md` (private reports through GitHub).
+
 - Windows now zoom in and out by default on niri, Hyprland and Mango (they
   used to rise from below). The old looks are still there: `zexos-motion set
   windows rise`. DMS panels use its "Depth" style, which zooms too, and
@@ -211,7 +216,7 @@ Two desktop shells, three compositors, a fast install and the gallery page.
 
 - DankMaterialShell (DMS) as a second desktop shell, installed next to
   Noctalia (`dms-shell`, `dms-shell-niri`, `matugen`). Noctalia stays the
-  default. See [Two desktop shells](README.md#two-desktop-shells).
+  default. See [Two desktop shells](docs/compositors-and-shells.md#two-desktop-shells).
 - `zshell`, one helper that every shell keybind calls. It passes the action
   to the running shell, so the keys work the same in both.
 - `Mod+Shift+D` opens a menu to switch shells: two big choices, each with
@@ -242,7 +247,7 @@ Two desktop shells, three compositors, a fast install and the gallery page.
   scrolling layout, gaps, borders, round corners, blur, window rules and
   the same keys. Both shells work in it, with the shell switcher, and
   window colours follow the wallpaper. See
-  [Three compositors](README.md#three-compositors).
+  [Three compositors](docs/compositors-and-shells.md#three-compositors).
 - Hyprland as a third compositor, picked on the login screen
   (`hyprland`, `xdg-desktop-portal-hyprland`, `dms-shell-hyprland`). Its
   config (new `hyprland` stow package, written in Hyprland's Lua format)

@@ -32,12 +32,6 @@ linux   /vmlinuz-linux
 initrd  /initramfs-linux.img
 options $options quiet splash
 CONF
-cat > "$ROOT/boot/loader/entries/zexos-fallback.conf" <<CONF
-title   ZeXOS (fallback)
-linux   /vmlinuz-linux
-initrd  /initramfs-linux-fallback.img
-options $options
-CONF
 # For a graphics card that shows a black screen: basic graphics, NVIDIA's
 # driver kept off.
 cat > "$ROOT/boot/loader/entries/zexos-safe.conf" <<CONF

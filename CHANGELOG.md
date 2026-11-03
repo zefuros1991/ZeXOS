@@ -95,6 +95,16 @@ New work is tested on the `beta` branch first and is listed under
 
 ### Fixed
 
+- The shell switcher's preview pictures now show (they are webp, so
+  `qt6-imageformats` is installed with the desktop).
+- Welcome's "Try it" for the shell switcher is no longer greyed out when DMS
+  is installed under its new name, `dux-shell`.
+- GTK 4 no longer reads two CSS files that never existed (`libadwaita.css`).
+- Everything is at the default size again: the bars, menus and launcher of
+  both shells, Qt apps (no more `QT_SCALE_FACTOR 1.2`) and GTK apps (96 DPI).
+- The boot menu of installed systems no longer lists the "ZeXOS (fallback)"
+  entry, which did not boot.
+
 - Workspaces now behave the same on niri, Hyprland and Mango. There is always
   one empty workspace after the last one in use; close the last window of a
   workspace and, once you leave it, the ones after it move up; scrolling,

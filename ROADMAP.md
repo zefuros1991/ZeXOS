@@ -81,6 +81,11 @@ New features that work on top of an existing install:
   styles (with previews, plain list, or none) become small swappable pieces
   you pick in one settings file, so new ones can be added later
 
+- **Try dropping Nautilus**: `xdg-desktop-portal-gnome` (needed for OBS screen
+  capture on niri) pulls in the Nautilus file manager, which ZeXOS does not
+  use. Test whether `xdg-desktop-portal-gtk` or a smaller setup captures the
+  screen just as well, and only then change it
+
 ## Not planned
 
 - **Debian, Ubuntu, Fedora and other non-Arch distros**: they use other

@@ -122,7 +122,7 @@ def shells_installed():
     if have & {"noctalia-zexos", "noctalia"}:
         out.append("noctalia")
     # dux-shell is DMS's new name upstream; pacman -Q doesn't follow Provides.
-        if have & {"dux-shell", "dux-shell-bin", "dms-shell", "dms-shell-bin", "dms-shell-git"}:
+    if have & {"dux-shell", "dux-shell-bin", "dms-shell", "dms-shell-bin", "dms-shell-git"}:
         out.append("dms")
     return out
 

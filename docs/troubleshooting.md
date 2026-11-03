@@ -12,23 +12,16 @@ ZeXOS doesn't support **Manjaro** (its repos are delayed and its own) or **Artix
 </details>
 
 <details>
-<summary>The installer hangs or skips the password prompt</summary>
-
-You probably piped the script in with `curl … | bash`. That takes over the input the `sudo` prompt needs. Use the download-then-run command from [Installing ZeXOS](install.md#install-with-the-script) instead.
-
-</details>
-
-<details>
 <summary>The final summary shows a ✖</summary>
 
-Open the log for that part in `~/.dotfiles` (`bootstrap.log`, `packages.log`, `stow.log` or `finaltouches.log`). The whole run is in `install.log`. If a pacman run failed, the installer retried the packages one at a time, so the log names the one that caused it.
+Open the log for that part in `~/.dotfiles` (`bootstrap.log`, `packages.log`, `stow.log` or `finaltouches.log`). The whole run is in `install.log`. If the install of the packages failed, the installer retried them one at a time, so the log names the one that caused it.
 
 </details>
 
 <details>
 <summary>A ready-made package was built here instead</summary>
 
-That's the fallback, not a fault. It happens when the download is missing, the checksum is wrong, or `qt6ct-kde` was made for a different Qt than yours. See [Install options](install-options.md#ready-made-or-build-it-yourself).
+That's the fallback, not a fault. It happens when a download is missing or damaged, or doesn't match your system. See [Install options](install-options.md#ready-made-or-build-it-yourself).
 
 </details>
 
@@ -37,7 +30,7 @@ That's the fallback, not a fault. It happens when the download is missing, the c
 <details>
 <summary>Dolphin or other open apps stopped following the wallpaper after an update</summary>
 
-A new Qt can break the patched `qt6ct-kde`. A pacman hook rebuilds it after every Qt update. Check how the rebuild went:
+ZeXOS rebuilds the piece that makes this work after every Qt update, and sometimes that rebuild fails. Check how the last one went:
 
 ```bash
 journalctl -u zexos-qt6ct-rebuild
@@ -55,7 +48,7 @@ GTK only reads its colours when an app starts. Close the app and open it again. 
 <details>
 <summary>Colours don't follow the wallpaper under DankMaterialShell</summary>
 
-A small watcher, `zexos-dms-sync`, does the parts DMS doesn't. Check it:
+A small background helper does the colour parts DankMaterialShell doesn't. Check that it is running:
 
 ```bash
 systemctl --user status zexos-dms-sync.path
@@ -96,7 +89,7 @@ With only one shell installed, the shell switcher is left out. See [Install opti
 </details>
 
 <details>
-<summary>DankMaterialShell has no USB drive island or no "Restart to UEFI"</summary>
+<summary>DankMaterialShell has no USB drive button or no "Restart to UEFI"</summary>
 
 DMS can't do those yet. Drives still mount from Dolphin.
 

@@ -61,7 +61,6 @@ It works the same in fish, bash and zsh. The old desktop stays in the login scre
 | [Wallpapers and screens](docs/wallpapers-and-screens.md) | Wallpapers, animated wallpapers, screen setup |
 | [Customizing ZeXOS](docs/customizing.md) | Everything ZeXOS sets up and the config packages |
 | [Troubleshooting](docs/troubleshooting.md) | Find what you see, try the fix |
-| [How the installer works](docs/how-the-installer-works.md) | What each install script does |
 
 Questions, bugs and ideas: see [CONTRIBUTING](CONTRIBUTING.md). Security problems: [SECURITY](SECURITY.md).
 

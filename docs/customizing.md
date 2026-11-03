@@ -10,10 +10,10 @@ What ZeXOS sets up for you, and which files to edit to change it.
 |---|---|
 | **niri** | Keybinds, window rules, blur and animations already set up |
 | **Mango** and **Hyprland** | Compositors you can pick on the login screen instead of niri, with the same keys. See [Three compositors](compositors-and-shells.md#three-compositors). |
-| **Noctalia v5** | The bar, launcher, notifications and lock screen. A lightly patched build (`packaging/noctalia-zexos`) attaches the three bar "islands" to the top edge and adds a launcher-only size option. |
+| **Noctalia v5** | The bar, launcher, notifications and lock screen. The bar is split into three groups attached to the top edge of the screen. |
 | **DankMaterialShell** | A second shell, switched with `Mod+Shift+D`. See [Two desktop shells](compositors-and-shells.md#two-desktop-shells). |
 | **roller** | A wallpaper picker (`Mod+W`) |
-| **SDDM** with the Pixie theme | A login screen that follows your current wallpaper and shows the ZeXOS logo as its round picture, in your wallpaper's colours. Both change with every wallpaper change and shell switch. `packaging/pixie-sddm-zexos/make-avatar.py` draws the six avatars. |
+| **SDDM** with the Pixie theme | A login screen that follows your current wallpaper and shows the ZeXOS logo as its round picture, in your wallpaper's colours. Both change with every wallpaper change and shell switch. |
 
 ### Colours from your wallpaper
 
@@ -51,9 +51,9 @@ To switch parts off, create an empty file:
 
 ## Config packages
 
-Every folder under `stow/` is one Stow package, a slice of your home folder that lives in this repo.
+Your settings live as plain files in `~/.dotfiles/stow/`, one folder per app. [GNU Stow](https://www.gnu.org/software/stow/) links each folder into your home folder, so editing the file in either place changes both.
 
-| Package | Manages |
+| Folder | Settings for |
 |---|---|
 | `btop` | `~/.config/btop` |
 | `desktop` | Default apps (`mimeapps.list`), GTK/Qt/KDE settings, `zshell` (the shell switcher) and its `Mod+Shift+D` menu (`~/.config/quickshell/zexos-switcher`), and `zexos-screenshot` (screenshots on Mango and Hyprland) |
@@ -70,22 +70,22 @@ Every folder under `stow/` is one Stow package, a slice of your home folder that
 | `roller` | `~/.config/roller` and its launcher files |
 | `theme` | GTK 3/4, qt5ct, qt6ct and the Noctalia colour files |
 
-### Relink one package after editing it
+### Link one folder again after changing it
 
-Replace `<package>` with a name from the table.
+Only needed if a link is missing or you added a new file. Replace `<package>` with a folder name from the table.
 
 ```bash
 cd ~/.dotfiles
 stow -d stow -t "$HOME" <package>
 ```
 
-To unlink it:
+To remove the links for it:
 
 ```bash
 stow -D -d stow -t "$HOME" <package>
 ```
 
-To see what would change first (a dry run):
+To see what would change first, without changing anything:
 
 ```bash
 stow -n -v -d stow -t "$HOME" <package>

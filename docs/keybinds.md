@@ -43,7 +43,7 @@ The keys you use every day. `Mod` is the Super (Windows) key. These do the same 
 
 ## Want the full list?
 
-Every key lives in one file per compositor:
+Every key lives in one file per compositor, inside `~/.dotfiles`:
 
 | Compositor | File |
 |---|---|

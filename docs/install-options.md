@@ -27,18 +27,14 @@ A few ZeXOS apps aren't in the Arch or CachyOS repos: the patched Noctalia, the 
 
 | | 1. Ready-made (default) | 2. Build here |
 |---|---|---|
-| What happens | Downloads ZeXOS's own package repo | Builds each one on your computer from the recipes in `packaging/` |
+| What happens | Downloads packages already built for you | Builds each one on your computer from source |
 | Time | About 2½ minutes for the whole install on a fresh Arch | Several minutes more. Noctalia is the slow one. |
 | Updates | `pacman -Syu` keeps them updated | Rebuilt by you |
 | Best for | Almost everyone | People who want to build from source |
 
 Both give you the same packages. To skip the question, use `ZEXOS_PACKAGES=prebuilt` or `ZEXOS_PACKAGES=source`.
 
-**If a ready-made package can't be used**, that one is built here instead. This happens when there is no download, the checksum is wrong, or `qt6ct-kde` was made for a different Qt than yours.
-
-**How ready-made works.** The [`prebuilt` release](https://github.com/zefuros1991/ZeXOS/releases/tag/prebuilt) on GitHub is added to `/etc/pacman.conf` as a package repo, checked against the checksum in `packaging/prebuilt.list`. The packages install with everything else in one pacman run. If the repo can't be reached or fails its check, each package is fetched on its own: the AUR first (`<name>-bin`, only if you have `yay` or `paru`), then the GitHub release, each checksum-checked.
-
-The packages are built in a clean Arch Linux container by `scripts/make-prebuilt.sh`, the same way Arch builds its own ([clean chroot builds](https://wiki.archlinux.org/title/DeveloperWiki:Building_in_a_clean_chroot)).
+**If a ready-made package can't be used** (no download, a damaged download, or a version that doesn't match your system), the installer builds that one on your computer instead. You don't have to do anything.
 
 ## What differs on CachyOS and other distros
 
@@ -48,7 +44,7 @@ Almost everything comes from Arch's official repos, which all supported distros 
 |---|---|
 | Shelly (app store, `Mod+M`) | KDE Discover |
 
-The installer tells them apart by reading `/etc/os-release` (`scripts/lib-distro.sh`), then runs `scripts/distro/cachyos.sh` or `scripts/distro/arch.sh`. If you added the CachyOS repos to your Arch install, the real CachyOS package is used.
+The installer works out which one you have by itself. If you added the CachyOS repos to your Arch install, you get the CachyOS version.
 
 ---
 

@@ -12,8 +12,8 @@ ZeXOS installs two shells: [Noctalia](https://noctalia.dev) and [DankMaterialShe
 | | Noctalia | DankMaterialShell |
 |---|---|---|
 | Default | Yes | No |
-| Bar layout | Three "islands" | The same items in the same order, grouped in three |
-| USB drive island | Yes | No (drives still mount from Dolphin) |
+| Bar layout | Three groups | The same items in the same order, grouped in three |
+| USB drive button | Yes | No (drives still mount from Dolphin) |
 | "Restart to UEFI" in the power menu | Yes | No |
 | Animated wallpapers | Plays them | Shows the first frame as a still |
 | Colours follow the wallpaper | By itself | Through a small watcher, `zexos-dms-sync` |
@@ -58,13 +58,12 @@ zexos-motion set switch none   # no animation
 
 ### How DMS gets its look
 
-The first time DMS starts, it gets a ZeXOS look copied from `stow/dms/.local/share/zexos/dms/`:
+The first time DMS starts, it is set up to look like Noctalia:
 
-- The same bar items as Noctalia, in the same order, in three groups: CPU use and updates on the left; DMS's Dank Island in the middle (workspaces, clock, music); tray, quick settings, notifications, battery and the shell switcher on the right
-- Each side shares one background, set with DMS's own island settings (no patch)
+- The same bar items in the same order, in three groups: CPU use and updates on the left; workspaces, clock and music in the middle; tray, quick settings, notifications, battery and the shell switcher on the right
 - The same font sizes and the ZeXOS wallpaper
 
-It's a copy, so changes you make in DMS's own settings are kept.
+After that, changes you make in DMS's own settings are kept.
 
 ### Colours follow the wallpaper
 

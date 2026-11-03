@@ -21,7 +21,7 @@ Put them in `~/Pictures/Wallpapers`. Noctalia and roller read from there.
 
 ### Make them in another size
 
-All the wallpapers are drawn by `wallpapers/make-wallpapers.py`, with no photos or downloads.
+All the wallpapers are drawn by a small script, with no photos or downloads. Run this from `~/.dotfiles` (the numbers are width and height):
 
 ```bash
 python wallpapers/make-wallpapers.py 2560 1440
@@ -50,11 +50,9 @@ Under DankMaterialShell, which can't play videos, you get the first frame as a s
 
 `Mod+W` opens roller on the pictures, and `Tab` switches between the two groups.
 
-> **Good to know.** ZeXOS ships its own copy of the Video Wallpaper plugin with one extra command. See `ZEXOS.md` in `~/.local/share/noctalia/plugins/mpvpaper`.
-
 ### Make the videos
 
-The `wallpapers/make-*-video.py` scripts draw them. They need `python-numpy`, `python-pillow` and `ffmpeg`.
+The animated ones are drawn by the `wallpapers/make-*-video.py` scripts in `~/.dotfiles`. They need `python-numpy`, `python-pillow` and `ffmpeg`.
 
 ## Screens
 

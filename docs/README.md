@@ -21,11 +21,10 @@
 | Page | What is in it |
 |---|---|
 | [Troubleshooting](troubleshooting.md) | Find what you see, try the fix |
-| [How the installer works](how-the-installer-works.md) | What each install script does, and where its log is |
 
 ## Also in the repo
 
-[CHANGELOG](../CHANGELOG.md) · [ROADMAP](../ROADMAP.md) · [CREDITS](../CREDITS.md) · [CONTRIBUTING](../CONTRIBUTING.md) · [SECURITY](../SECURITY.md)
+[Installer ISO](../iso/README.md) · [CHANGELOG](../CHANGELOG.md) · [ROADMAP](../ROADMAP.md) · [CREDITS](../CREDITS.md) · [CONTRIBUTING](../CONTRIBUTING.md) · [SECURITY](../SECURITY.md)
 
 ---
 

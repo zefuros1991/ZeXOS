@@ -45,8 +45,6 @@ On those two the installer stops early and says why.
 5. Wait for it to finish. At the end you get a short result for each part, ✔ or ✖.
 6. Log out. On the login screen, pick **niri**, **Hyprland** or **Mango** from the session menu next to the password box.
 
-> **Don't use `curl … | bash`.** The installer asks for your `sudo` password, and piping the script in takes over the input that prompt needs.
-
 **Already cloned the repo to `~/.dotfiles`?**
 
 ```bash
@@ -62,9 +60,7 @@ Use this on an empty PC. It installs Arch and ZeXOS together.
 2. Boot the PC from it. You get a graphical and a text installer.
 3. Follow the installer.
 
-A system installed this way is called **ZeXOS** in `/etc/os-release`. Under the hood it is plain Arch and says so (`ID_LIKE=arch`), so Arch packages and guides apply. Installing with the script on a system you already have keeps that system's name and logo.
-
-How the ISO is built: [iso/README.md](../iso/README.md).
+Your system shows up as ZeXOS, and it's still Arch underneath, so Arch packages and guides work. More about the ISO: [Download, boot, install](../iso/README.md).
 
 ## Something went wrong?
 
@@ -74,7 +70,6 @@ Every step keeps a log in `~/.dotfiles`. Look there first. See [Troubleshooting]
 
 - [Install options](install-options.md): install only some compositors or shells, or build the packages yourself
 - [Main keybinds](keybinds.md): the keys you use every day
-- [How the installer works](how-the-installer-works.md): what each script does
 
 ---
 

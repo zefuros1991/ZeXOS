@@ -25,6 +25,10 @@ Open an issue first and describe what you would like to see. That saves you the 
 4. Describe the change in plain language in the commit message and the pull request.
 5. Add a line to `CHANGELOG.md` under "Unreleased".
 
+## How ZeXOS is built
+
+The [internals pages](docs/internals/README.md) explain how the installer, the ISO, the packages and the signing key work.
+
 Your contribution is covered by the project's [MIT license](LICENSE).
 
 [Back to the README](README.md)

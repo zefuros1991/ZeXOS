@@ -1,8 +1,7 @@
 # Credits
 
 ZeXOS is my own setup: the config files, the install scripts, a couple of
-small patches, and the wallpapers (drawn from scratch by
-`wallpapers/make-wallpapers.py`, no photos or outside art). Everything it runs on was made by other people, and it would
+small patches, and the wallpapers (drawn from scratch, no photos or outside art). Everything it runs on was made by other people, and it would
 not exist without them. Thank you.
 
 ## Built on
@@ -23,25 +22,15 @@ not exist without them. Thank you.
 | [Bibata](https://github.com/ful1e5/Bibata_Cursor) by ful1e5 | Mouse pointer |
 | [Papirus](https://github.com/PapirusDevelopmentTeam/papirus-icon-theme) | Icon theme; its folder icons are recoloured to follow the wallpaper |
 | [fastfetch](https://github.com/fastfetch-cli/fastfetch) | System info shown in the terminal |
-| [GNU Stow](https://www.gnu.org/software/stow/) | Links the config files from this repo into your home folder |
+| [GNU Stow](https://www.gnu.org/software/stow/) | Puts the config files from this repo into your home folder |
 | [adw-gtk3](https://github.com/lassekongo83/adw-gtk3) | Makes older GTK apps match the modern GNOME look |
 
 The installer downloads all of these from their official sources: the
-CachyOS/Arch repos, or the project's own GitHub for the few that aren't in
-the repos (checked against a fixed checksum).
+CachyOS and Arch repos, or the project's own GitHub for the few that aren't in
+the repos. None of their code is copied into this repo, and each one keeps its
+own license.
 
-ZeXOS's own few packages (the patched Noctalia, the Pixie login theme, the
-Bibata pointer, roller, qt6ct-kde and, outside CachyOS, mpvpaper) can come
-two ways, and the installer asks which: built on your computer from the
-recipes in `packaging/`, or downloaded ready-made. Ready-made means the
-AUR's `-bin` package if you already have `yay` or `paru` (the AUR is
-user-made, so ZeXOS never installs an AUR helper for you), otherwise
-ZeXOS's own `prebuilt` GitHub release; every download must match the
-checksum in `packaging/prebuilt.list`.
-None of their code is copied into this repo, and each one keeps its own
-license.
-
-## Files here that contain other people's code
+## Files with other people's code
 
 These are the only files in this repo with someone else's code inside them.
 They keep their original license (MIT, except the qt6ct patches, which follow

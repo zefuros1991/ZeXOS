@@ -9,10 +9,10 @@
 
 <p align="center">
   <a href="https://github.com/zefuros1991/ZeXOS/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/zefuros1991/ZeXOS?color=7C5CFF&labelColor=1A1B22"></a>
-  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-B45CE6?labelColor=1A1B22"></a>
-  <img alt="Arch based" src="https://img.shields.io/badge/Arch--based-CachyOS%20%C2%B7%20Arch%20%C2%B7%20EndeavourOS-3DDC97?labelColor=1A1B22">
-  <img alt="Compositors" src="https://img.shields.io/badge/compositors-niri%20%C2%B7%20Hyprland%20%C2%B7%20Mango-7C5CFF?labelColor=1A1B22">
-  <img alt="Shells" src="https://img.shields.io/badge/shells-Noctalia%20%C2%B7%20DankMaterialShell-B45CE6?labelColor=1A1B22">
+  <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-6C7CE5?labelColor=1A1B22"></a>
+  <img alt="Arch-based" src="https://img.shields.io/badge/Arch--based-5D9CCB?labelColor=5D9CCB">
+  <img alt="Compositors: niri, Hyprland, Mango" src="https://img.shields.io/badge/niri%20%C2%B7%20Hyprland%20%C2%B7%20Mango-4DBCB1?labelColor=4DBCB1">
+  <img alt="Shells: Noctalia, DankMaterialShell" src="https://img.shields.io/badge/Noctalia%20%C2%B7%20DankMaterialShell-3DDC97?labelColor=3DDC97">
 </p>
 
 <p align="center">

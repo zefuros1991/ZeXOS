@@ -7,7 +7,6 @@
 -- Qt apps (Dolphin, VLC...) take their look from qt6ct...
 hl.env("QT_QPA_PLATFORMTHEME", "qt6ct")
 -- ...and are drawn 20% bigger.
-hl.env("QT_SCALE_FACTOR", "1.2")
 
 hl.config({
     misc = {

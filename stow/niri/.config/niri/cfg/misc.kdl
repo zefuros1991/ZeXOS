@@ -10,7 +10,6 @@ screenshot-path "~/Pictures/Screenshots/Screenshot from %Y-%m-%d %H-%M-%S.png"
 // Settings passed to every app started from the desktop.
 environment {
     QT_QPA_PLATFORMTHEME "qt6ct"   // Qt apps (Dolphin, VLC...) take their look from qt6ct
-    QT_SCALE_FACTOR "1.2"          // Qt apps drawn 20% bigger
 }
 
 debug {

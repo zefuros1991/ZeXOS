@@ -35,6 +35,12 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 BRANCH="${ZEXOS_BRANCH:-main}"
+# The file name carries the release version (newest number in the changelog),
+# e.g. ZeXOS-v2.0.0-x86_64.iso. Test builds from any other branch say -beta.
+VERSION="$(sed -n 's/^## \[\([0-9][0-9.]*\)\].*/\1/p' "$here/../CHANGELOG.md" | head -n1)"
+[ -n "$VERSION" ] || { echo "No version found in CHANGELOG.md." >&2; exit 1; }
+ISO_VERSION="v$VERSION"
+[ "$BRANCH" = main ] || ISO_VERSION="$ISO_VERSION-beta"
 base="$(cd "$here/../.." && pwd)/ZeXOS-iso"
 OUT="${ZEXOS_ISO_OUT:-$base/out}"
 WORK="${ZEXOS_ISO_WORK:-$base/work}"
@@ -146,7 +152,8 @@ sh "$here/common/airootfs/usr/local/share/zexos/branding/zexos-branding" "$profi
 
 # Name it ZeXOS instead of Arch Linux: file name, volume label, boot menu.
 sed -i \
-    -e "s|^iso_name=.*|iso_name=\"zexos\"|" \
+    -e "s|^iso_name=.*|iso_name=\"ZeXOS\"|" \
+    -e "s|^iso_version=.*|iso_version=\"$ISO_VERSION\"|" \
     -e "s|^iso_label=.*|iso_label=\"ZEXOS_\$(date --date=\"@\${SOURCE_DATE_EPOCH:-\$(date +%s)}\" +%Y%m)\"|" \
     -e "s|^iso_publisher=.*|iso_publisher=\"ZeXOS <https://github.com/zefuros1991/ZeXOS>\"|" \
     -e "s|^iso_application=.*|iso_application=\"ZeXOS installer\"|" \
@@ -169,4 +176,4 @@ fi
 echo "Packing: $COMPRESS ($( [ "$COMPRESS" = fast ] && echo zstd || echo xz ))"
 
 mkarchiso -v -r -w "$WORK/work-$variant" -o "$OUT" "$profile"
-ls -lh "$OUT"/zexos-[0-9]*.iso
+ls -lh "$OUT"/ZeXOS-v*.iso

@@ -5,7 +5,7 @@
   </picture>
 </p>
 
-<h3 align="center">A ready-to-use, themed desktop for Arch Linux and CachyOS.<br>One command, or one ISO, and you have a complete daily desktop.</h3>
+<h3 align="center">A ready-to-use, themed Arch-based Linux distro.<br>Install it from the ISO, or add the same desktop to the Arch or CachyOS you already have.</h3>
 
 <p align="center">
   <a href="https://github.com/zefuros1991/ZeXOS/releases/latest"><img alt="Release" src="https://img.shields.io/github/v/release/zefuros1991/ZeXOS?color=7C5CFF&labelColor=1A1B22"></a>
@@ -38,11 +38,11 @@ Everything in detail: [Customizing ZeXOS](docs/customizing.md).
 
 ## Get ZeXOS
 
-**On a new PC:** download the installer ISO. It has a graphical and a text installer.
+**Install ZeXOS as your system:** download the ISO and boot it. It has a graphical and a text installer.
 
 <p align="center"><a href="https://github.com/zefuros1991/ZeXOS/releases/latest"><img alt="Download ISO" src="https://img.shields.io/badge/Download%20ISO-7C5CFF?style=for-the-badge&labelColor=7C5CFF"></a></p>
 
-**On an Arch-based system you already have** (CachyOS, Arch Linux, EndeavourOS), run this as your normal user:
+**Already on Arch, CachyOS or EndeavourOS and don't want a clean install?** Add the ZeXOS desktop to it with one command, run as your normal user:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/zefuros1991/ZeXOS/main/install.sh -o /tmp/zexos-install.sh; bash /tmp/zexos-install.sh; rm -f /tmp/zexos-install.sh
@@ -54,7 +54,7 @@ It works the same in fish, bash and zsh. The old desktop stays in the login scre
 
 | | |
 |---|---|
-| [Installing ZeXOS](docs/install.md) | Which distros work, the install command, the ISO |
+| [Installing ZeXOS](docs/install.md) | The ISO, then how to add the desktop to a system you already have |
 | [Install options](docs/install-options.md) | Pick only some compositors or shells, ready-made or built packages |
 | [Main keybinds](docs/keybinds.md) | The keys you use every day |
 | [Compositors and shells](docs/compositors-and-shells.md) | niri, Hyprland, Mango, Noctalia, DankMaterialShell |

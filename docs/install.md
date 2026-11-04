@@ -1,8 +1,25 @@
 # Installing ZeXOS
 
-Two ways in: run the install script on an Arch-based system you already have, or use the installer ISO on an empty PC. The script takes about 2½ minutes on a fresh Arch.
+ZeXOS is a Linux distro based on Arch. The normal way to get it is the installer ISO: write it to a USB stick and install ZeXOS on a PC. If you'd rather keep the Arch-based system you already have, you can add the ZeXOS desktop to it with one command instead.
 
-## Before you start
+| You want | Do this |
+|---|---|
+| ZeXOS as your system (new PC, or a clean start) | [Install from the ISO](#install-zexos-from-the-iso) |
+| To keep your current Arch, CachyOS or EndeavourOS | [Add the desktop to your system](#keep-your-system-add-the-zexos-desktop) |
+
+## Install ZeXOS from the ISO
+
+1. Download the installer ISO from the [Releases page](https://github.com/zefuros1991/ZeXOS/releases/latest).
+2. Write it to a USB stick and boot the PC from it. You get a graphical and a text installer.
+3. Follow the installer. It installs Arch and ZeXOS together.
+
+Your system shows up as ZeXOS, and it's still Arch underneath, so Arch packages and guides work. Everything about the ISO, step by step: [Download, boot, install](../iso/README.md).
+
+## Keep your system: add the ZeXOS desktop
+
+Already running Arch, CachyOS or EndeavourOS and don't want a clean install? The install script adds the ZeXOS desktop on top of that system. Your files, apps and old desktop stay. It takes about 2½ minutes on a fresh Arch.
+
+### Before you start
 
 **Tested and working**
 
@@ -26,7 +43,7 @@ On those two the installer stops early and says why.
 
 `git` is added for you if it's missing. Everything else, including `stow`, comes with the install.
 
-## Install with the script
+### Run the script
 
 1. Open a terminal as your normal user.
 2. Paste this and press Enter:
@@ -52,23 +69,13 @@ cd ~/.dotfiles
 ./install.sh
 ```
 
-## Install from the ISO
-
-Use this on an empty PC. It installs Arch and ZeXOS together.
-
-1. Download the installer ISO from the [Releases page](https://github.com/zefuros1991/ZeXOS/releases/latest).
-2. Boot the PC from it. You get a graphical and a text installer.
-3. Follow the installer.
-
-Your system shows up as ZeXOS, and it's still Arch underneath, so Arch packages and guides work. More about the ISO: [Download, boot, install](../iso/README.md).
-
 ## Something went wrong?
 
-Every step keeps a log in `~/.dotfiles`. Look there first. See [Troubleshooting](troubleshooting.md) for fixes by symptom.
+On the ISO, the log is `/var/log/zexos-install.log` on the new system. With the script, every step keeps a log in `~/.dotfiles`. Look there first. See [Troubleshooting](troubleshooting.md) for fixes by symptom.
 
 ## Next
 
-- [Install options](install-options.md): install only some compositors or shells, or build the packages yourself
+- [Install options](install-options.md): for the script, install only some compositors or shells, or build the packages yourself
 - [Main keybinds](keybinds.md): the keys you use every day
 
 ---

@@ -1,6 +1,6 @@
 # Install options
 
-Extra choices for the install script. None are needed for a normal install.
+Extra choices for the install script, the way to add ZeXOS to a system you already have. None are needed for a normal install. On the ISO you make these choices in the installer instead.
 
 Put any of these in front of the install command, for example `ZEXOS_SHELLS=noctalia bash install.sh`.
 

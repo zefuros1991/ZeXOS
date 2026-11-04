@@ -6,7 +6,7 @@ Bug reports, ideas and fixes are welcome. Please follow the [code of conduct](CO
 
 [Open an issue](https://github.com/zefuros1991/ZeXOS/issues/new). It helps to say:
 
-- which distro you installed on, and whether you used the install script or the ISO
+- which distro you installed on, and whether you used the ISO or the install script
 - which compositor (niri, Hyprland, Mango) and which shell (Noctalia, DankMaterialShell) you were using
 - what you did, what you expected and what happened instead
 - the log that matches the step that failed, from `~/.dotfiles` (`install.log`, `bootstrap.log`, `packages.log`, `stow.log` or `finaltouches.log`)

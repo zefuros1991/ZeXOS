@@ -4,7 +4,7 @@
 
 | Page | What is in it |
 |---|---|
-| [Installing ZeXOS](install.md) | Which distros work, the install command, the installer ISO |
+| [Installing ZeXOS](install.md) | The installer ISO first, then how to add the desktop to a system you already have |
 | [Install options](install-options.md) | Install only some compositors or shells, ready-made or built packages |
 | [Main keybinds](keybinds.md) | The keys you use every day |
 

@@ -78,8 +78,8 @@ it to Arch, CachyOS and friends with the script.
   until you switch "Show at startup" off. Every button also works as
   `zexos-welcome <job>` in a terminal.
 - **Drivers, found and installed for you** (`zexos-drivers`). The scan looks
-  at the graphics, Wi-Fi and network chips and picks the driver each needs,
-  the same choices CachyOS, EndeavourOS and Manjaro make (newest NVIDIA,
+  at the graphics, Wi-Fi and network chips and picks the driver each needs
+  (newest NVIDIA,
   legacy NVIDIA 580 for GTX 750–1080 with a backup kernel, open-source for
   older cards, AMD, Intel by generation, laptop battery saving on NVIDIA
   laptops, VM helper tools, Broadcom and Realtek). Both installers show what
@@ -94,8 +94,7 @@ it to Arch, CachyOS and friends with the script.
     graphics or Broadcom Wi-Fi isn't working.
 - **Gaming in one click.** Two ZeXOS packages, `zexos-gaming-meta` (Wine and
   the libraries and fonts Windows games need) and
-  `zexos-gaming-applications` (Steam, Lutris, MangoHud, gamescope and more),
-  like CachyOS's gaming packages.
+  `zexos-gaming-applications` (Steam, Lutris, MangoHud, gamescope and more).
 - **An overview on Mango and Hyprland**, like niri's:
   [mango-overview](https://github.com/zefuros1991/mango-overview).
   `Mod+O` or four fingers up opens it. Drag windows between workspaces;
@@ -133,9 +132,8 @@ it to Arch, CachyOS and friends with the script.
 - The README is now a short landing page, and the documentation is rewritten
   into short pages under `docs/` (installing, install options, keybinds,
   compositors and shells, wallpapers and screens, customizing,
-  troubleshooting), with an index at `docs/README.md`. How ZeXOS is built
-  moved to `docs/internals/`. New `CONTRIBUTING.md` and `SECURITY.md` (private
-  reports through GitHub).
+  troubleshooting), with an index at `docs/README.md`. New `CONTRIBUTING.md` and `SECURITY.md`
+  (private reports through GitHub).
 
 ### Fixed
 

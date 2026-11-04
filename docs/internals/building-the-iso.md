@@ -102,7 +102,7 @@ zexos-tui --demo                          # every screen, no disk is touched
 
 ## The ZeXOS name
 
-Only systems installed from this ISO are called ZeXOS. It works the way CachyOS and EndeavourOS do it:
+Only systems installed from this ISO are called ZeXOS. How it works:
 
 - `zexos-branding` writes `/etc/os-release` with `NAME="ZeXOS"`, `ID=zexos` and `ID_LIKE=arch`. That file belongs to no package, and it is read before Arch's `/usr/lib/os-release`, so Arch's file is never touched.
 - `ID_LIKE=arch` keeps everything treating the system as Arch, including ZeXOS's own `install.sh` (`scripts/lib-distro.sh`).

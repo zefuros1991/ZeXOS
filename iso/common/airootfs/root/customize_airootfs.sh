@@ -7,4 +7,8 @@
 # its own headers from zexos-pacstrap.
 set -euo pipefail
 ls /usr/lib/modules/*/updates/dkms/wl.ko* >/dev/null
-pacman -Rdd --noconfirm linux-headers gcc
+# The headers are deleted by hand, not with pacman: removing the package makes
+# dkms' pacman hook delete the driver it just built.
+rm -rf /usr/lib/modules/*/build /usr/src/linux-headers-*
+pacman -Rdd --noconfirm gcc
+ls /usr/lib/modules/*/updates/dkms/wl.ko* >/dev/null

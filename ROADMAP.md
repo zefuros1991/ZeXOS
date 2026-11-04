@@ -1,77 +1,31 @@
 # Roadmap
 
 Where ZeXOS is going. These are plans, not promises: the order can change,
-and there are no dates. What has already shipped is in the
-[changelog](CHANGELOG.md).
+and there are no dates. Everything that has already shipped is in the
+[changelog](CHANGELOG.md), which also explains the
+[version numbers](CHANGELOG.md#version-numbers).
 
-Version numbers work like this (see [the changelog](CHANGELOG.md#version-numbers)
-for more):
-
-- **1.0.x** — fixes only
-- **1.x.0** — new features; your setup updates normally
-- **x.0.0** — a big change to what ZeXOS is; updating may need a reinstall or
-  manual steps
-
-## Latest: 1.2.1 (released 2026-10-14)
-
-- Fix: with DMS, the wallpaper colour sync no longer shows as "failed"
-  after it worked
-
-### 1.2.0 (released 2026-10-03)
-
-- One pacman run for the whole install, falling back to one package at a
-  time if it fails
-- ZeXOS's own package repo: its few packages install and update with the
-  rest of the system
-- Anything that has to be built now builds while the rest installs
-
-### 1.1.0 (released 2026-10-03)
-
-- Two desktop shells, Noctalia and DankMaterialShell, with a menu to switch
-  (`Mod+Shift+D`)
-- Three compositors, niri, Hyprland and Mango, picked at the login screen
-- Animated shell switch, `zexos-motion` and animated wallpapers
-- A fast install with ready-made packages, or build everything yourself
-- The gallery page with clips of every combination
-
-Full details are in the [changelog](CHANGELOG.md).
-
-## Next: 1.x
+## Next: 2.x
 
 New features that work on top of an existing install:
 
 - **More animation polish**, on all three compositors and both shells
-- **Cheaper animated wallpapers**: the video wallpaper (mpvpaper) takes about half of an integrated graphics chip. Look at how other distros do it and change it at the root, for example animated pictures instead of video. A small patch update after 2.0.0.
+- **Cheaper animated wallpapers**: the video wallpaper (mpvpaper) takes about
+  half of an integrated graphics chip. Look at how other distros do it and
+  change it at the root, for example animated pictures instead of video. A
+  small patch update after 2.0.0.
 - **`zexos update`**: one command that updates ZeXOS and safely moves your
   config over when a new version changes how things are set up
-- **Signed ZeXOS package repo**: the repo from 1.2.0, with signed
-  packages, public build logs, and automatic checks that building the
-  packages yourself gives the same result
-- **An installer ISO**: a USB image that installs Arch and ZeXOS together,
-  first an online one (downloads during the install), later an offline one
-- **Closing known gaps** listed in the changelog where the shells or
+- **A more open package repo**: public build logs, and automatic checks that
+  building the packages yourself gives the same result
+- **An offline installer ISO**: a USB image that installs without needing an
+  internet connection
+- **Closing known issues** listed in the changelog where the shells or
   compositors allow it (for example a USB drive widget for DMS)
 - **More distros tested**: more Arch-based distros checked and added to the
   tested list
 
 ## Later
-
-- **NixOS support**: ZeXOS as a NixOS flake, so the same desktop can be
-  declared in a NixOS config. NixOS doesn't use pacman or config files in
-  the same way, so this is its own piece of work next to the install script
-
-## 2.0: ZeXOS as its own distro
-
-- **An installer ISO**: a bootable USB image that installs Arch Linux with
-  ZeXOS already set up, using the ZeXOS package repository. It turns ZeXOS
-  into a small Arch-based distro of its own
-- **The install script stays**: anyone already on CachyOS, Arch or another
-  Arch-based distro can keep adding ZeXOS to their system. The ISO runs the
-  same script, so both stay the same desktop
-- This is a major version because it changes how ZeXOS is installed and
-  updated. Moving a script install to the distro may need a reinstall
-
-## After 2.0
 
 - **Limine bootloader option**: choose Limine instead of systemd-boot at
   install time. With a btrfs disk it makes every snapshot a boot entry, so
@@ -80,11 +34,13 @@ New features that work on top of an existing install:
   any Arch install that has both shells. Backdrops, logo animations and menu
   styles (with previews, plain list, or none) become small swappable pieces
   you pick in one settings file, so new ones can be added later
-
 - **Try dropping Nautilus**: `xdg-desktop-portal-gnome` (needed for OBS screen
   capture on niri) pulls in the Nautilus file manager, which ZeXOS does not
   use. Test whether `xdg-desktop-portal-gtk` or a smaller setup captures the
   screen just as well, and only then change it
+- **NixOS support**: ZeXOS as a NixOS flake, so the same desktop can be
+  declared in a NixOS config. NixOS doesn't use pacman or config files in
+  the same way, so this is its own piece of work next to the install script
 
 ## Not planned
 

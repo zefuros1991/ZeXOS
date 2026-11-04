@@ -1,9 +1,9 @@
 # Changelog
 
-All notable changes to ZeXOS are listed here.
+Every ZeXOS release, newest first. Read it top to bottom to follow how ZeXOS
+grew. Plans for later versions are in the [roadmap](ROADMAP.md).
 
 The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
-Plans for later versions are in the [roadmap](ROADMAP.md).
 
 ## Version numbers
 
@@ -19,84 +19,123 @@ ZeXOS versions have three numbers, like `1.2.3`, following
 New work is tested on the `beta` branch first and is listed under
 "Unreleased" until it reaches `main` with a version number.
 
+## How each release is laid out
+
+Every version uses the same four headings, most important first:
+
+1. **New features**: things you couldn't do before.
+2. **Small changes**: smaller additions, tweaks and removals.
+3. **Fixed**: problems that are gone.
+4. **Known issues**: problems that are still there when the version is released.
+
+A heading with nothing under it says "Nothing."
+
 ## [Unreleased]
 
-### Added
+### New features
 
-- The README is now a short landing page. The long text moved, unchanged, into
-  five pages under `docs/` (installing, keybinds, compositors and shells,
-  wallpapers and screens, customizing), with an index at `docs/README.md`.
-  New `CONTRIBUTING.md` and `SECURITY.md` (private reports through GitHub).
+Nothing yet.
 
-- Windows now zoom in and out by default on niri, Hyprland and Mango (they
-  used to rise from below). The old looks are still there: `zexos-motion set
-  windows rise`. DMS panels use its "Depth" style, which zooms too, and
-  `zexos-motion`'s panels choice now really works on DMS 2.0. Noctalia can't
-  zoom its panels, so they are only slowed a little to be easier to see.
-- An overview on Mango and Hyprland, like niri's:
-  [mango-overview](https://github.com/zefuros1991/mango-overview).
-  `Mod+O` or four fingers up opens it. Drag windows between workspaces;
-  three-finger swipes follow your fingers (up/down for workspaces,
-  sideways for windows, several in one swipe).
+### Small changes
+
+Nothing yet.
+
+### Fixed
+
+Nothing yet.
+
+### Known issues
+
+Same as in [2.0.0](#200---2026-11-04) until something changes.
+
+## [2.0.0] - 2026-11-04
+
+ZeXOS becomes a distro of its own: install it from a USB stick, or keep adding
+it to Arch, CachyOS and friends with the script.
+
+### New features
+
+- **Installer ISOs** (in `iso/`, see [iso/README.md](iso/README.md)). A text
+  one: a few plain questions, one screen to check them, then it installs
+  everything by itself, with optional disk encryption. And a window one
+  (Calamares on niri): compositor and shell pickers that show animated
+  previews, and a slideshow while installing.
+- **ZeXOS is a distro.** Systems installed from a ZeXOS ISO are called ZeXOS
+  (`ID=zexos`, `ID_LIKE=arch`), kept after updates by a pacman hook. Script
+  installs keep their distro's name. The live system on the stick is called
+  ZeXOS too (name, host name `zexos`, welcome text), not Arch.
+- **Signed packages.** Every ZeXOS package is signed with the ZeXOS key
+  (`zexos-keyring`), and computers refuse unsigned or changed ZeXOS packages.
+  **Installed before this?** If `pacman -Syu` stops with "key A7806D3A… is
+  unknown", run ZeXOS's `install.sh` once more: it adds the key and switches
+  the ZeXOS source to signed packages.
 - **ZeXOS - Welcome**, a welcome app for systems installed from the ZeXOS
   ISO (script installs on another distro don't get it). Pages: Welcome,
   Keys (12 basic keys, each with a Try it button), System care (update,
   faster download servers, remove leftover packages, clean old package
-  files, fix "pacman is locked"), Gaming (one click, see below) and
-  What's new. Each job runs in a terminal you can watch, and the window
-  says how it ended. Opens at login until you switch "Show at startup"
-  off. Every button also works as `zexos-welcome <job>` in a terminal.
-- Gaming in one click: two ZeXOS packages, `zexos-gaming-meta` (Wine and
-  the libraries and fonts Windows games need) and
-  `zexos-gaming-applications` (Steam, Lutris, MangoHud, gamescope and
-  more), like CachyOS's gaming packages.
-- In a virtual machine, the mouse pointer is drawn where clicks really
-  land (`zexos-vm-cursor`, on niri, Hyprland and Mango). Real hardware
-  is not affected.
-- Systems installed from the ZeXOS ISO open web links in Firefox by
-  default, instead of asking which app to use.
-- Pick what to install: `ZEXOS_COMPOSITORS` (niri, hyprland, mango) and
-  `ZEXOS_SHELLS` (noctalia, dms) choose any mix; the default is all of
-  them. The pick is remembered for later updates. With one shell, the
-  shell switcher is left out.
-- Installer ISOs (beta), in `iso/`: a text one (a few plain questions,
-  one screen to check them, then it installs everything by itself, with
-  optional disk encryption) and a graphical one (Calamares on niri, with compositor and shell
-  pickers that show animated previews, and a slideshow while installing).
-  See [iso/README.md](iso/README.md).
-- Systems installed from a ZeXOS ISO are called ZeXOS (`ID=zexos`,
-  `ID_LIKE=arch`), kept after updates by a pacman hook. Script installs keep
-  their distro's name. The ISOs' live system is called ZeXOS too (name,
-  host name `zexos`, welcome text), not Arch.
-- A terminal look in kitty, in the wallpaper's colours: the system info in a
-  box under your distro's logo (the ZeXOS Z on ISO installs) and a two-line
-  prompt with folder, git branch, status and time, for bash, zsh and fish.
-  Both change with the wallpaper and shell. Your own prompt (starship,
-  oh-my-posh, powerlevel10k, oh-my-zsh themes, a custom fish prompt) is left
-  alone; `~/.config/zexos/no-prompt` turns ours off.
-- Drivers, found and installed for you (`zexos-drivers`): the scan looks at
-  the graphics, Wi-Fi and network chips and picks the driver each needs, the
-  same choices CachyOS, EndeavourOS and Manjaro make (newest NVIDIA, legacy
-  NVIDIA 580 for GTX 750–1080 with a backup kernel, open-source for older
-  cards, AMD, Intel by generation, laptop battery saving on NVIDIA laptops,
-  VM helper tools, Broadcom and Realtek). Both installers show what was found
-  ("chip → driver") and let you pick another driver where one fits. If a
-  driver can't be installed, the install still finishes on the open-source
-  driver and tells you at login.
+  files, fix "pacman is locked"), Gaming and What's new. Each job runs in a
+  terminal you can watch, and the window says how it ended. Opens at login
+  until you switch "Show at startup" off. Every button also works as
+  `zexos-welcome <job>` in a terminal.
+- **Drivers, found and installed for you** (`zexos-drivers`). The scan looks
+  at the graphics, Wi-Fi and network chips and picks the driver each needs,
+  the same choices CachyOS, EndeavourOS and Manjaro make (newest NVIDIA,
+  legacy NVIDIA 580 for GTX 750–1080 with a backup kernel, open-source for
+  older cards, AMD, Intel by generation, laptop battery saving on NVIDIA
+  laptops, VM helper tools, Broadcom and Realtek). Both installers show what
+  was found ("chip → driver") and let you pick another driver where one fits.
+  If a driver can't be installed, the install still finishes on the
+  open-source driver and tells you at login.
   - **Welcome → Drivers**: shows the chips and their drivers; Check again
     needs no password and asks for it only when something has to change.
   - **Terminal**: `zexos-drivers status | check | install | remove | switch`.
   - **Script installs**: real Arch gets the drivers it needs; CachyOS,
     EndeavourOS and other distros are left alone, with a warning only when
     graphics or Broadcom Wi-Fi isn't working.
+- **Gaming in one click.** Two ZeXOS packages, `zexos-gaming-meta` (Wine and
+  the libraries and fonts Windows games need) and
+  `zexos-gaming-applications` (Steam, Lutris, MangoHud, gamescope and more),
+  like CachyOS's gaming packages.
+- **An overview on Mango and Hyprland**, like niri's:
+  [mango-overview](https://github.com/zefuros1991/mango-overview).
+  `Mod+O` or four fingers up opens it. Drag windows between workspaces;
+  three-finger swipes follow your fingers (up/down for workspaces,
+  sideways for windows, several in one swipe).
+- **Pick what to install.** `ZEXOS_COMPOSITORS` (niri, hyprland, mango) and
+  `ZEXOS_SHELLS` (noctalia, dms) choose any mix; the default is all of them.
+  The pick is remembered for later updates. With one shell, the shell
+  switcher is left out.
+- **A terminal look in kitty**, in the wallpaper's colours: the system info
+  in a box under your distro's logo (the ZeXOS Z on ISO installs) and a
+  two-line prompt with folder, git branch, status and time, for bash, zsh and
+  fish. Both change with the wallpaper and shell. Your own prompt (starship,
+  oh-my-posh, powerlevel10k, oh-my-zsh themes, a custom fish prompt) is left
+  alone; `~/.config/zexos/no-prompt` turns ours off.
+
+### Small changes
+
+- Windows now zoom in and out by default on niri, Hyprland and Mango (they
+  used to rise from below). The old looks are still there:
+  `zexos-motion set windows rise`. DMS panels use its "Depth" style, which
+  zooms too, and `zexos-motion`'s panels choice now really works on DMS 2.0.
+  Noctalia can't zoom its panels, so they are only slowed a little to be
+  easier to see.
 - **"ZeXOS (safe graphics)"** in every start menu of the USB sticks and of
   installed systems: basic graphics for cards that show a black screen.
 - Broadcom Wi-Fi works on the USB stick itself, before installing.
-- Every ZeXOS package is now signed with the ZeXOS key (`zexos-keyring`), and
-  computers refuse unsigned or changed ZeXOS packages. **Installed before
-  this?** If `pacman -Syu` stops with "key A7806D3A… is unknown", run ZeXOS's
-  `install.sh` once more: it adds the key and switches the ZeXOS source to
-  signed packages.
+- In a virtual machine, the mouse pointer is drawn where clicks really land
+  (`zexos-vm-cursor`, on niri, Hyprland and Mango). Real hardware is not
+  affected.
+- Systems installed from the ZeXOS ISO open web links in Firefox by default,
+  instead of asking which app to use.
+- The boot menu of installed systems no longer lists the "ZeXOS (fallback)"
+  entry, which did not boot.
+- The README is now a short landing page, and the documentation is rewritten
+  into short pages under `docs/` (installing, install options, keybinds,
+  compositors and shells, wallpapers and screens, customizing,
+  troubleshooting), with an index at `docs/README.md`. How ZeXOS is built
+  moved to `docs/internals/`. New `CONTRIBUTING.md` and `SECURITY.md` (private
+  reports through GitHub).
 
 ### Fixed
 
@@ -107,9 +146,6 @@ New work is tested on the `beta` branch first and is listed under
 - GTK 4 no longer reads two CSS files that never existed (`libadwaita.css`).
 - Everything is at the default size again: the bars, menus and launcher of
   both shells, Qt apps (no more `QT_SCALE_FACTOR 1.2`) and GTK apps (96 DPI).
-- The boot menu of installed systems no longer lists the "ZeXOS (fallback)"
-  entry, which did not boot.
-
 - Workspaces now behave the same on niri, Hyprland and Mango. There is always
   one empty workspace after the last one in use; close the last window of a
   workspace and, once you leave it, the ones after it move up; scrolling,
@@ -122,158 +158,196 @@ New work is tested on the `beta` branch first and is listed under
   (`exec-once` → `exec_once`, `windowrule` → `window_rule`, colours like
   `focuscolor` → `focus_color`, …). ZeXOS's Mango config and Noctalia's
   Mango colours (noctalia-zexos 5.1.0-3) use the new names.
-
-- With Noctalia as the only shell, the bar lost its left and middle
-  islands (only the right one showed).
-
-- The shell switcher menu and its splash animation show the DMS logo
-  again (DMS 2.0 renamed the logo icon).
-- Window installer: the time zone is guessed when the Location page opens
-  (it used to be London for everyone), and Wi-Fi networks saved on the live
+- With Noctalia as the only shell, the bar lost its left and middle islands
+  (only the right one showed).
+- The shell switcher menu and its splash animation show the DMS logo again
+  (DMS 2.0 renamed the logo icon).
+- Window installer: the time zone is guessed when the Location page opens (it
+  used to be London for everyone), and Wi-Fi networks saved on the live
   system are carried into the new system.
 - Window installer, first screen: when offline, a single orange line with a
   "click here" link opens the Wi-Fi menu instead of a big warning box.
 - Text installer: the time zone is asked early, an NVMe drive is the default
   (never a USB stick), and the password has the same rule and strength bar.
 
+### Known issues
+
+- **DMS** has no USB drive button (Noctalia uses the udiskie plugin; drives
+  still mount from Dolphin) and no "Restart to UEFI" in its power menu. If you
+  used DMS before, your own DMS bar is kept; the ZeXOS bar only comes with a
+  fresh DMS setup.
+- **Mango** has no keys to jump to the first or last window, or to make a
+  window taller or shorter. `Mod+Minus`/`Mod+Equal` step through set widths
+  instead of 10% at a time. Under Noctalia, `Mod+F1` shows a simple searchable
+  list instead of a cheat sheet.
+- **Hyprland** tiles instead of scrolling, so there are no keys to jump to the
+  first or last window. `Mod+Minus`/`Mod+Equal` move the line between two
+  windows by 100 pixels instead of changing one window's width by 10%, so on
+  the right-hand window `Mod+Equal` makes it smaller. Once in testing,
+  Hyprland 0.56.2 closed the whole session during a DMS wallpaper change (DMS
+  rewrites Hyprland's colour file, which makes Hyprland reload). It left no
+  crash report and did not happen again in 17 more tries. Upstream reports
+  crashes on repeated reloads in 0.55/0.56.
+- Only systemd-boot (UEFI) is available as a bootloader on the ISOs.
+
 ## [1.2.1] - 2026-10-14
+
+### New features
+
+Nothing.
+
+### Small changes
+
+Nothing.
 
 ### Fixed
 
-- With DMS, the wallpaper colour sync (`zexos-dms-sync`) showed as
-  "failed" in systemd after every wallpaper change, even though it worked.
+- With DMS, the wallpaper colour sync (`zexos-dms-sync`) showed as "failed" in
+  systemd after every wallpaper change, even though it worked.
+
+### Known issues
+
+Same as in 1.1.0.
 
 ## [1.2.0] - 2026-10-03
 
 A faster, simpler install: one pacman run and ZeXOS's own package repo.
 
-### Changed
+### New features
 
-- Faster install: all packages now go in with one pacman run instead of
-  one run per package. If that run fails, they're installed one at a time,
-  so the log still names the package that caused it.
-- The fast install now adds ZeXOS's own package repo to `/etc/pacman.conf`
+- **ZeXOS's own package repo.** The fast install adds it to `/etc/pacman.conf`
   (the GitHub release "prebuilt", checked against `packaging/prebuilt.list`).
-  ZeXOS's own apps install in the same pacman run, and `pacman -Syu`
-  updates them like any other package.
-- When something does have to be built, it builds while pacman installs
-  the rest, and Noctalia builds next to the smaller ones instead of
-  after them.
+  ZeXOS's own apps install in the same pacman run, and `pacman -Syu` updates
+  them like any other package.
+
+### Small changes
+
+- Faster install: all packages now go in with one pacman run instead of one
+  run per package. If that run fails, they're installed one at a time, so the
+  log still names the package that caused it.
+- When something does have to be built, it builds while pacman installs the
+  rest, and Noctalia builds next to the smaller ones instead of after them.
+
+### Fixed
+
+Nothing.
+
+### Known issues
+
+Same as in 1.1.0.
 
 ## [1.1.0] - 2026-10-03
 
 Two desktop shells, three compositors, a fast install and the gallery page.
 
-### Added
+### New features
 
-- A fast install. The installer asks whether to download ZeXOS's own apps
-  ready-made (AUR first if you have yay or paru, then ZeXOS's GitHub
-  release, checksum-checked) or to build them on your computer as before.
+- **DankMaterialShell (DMS) as a second desktop shell**, installed next to
+  Noctalia (`dms-shell`, `dms-shell-niri`, `matugen`). Noctalia stays the
+  default. See [Two desktop shells](docs/compositors-and-shells.md#two-desktop-shells).
+- **Mango (`mangowm`) as a second compositor**, picked on the login screen.
+  Its config (new `mango` stow package) copies the niri one: the scrolling
+  layout, gaps, borders, round corners, blur, window rules and the same keys.
+  Both shells work in it, with the shell switcher, and window colours follow
+  the wallpaper. See
+  [Three compositors](docs/compositors-and-shells.md#three-compositors).
+- **Hyprland as a third compositor**, picked on the login screen
+  (`hyprland`, `xdg-desktop-portal-hyprland`, `dms-shell-hyprland`). Its
+  config (new `hyprland` stow package, written in Hyprland's Lua format)
+  tiles windows instead of scrolling them (the "dwindle" layout), and
+  otherwise copies niri: gaps, borders, round corners, blur, window rules and
+  the same keys. Both shells work in it, with the shell switcher, and window
+  colours follow the wallpaper.
+- **`zshell` and the shell switcher.** `zshell` is one helper that every shell
+  keybind calls. It passes the action to the running shell, so the keys work
+  the same in both. `Mod+Shift+D` opens a menu to switch shells: two big
+  choices, each with the shell's logo and its name in Nunito ExtraBold
+  (`ttf-nunito`). It is a small Quickshell window
+  (`~/.config/quickshell/zexos-switcher`) with no search box, so a stray key
+  press can't hide the choices. Arrows, Tab, j/k or W/S move, Enter picks,
+  1/2 pick straight away, Esc or a click outside closes, and the same key
+  closes it again. The choice is saved per user in `~/.config/zexos/shell`.
+  Both shells also get a switcher button on the bar, which opens the same menu.
+- **An animated shell switch** (`~/.config/quickshell/zexos-curtain`): a fade
+  to a dark shade of the old wallpaper's colour with the new shell's logo, a
+  slow turn to the new wallpaper's shade, then a fade out to the new shell. No
+  grey or black gap, animated wallpapers included.
+- **`zexos-motion`**, to pick how the desktop moves, the same on niri,
+  Hyprland and Mango, under both shells: windows (rise, pop, balloon, fade,
+  rise-shrink), workspaces (spring, snappy, glide), panels (matched, off) and
+  the shell switch (logo, dip, none).
+- **A fast install.** The installer asks whether to download ZeXOS's own apps
+  ready-made (AUR first if you have yay or paru, then ZeXOS's GitHub release,
+  checksum-checked) or to build them on your computer as before.
   `ZEXOS_PACKAGES=prebuilt|source` skips the question. Maintainers make the
   packages with `scripts/make-prebuilt.sh`.
-- A gallery page (`docs/index.html`, published with GitHub Pages) with
+- **The gallery page** (`docs/index.html`, published with GitHub Pages) with
   short animated clips of all six compositor and shell combinations, the
   shell switch, the wallpaper picker, light mode and more. It opens as a
-  slideshow: arrow keys move between clips, Esc or a click outside goes
-  back. The README now shows one animated preview that links to it,
-  instead of a grid of still screenshots.
-  The installer leaves these clips out (a partial, sparse git clone), so
-  installing doesn't download them: about 40 MB less.
-- The login screen's round ZeXOS logo comes in the six wallpaper colours
-  (violet, ocean, ember, forest, mono, light) and follows your wallpaper:
-  a ZeXOS wallpaper picks by its name, any other picture by its colours.
-- Switching shells also updates the login screen's wallpaper and logo to
-  the new shell's wallpaper. Before, they only changed when you picked a
-  new wallpaper, so the login screen could show the other shell's.
-- Animated versions of 8 more wallpapers, 9 in all, covering every style
-  and colour family: aurora (violet, ocean, mono), topo (energy, ember),
-  mark (ember, light), bars and dots (forest). Each is a 12-second 4K loop
-  whose first frame is the still picture. They live in
+  slideshow: arrow keys move between clips, Esc or a click outside goes back.
+  The README now shows one animated preview that links to it, instead of a
+  grid of still screenshots. The installer leaves these clips out (a partial,
+  sparse git clone), so installing doesn't download them: about 40 MB less.
+- **Animated versions of 8 more wallpapers**, 9 in all, covering every style
+  and colour family: aurora (violet, ocean, mono), topo (energy, ember), mark
+  (ember, light), bars and dots (forest). Each is a 12-second 4K loop whose
+  first frame is the still picture. They live in
   `~/Pictures/Wallpapers/Animated` (it was `~/Videos/Wallpapers`).
-- roller shows pictures and videos as two groups. `Mod+Shift+W` opens it
-  on the videos, `Tab` switches groups, and video cards carry a ▶ badge
+- **A gradient window border** in two colours picked from the wallpaper
+  itself, on niri and Hyprland, with either shell (`zexos-border`). It takes
+  the wallpaper's two most different colours; on a mostly one-colour wallpaper
+  it picks a small bright accent instead (green lines on a purple map). Other
+  windows get a faint line in a dark shade of the first colour. Noctalia runs
+  it on every wallpaper change, DMS on every colour change, and `zshell` when
+  a shell starts. Mango can only draw a border in one colour, so it keeps the
+  shell's. Needs `python-pillow`, now installed.
+- **`zexos-dms-sync`**, a small watcher (`zexos-dms-sync.path`) that does for
+  DMS what Noctalia does by itself after a wallpaper change: Dolphin and other
+  KDE apps, GTK apps, fuzzel menus and btop take the new colours, the login
+  screen gets the new wallpaper, and a very bright wallpaper turns on light
+  mode. It uses `zshell relink` and `zexos-kde-colors`.
+- **A ZeXOS look for DMS** on its first start (bar, fonts, wallpaper), in the
+  new `dms` stow package. The bar uses DMS's Dank Island with three groups,
+  like Noctalia's islands: CPU use and updates on the left; the island
+  (workspaces, clock, music) in the middle; tray, quick settings (network,
+  Bluetooth, sound, brightness), notifications, battery and the shell switcher
+  on the right. Each side shares one background (DMS's own satellite
+  background setting, no patch), and CPU is one button, like Noctalia.
+
+### Small changes
+
+Added:
+
+- The login screen's round ZeXOS logo comes in the six wallpaper colours
+  (violet, ocean, ember, forest, mono, light) and follows your wallpaper: a
+  ZeXOS wallpaper picks by its name, any other picture by its colours.
+- Switching shells also updates the login screen's wallpaper and logo to the
+  new shell's wallpaper. Before, they only changed when you picked a new
+  wallpaper, so the login screen could show the other shell's.
+- roller shows pictures and videos as two groups. `Mod+Shift+W` opens it on
+  the videos, `Tab` switches groups, and video cards carry a ▶ badge
   (`packaging/roller/zexos-video-groups.patch`).
 - A ZeXOS copy of Noctalia's Video Wallpaper plugin with one more command,
   `set`, so the picker can start a video.
 - Hyprland and Mango dim the windows you're not using, like niri does.
-- A gradient window border in two colours picked from the wallpaper
-  itself, on niri and Hyprland, with either shell (`zexos-border`). It
-  takes the wallpaper's two most different colours; on a mostly one-colour
-  wallpaper it picks a small bright accent instead (green lines on a purple
-  map). Other windows get a faint line in a dark shade of the first colour.
-  Noctalia runs it on every wallpaper change, DMS on every colour change,
-  and `zshell` when a shell starts. Mango can only draw a border in one
-  colour, so it keeps the shell's. Needs `python-pillow`, now installed.
+- `zexos-screenshot` takes area, screen and window screenshots on Mango and
+  Hyprland.
+- Mango: workspaces work like niri's. They are stacked top to bottom and slide
+  up and down, with no empty ones in between (`tag_gather`). Noctalia's bar
+  shows only the workspaces in use, the top-left corner opens the overview,
+  and Noctalia's pop-ups get the same frosted-glass blur as on niri.
+- Mango: `Alt+Tab` opens the carousel to go through every window. Let go of
+  Alt to jump to the chosen window; `Shift` goes backwards.
+- On niri, the overview (`Mod+O`) shows your wallpaper behind it under DMS
+  too, not plain grey (DMS's own `place-within-backdrop` rule).
 
-- `zexos-motion`, to pick how the desktop moves, the same on niri,
-  Hyprland and Mango, under both shells: windows (rise, pop, balloon, fade,
-  rise-shrink), workspaces (spring, snappy, glide), panels (matched, off)
-  and the shell switch (logo, dip, none).
-- An animated shell switch (`~/.config/quickshell/zexos-curtain`): a fade
-  to a dark shade of the old wallpaper's colour with the new shell's logo,
-  a slow turn to the new wallpaper's shade, then a fade out to the new
-  shell. No grey or black gap, animated wallpapers included.
+Changed:
 
-- DankMaterialShell (DMS) as a second desktop shell, installed next to
-  Noctalia (`dms-shell`, `dms-shell-niri`, `matugen`). Noctalia stays the
-  default. See [Two desktop shells](docs/compositors-and-shells.md#two-desktop-shells).
-- `zshell`, one helper that every shell keybind calls. It passes the action
-  to the running shell, so the keys work the same in both.
-- `Mod+Shift+D` opens a menu to switch shells: two big choices, each with
-  the shell's logo and its name in Nunito ExtraBold (`ttf-nunito`). It is a
-  small Quickshell window (`~/.config/quickshell/zexos-switcher`) with no
-  search box, so a stray key press can't hide the choices. Arrows, Tab,
-  j/k or W/S move, Enter picks, 1/2 pick straight away, Esc or a click outside
-  closes, and the same key closes it again. The choice is saved per user in
-  `~/.config/zexos/shell`.
-- A ZeXOS look for DMS on its first start (bar, fonts, wallpaper), in the
-  new `dms` stow package. The bar uses DMS's Dank Island with three groups,
-  like Noctalia's islands: CPU use and updates on the left; the island
-  (workspaces, clock, music) in the middle; tray, quick settings (network,
-  Bluetooth, sound, brightness), notifications, battery and the shell
-  switcher on the right. Each side shares one background (DMS's own
-  satellite background setting, no patch), and CPU is one button, like
-  Noctalia.
-- A shell switcher button on the bar of both shells. It opens the same
-  menu as `Mod+Shift+D`.
-- `zexos-dms-sync`, a small watcher (`zexos-dms-sync.path`) that does for
-  DMS what Noctalia does by itself after a wallpaper change: Dolphin and
-  other KDE apps, GTK apps, fuzzel menus and btop take the new colours,
-  the login screen gets the new wallpaper, and a very bright wallpaper
-  turns on light mode.
-- `zshell relink` and `zexos-kde-colors`, which the watcher uses.
-- Mango (`mangowm`) as a second compositor, picked on the login screen.
-  Its config (new `mango` stow package) copies the niri one: the
-  scrolling layout, gaps, borders, round corners, blur, window rules and
-  the same keys. Both shells work in it, with the shell switcher, and
-  window colours follow the wallpaper. See
-  [Three compositors](docs/compositors-and-shells.md#three-compositors).
-- Hyprland as a third compositor, picked on the login screen
-  (`hyprland`, `xdg-desktop-portal-hyprland`, `dms-shell-hyprland`). Its
-  config (new `hyprland` stow package, written in Hyprland's Lua format)
-  tiles windows instead of scrolling them (the "dwindle" layout), and
-  otherwise copies niri: gaps, borders, round corners, blur, window rules
-  and the same keys. Both shells work in it, with the shell switcher, and
-  window colours follow the wallpaper.
-- `zexos-screenshot` takes area, screen and window screenshots on Mango
-  and Hyprland.
-- Mango: workspaces work like niri's. They are stacked top to bottom and
-  slide up and down, with no empty ones in between (`tag_gather`).
-  Noctalia's bar shows only the workspaces in use, the top-left corner
-  opens the overview, and Noctalia's pop-ups get the same frosted-glass
-  blur as on niri.
-- Mango: `Alt+Tab` opens the carousel to go through every window. Let go
-  of Alt to jump to the chosen window; `Shift` goes backwards.
-- On niri, the overview (`Mod+O`) shows your wallpaper behind it under
-  DMS too, not plain grey (DMS's own `place-within-backdrop` rule).
-
-### Changed
-
-- niri: windows you're not using are now dimmed darker instead of just
-  faded, and every app dims by the same amount (kitty, which is already
-  see-through, gets a lighter setting so it matches). The border is drawn
-  as a frame round the edge only, so it no longer shows through see-through
-  windows as a grey haze.
+- niri: windows you're not using are now dimmed darker instead of just faded,
+  and every app dims by the same amount (kitty, which is already see-through,
+  gets a lighter setting so it matches). The border is drawn as a frame round
+  the edge only, so it no longer shows through see-through windows as a grey
+  haze.
 - niri starts the desktop shell through `zshell start` instead of starting
   Noctalia directly. Mango and Hyprland do the same.
 - niri window colours and kitty colours follow whichever shell is running.
@@ -282,17 +356,16 @@ Two desktop shells, three compositors, a fast install and the gallery page.
   wallpaper change.
 - Qt apps read `ZeXOS.colors`, fuzzel reads `themes/shell` and GTK reads
   `shell.css`. zshell points each at the colours of the shell in use.
-- DMS bar: the middle island opens on click instead of on hover, and
-  touches the top edge like the side groups. Existing DMS setups are
-  moved over too.
+- DMS bar: the middle island opens on click instead of on hover, and touches
+  the top edge like the side groups. Existing DMS setups are moved over too.
 - DMS app launcher always opens on the Apps tab.
 - The wallpaper picker closes after you pick, so you see the change.
-- Shell switcher menu: bigger, no search box, Nunito font, shell names in
-  the theme colour and "IN USE" always in orange.
-- The installer updates the system before installing git, so an older
-  Arch install doesn't fail.
-- Sound, music and brightness keys have readable names on the shortcut
-  cheat sheet. Noctalia's cheat sheet shows them after the next login.
+- Shell switcher menu: bigger, no search box, Nunito font, shell names in the
+  theme colour and "IN USE" always in orange.
+- The installer updates the system before installing git, so an older Arch
+  install doesn't fail.
+- Sound, music and brightness keys have readable names on the shortcut cheat
+  sheet. Noctalia's cheat sheet shows them after the next login.
 
 ### Fixed
 
@@ -300,7 +373,6 @@ Two desktop shells, three compositors, a fast install and the gallery page.
   Noctalia can freeze while quitting, so the old one stayed running and the
   new one refused to start ("already running"). `zshell start` now force-quits
   any shell left over from an earlier session first.
-
 - The installer no longer shows "Failed to install dms-shell-niri" and
   "dms-shell-hyprland" on Arch. Since 2026-10-03 Arch's `dms-shell` includes
   both, so they are only installed where the repo still has them.
@@ -309,16 +381,13 @@ Two desktop shells, three compositors, a fast install and the gallery page.
 - After using Mango, the shortcut list (`Mod+F1`) on niri showed Mango's
   shortcuts. An empty Mango variable left from that session made
   Noctalia think it was still in Mango; `zshell start` now drops it.
-
 - Picking a picture in roller while a video wallpaper played changed the
   colours but left the video on screen. Pictures now stop the video, and
   picking a video plays it. Random wallpaper (`Mod+Ctrl+W`) stops it too.
-
 - Switching to or from a video wallpaper showed a grey screen for about a
   second instead of the usual wallpaper transition. Noctalia now runs its
   normal transition in every case, and the video only takes over once its
   first frame is on screen.
-
 - Under DMS, the shell switcher and other fuzzel menus now take the
   wallpaper colours. Noctalia's fuzzel hook had pointed `fuzzel.ini` at
   Noctalia's colours for good, so they stayed on the last Noctalia
@@ -348,42 +417,52 @@ Two desktop shells, three compositors, a fast install and the gallery page.
 - `Mod+B` opens a real browser when DMS is installed. DMS's link chooser
   (`dms-open`) says it opens web links, so it was picked by mistake.
 
-### Known gaps in DMS
+### Known issues
 
-- No USB drive island: DMS has no widget for it (Noctalia uses the
-  udiskie plugin). Drives still mount from Dolphin.
-- No "Restart to UEFI" in the DMS power menu.
-- If you already used DMS before, your own DMS bar is kept; the ZeXOS bar
-  only comes with a fresh DMS setup.
-
-### Known gaps in Mango
-
-- No keys to jump to the first or last window, or to make a window taller
-  or shorter. Mango has nothing for these.
-- `Mod+Minus`/`Mod+Equal` step through set widths instead of 10% at a
-  time.
-- Noctalia's cheat sheet doesn't know Mango, so under Noctalia `Mod+F1`
-  shows a simple searchable list instead.
-
-### Known gaps in Hyprland
-
-- It tiles instead of scrolling, so there is no overview (`Mod+O`) and
-  no keys to jump to the first or last window.
-- `Mod+Minus`/`Mod+Equal` move the line between two windows by 100
-  pixels instead of changing one window's width by 10%, so on the
-  right-hand window `Mod+Equal` makes it smaller.
-- Once in testing, Hyprland 0.56.2 closed the whole session during a DMS
-  wallpaper change (DMS rewrites Hyprland's colour file, which makes
-  Hyprland reload). It left no crash report and did not happen again in
+- **DMS:** no USB drive island, because DMS has no widget for it (Noctalia
+  uses the udiskie plugin). Drives still mount from Dolphin. No "Restart to
+  UEFI" in the DMS power menu. If you already used DMS before, your own DMS
+  bar is kept; the ZeXOS bar only comes with a fresh DMS setup.
+- **Mango:** no keys to jump to the first or last window, or to make a window
+  taller or shorter, because Mango has nothing for these. `Mod+Minus`/
+  `Mod+Equal` step through set widths instead of 10% at a time. Noctalia's
+  cheat sheet doesn't know Mango, so under Noctalia `Mod+F1` shows a simple
+  searchable list instead.
+- **Hyprland:** it tiles instead of scrolling, so there is no overview
+  (`Mod+O`) and no keys to jump to the first or last window. `Mod+Minus`/
+  `Mod+Equal` move the line between two windows by 100 pixels instead of
+  changing one window's width by 10%, so on the right-hand window `Mod+Equal`
+  makes it smaller. Once in testing, Hyprland 0.56.2 closed the whole session
+  during a DMS wallpaper change (DMS rewrites Hyprland's colour file, which
+  makes Hyprland reload). It left no crash report and did not happen again in
   17 more tries. Upstream reports crashes on repeated reloads in 0.55/0.56.
 
 ## [1.0.0] - 2026-09-30
 
-First release: niri, patched Noctalia v5, roller, SDDM with Pixie, colours
-from the wallpaper, and one installer for CachyOS, Arch Linux, EndeavourOS
-and other Arch-based distros (any desktop already installed).
+First release.
 
-[Unreleased]: https://github.com/zefuros1991/ZeXOS/compare/v1.2.1...HEAD
+### New features
+
+- niri with the patched Noctalia v5 shell, the roller wallpaper picker, and
+  SDDM with the Pixie login theme.
+- Colours that follow the wallpaper.
+- One installer for CachyOS, Arch Linux, EndeavourOS and other Arch-based
+  distros (any desktop already installed).
+
+### Small changes
+
+Nothing.
+
+### Fixed
+
+Nothing.
+
+### Known issues
+
+None recorded.
+
+[Unreleased]: https://github.com/zefuros1991/ZeXOS/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/zefuros1991/ZeXOS/compare/v1.2.1...v2.0.0
 [1.2.1]: https://github.com/zefuros1991/ZeXOS/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/zefuros1991/ZeXOS/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/zefuros1991/ZeXOS/compare/v1.0.0...v1.1.0

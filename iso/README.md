@@ -4,7 +4,16 @@ Put ZeXOS on an empty PC from a USB stick. The stick holds two installers, a win
 
 ## 1. Download it
 
-Get the newest ISO from the [Releases page](https://github.com/zefuros1991/ZeXOS/releases/latest) and write it to a USB stick with any USB-writing tool.
+Get the newest ISO from the [Releases page](https://github.com/zefuros1991/ZeXOS/releases/latest) and write it to a USB stick with any USB-writing tool. The file is called `ZeXOS-v2.0.0-x86_64.iso`, with the version number of the release.
+
+To check that the download is complete and really from ZeXOS, also download `SHA256SUMS` and `SHA256SUMS.asc` into the same folder and run:
+
+```bash
+sha256sum -c --ignore-missing SHA256SUMS
+gpg --verify SHA256SUMS.asc SHA256SUMS
+```
+
+The first line should say `OK`. The second should say "Good signature" from "ZeXOS Package Signing" (key `D429340F700A6F86C921E8A801F22C6FAC9CF960`). If gpg says it doesn't know the key, that is normal on a new computer; compare the key ID.
 
 ## 2. Before you boot
 

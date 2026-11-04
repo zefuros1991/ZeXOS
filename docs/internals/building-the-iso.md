@@ -35,8 +35,27 @@ You need `podman`.
 2. Build the ISO:
 
    ```bash
-   sudo ZEXOS_BRANCH=beta ./iso/build.sh
+   sudo ./iso/build.sh                    # release ISO, built from main
+   sudo ZEXOS_BRANCH=beta ./iso/build.sh  # test ISO, built from beta
    ```
+
+   `ZEXOS_BRANCH` is the branch the installed system downloads ZeXOS from. It also picks the compression: `main` gives the small xz image, any other branch gives a bigger but faster-to-build zstd image.
+
+### The file name
+
+The ISO is named after the newest version in `CHANGELOG.md`, for example `ZeXOS-v2.0.0-x86_64.iso`. Test builds from any other branch get `-beta` after the version.
+
+### The 2 GiB limit
+
+GitHub refuses release files of 2 GiB or more, and the ISO is close to that. The Broadcom Wi-Fi driver is built while the packages install, and building it needs the kernel headers and gcc. `iso/common/airootfs/root/customize_airootfs.sh` runs once the driver is built and deletes both, which keeps about 540 MB out of the image. The headers are deleted by hand, not with `pacman -R`, because removing the package makes dkms delete the driver it just built. The script checks that the driver is still there before and after. The installed system gets its own headers during install.
+
+### Making a release
+
+1. Build from `main` with `sudo ./iso/build.sh`.
+2. In `~/Projects/ZeXOS-iso/out/`, write the checksum: `sha256sum ZeXOS-v2.0.0-x86_64.iso > SHA256SUMS`.
+3. Sign it in a real terminal, because the passphrase needs one: `gpg --armor --detach-sign SHA256SUMS`.
+4. Check both: `gpg --verify SHA256SUMS.asc SHA256SUMS` and `sha256sum -c SHA256SUMS`.
+5. Tag the release, then publish it on GitHub with the ISO, `SHA256SUMS` and `SHA256SUMS.asc` attached.
 
 ### Where the files go
 

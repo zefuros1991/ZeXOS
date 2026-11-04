@@ -1,0 +1,59 @@
+name: Something is broken
+description: The install failed, or something does not work as it should
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for telling us. The [troubleshooting guide](https://github.com/zefuros1991/ZeXOS/blob/main/docs/troubleshooting.md) may already have a fix.
+  - type: dropdown
+    id: how
+    attributes:
+      label: How did you install ZeXOS?
+      options:
+        - ISO with the window installer
+        - ISO with the text installer
+        - Install script on an existing Arch or CachyOS
+    validations:
+      required: true
+  - type: input
+    id: distro
+    attributes:
+      label: Which distro is it on?
+      description: For example CachyOS, Arch, EndeavourOS.
+    validations:
+      required: true
+  - type: dropdown
+    id: compositor
+    attributes:
+      label: Which compositor?
+      options:
+        - niri
+        - Hyprland
+        - Mango
+        - Not sure / not relevant
+    validations:
+      required: true
+  - type: dropdown
+    id: shell
+    attributes:
+      label: Which shell?
+      options:
+        - Noctalia
+        - DankMaterialShell
+        - Not sure / not relevant
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: The log of the step that failed, from `~/.dotfiles` (`install.log`, `bootstrap.log`, `packages.log`, `stow.log` or `finaltouches.log`). Screenshots help too.
+      render: text

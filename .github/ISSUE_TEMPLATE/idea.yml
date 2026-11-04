@@ -1,0 +1,21 @@
+name: I have an idea
+description: Suggest a new feature or a change
+labels: ["idea"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ZeXOS is a one-person project, so the maintainer decides what gets built. Check the [roadmap](https://github.com/zefuros1991/ZeXOS/blob/main/ROADMAP.md) first: your idea may already be planned.
+  - type: textarea
+    id: want
+    attributes:
+      label: What would you like to see?
+    validations:
+      required: true
+  - type: textarea
+    id: why
+    attributes:
+      label: Why would it help?
+      description: What problem does it solve, or what would it make easier?
+    validations:
+      required: true

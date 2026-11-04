@@ -1,6 +1,6 @@
 # Contributing to ZeXOS
 
-Bug reports, ideas and fixes are welcome.
+Bug reports, ideas and fixes are welcome. Please follow the [code of conduct](CODE_OF_CONDUCT.md).
 
 ## Reporting a problem
 

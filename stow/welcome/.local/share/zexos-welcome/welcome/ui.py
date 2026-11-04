@@ -950,7 +950,7 @@ class Welcome(QMainWindow):
         t = label(f"ZeXOS {v}" if v else "ZeXOS", h2=True)
         t.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         lay.addWidget(t)
-        s = label("A ready-to-use desktop built on Arch Linux.", muted=True)
+        s = label("An Arch Linux based distro with a ready-to-use desktop.", muted=True)
         s.setAlignment(Qt.AlignmentFlag.AlignHCenter)
         lay.addWidget(s)
         link = label('<a href="https://github.com/zefuros1991/ZeXOS">github.com/zefuros1991/ZeXOS</a>')

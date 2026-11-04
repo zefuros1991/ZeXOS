@@ -15,7 +15,7 @@ Presentation {
     ZexosSlide {
         backdrop: "slides/1.jpg"
         title: "Welcome to ZeXOS"
-        body: "A ready-made Wayland desktop on top of Arch Linux. Sit back: the base system, your compositors and your shell are being installed."
+        body: "ZeXOS is an Arch Linux based distro with a ready-to-use Wayland desktop. Sit back: the base system, your compositors and your shell are being installed."
     }
     ZexosSlide {
         backdrop: "slides/2.jpg"
